@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef, useCallback } from 'react';
 import dynamic from 'next/dynamic';
 import type { SiteAnalysis, WindTrendResult, BoxPlotData, SpeedDistributionResult, DiurnalProfileResult, SeasonalHeatmapResult } from '@jamieblair/wind-site-intelligence-core';
 import { fetchMonthlyWindHistory, fetchDailyWindData, fetchHourlyWindData, computeWindTrend, computeMonthlyBoxPlots, computeSpeedDistribution, computeDiurnalProfile, computeSeasonalHeatmap } from '@jamieblair/wind-site-intelligence-core';
@@ -46,9 +46,17 @@ interface ChartData {
 export default function HomePage() {
   const [chartData, setChartData] = useState<ChartData>({});
   const [chartsLoading, setChartsLoading] = useState(false);
+  const chartAbortRef = useRef<AbortController | null>(null);
 
-  const handleAnalysisComplete = async (analysis: SiteAnalysis) => {
+  const handleAnalysisComplete = useCallback(async (analysis: SiteAnalysis) => {
     console.log('Analysis complete:', analysis);
+
+    // Abort any in-flight chart fetches
+    chartAbortRef.current?.abort();
+    const controller = new AbortController();
+    chartAbortRef.current = controller;
+    const { signal } = controller;
+
     setChartsLoading(true);
 
     const { coordinate } = analysis;
@@ -60,10 +68,13 @@ export default function HomePage() {
     const hourlyEnd = `${endYear}-12-31`;
 
     const [monthlyResult, dailyResult, hourlyResult] = await Promise.allSettled([
-      fetchMonthlyWindHistory(coordinate),
-      fetchDailyWindData(coordinate, dailyStart, dailyEnd),
-      fetchHourlyWindData(coordinate, hourlyStart, hourlyEnd),
+      fetchMonthlyWindHistory(coordinate, 10, signal),
+      fetchDailyWindData(coordinate, dailyStart, dailyEnd, signal),
+      fetchHourlyWindData(coordinate, hourlyStart, hourlyEnd, signal),
     ]);
+
+    // Ignore results if this request was superseded
+    if (signal.aborted) return;
 
     const newChartData: ChartData = {};
 
@@ -85,7 +96,7 @@ export default function HomePage() {
 
     setChartData(newChartData);
     setChartsLoading(false);
-  };
+  }, []);
 
   return (
     <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>

@@ -47,6 +47,7 @@ interface NominatimResponse {
 
 export async function reverseGeocode(
   coordinate: LatLng,
+  signal?: AbortSignal,
 ): Promise<Result<ReverseGeocodeResult, ScoringError>> {
   const key = cacheKey(coordinate);
   const cached = geocodeCache.get(key);
@@ -59,7 +60,7 @@ export async function reverseGeocode(
   try {
     const response = await fetch(url, {
       headers: { 'User-Agent': USER_AGENT },
-      signal: AbortSignal.timeout(10000),
+      signal: signal ?? AbortSignal.timeout(10000),
     });
 
     if (!response.ok) {

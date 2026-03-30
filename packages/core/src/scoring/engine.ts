@@ -67,6 +67,7 @@ export async function analyseSite(
   const startTime = Date.now();
   const { coordinate } = options;
   const hubHeightM = options.hubHeightM ?? DEFAULT_HUB_HEIGHT_M;
+  const signal = options.signal;
 
   if (!isValidCoordinate(coordinate)) {
     return err(
@@ -86,13 +87,13 @@ export async function analyseSite(
   // Fetch all data in parallel using Promise.allSettled so one failure does not block others
   const [windSettled, elevationSettled, gridSettled, landUseSettled, roadSettled, windFarmSettled, geocodeSettled] =
     await Promise.allSettled([
-      fetchWindData(coordinate),
-      fetchElevationData(coordinate),
-      fetchGridInfrastructure(coordinate),
-      fetchLandUse(coordinate),
-      fetchRoadAccess(coordinate),
-      fetchNearbyWindFarms(coordinate),
-      reverseGeocode(coordinate),
+      fetchWindData(coordinate, signal),
+      fetchElevationData(coordinate, signal),
+      fetchGridInfrastructure(coordinate, signal),
+      fetchLandUse(coordinate, signal),
+      fetchRoadAccess(coordinate, signal),
+      fetchNearbyWindFarms(coordinate, signal),
+      reverseGeocode(coordinate, signal),
     ]);
 
   const windResult = windSettled.status === 'fulfilled' ? windSettled.value : null;

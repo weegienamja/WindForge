@@ -39,6 +39,7 @@ function cacheKey(coord: LatLng, suffix = ''): string {
 
 export async function fetchWindData(
   coordinate: LatLng,
+  signal?: AbortSignal,
 ): Promise<Result<WindDataSummary, ScoringError>> {
   const key = cacheKey(coordinate);
   const cached = windDataCache.get(key);
@@ -60,7 +61,7 @@ export async function fetchWindData(
     `&end=${endYear}` +
     `&format=JSON`;
 
-  const result = await fetchWithRetry(url);
+  const result = await fetchWithRetry(url, signal ? { signal } : {});
   if (!result.ok) {
     return result;
   }
@@ -161,6 +162,7 @@ function parseWindData(
 export async function fetchMonthlyWindHistory(
   coordinate: LatLng,
   yearsBack = 10,
+  signal?: AbortSignal,
 ): Promise<Result<MonthlyWindHistory, ScoringError>> {
   const key = cacheKey(coordinate, `:monthly:${yearsBack}`);
   const cached = monthlyHistoryCache.get(key);
@@ -179,7 +181,7 @@ export async function fetchMonthlyWindHistory(
     `&end=${endYear}` +
     `&format=JSON`;
 
-  const result = await fetchWithRetry(url);
+  const result = await fetchWithRetry(url, signal ? { signal } : {});
   if (!result.ok) return result;
 
   let data: NasaPowerResponse;
@@ -232,6 +234,7 @@ export async function fetchDailyWindData(
   coordinate: LatLng,
   startDate: string,
   endDate: string,
+  signal?: AbortSignal,
 ): Promise<Result<DailyWindData, ScoringError>> {
   const key = cacheKey(coordinate, `:daily:${startDate}:${endDate}`);
   const cached = dailyDataCache.get(key);
@@ -250,7 +253,7 @@ export async function fetchDailyWindData(
     `&end=${end}` +
     `&format=JSON`;
 
-  const result = await fetchWithRetry(url);
+  const result = await fetchWithRetry(url, signal ? { signal } : {});
   if (!result.ok) return result;
 
   let data: NasaPowerResponse;
@@ -301,6 +304,7 @@ export async function fetchHourlyWindData(
   coordinate: LatLng,
   startDate: string,
   endDate: string,
+  signal?: AbortSignal,
 ): Promise<Result<HourlyWindData, ScoringError>> {
   const key = cacheKey(coordinate, `:hourly:${startDate}:${endDate}`);
   const cached = hourlyDataCache.get(key);
@@ -319,7 +323,7 @@ export async function fetchHourlyWindData(
     `&end=${end}` +
     `&format=JSON`;
 
-  const result = await fetchWithRetry(url);
+  const result = await fetchWithRetry(url, signal ? { signal } : {});
   if (!result.ok) return result;
 
   let data: NasaPowerResponse;

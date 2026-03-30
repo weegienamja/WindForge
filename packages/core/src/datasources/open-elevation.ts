@@ -23,6 +23,7 @@ function cacheKey(coord: LatLng): string {
 
 export async function fetchElevationData(
   coordinate: LatLng,
+  signal?: AbortSignal,
 ): Promise<Result<ElevationData, ScoringError>> {
   const key = cacheKey(coordinate);
   const cached = elevationCache.get(key);
@@ -43,7 +44,7 @@ export async function fetchElevationData(
   const locationsParam = points.map((p) => `${p.lat},${p.lng}`).join('|');
   const url = `https://api.open-elevation.com/api/v1/lookup?locations=${locationsParam}`;
 
-  const result = await fetchWithRetry(url);
+  const result = await fetchWithRetry(url, signal ? { signal } : {});
   if (!result.ok) {
     return result;
   }

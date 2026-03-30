@@ -67,4 +67,5 @@ export interface AnalysisOptions {
   coordinate: LatLng;
   weights?: Partial<ScoringWeights>;
   hubHeightM?: number;
+  signal?: AbortSignal;
 }

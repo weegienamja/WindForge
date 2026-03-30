@@ -94,9 +94,12 @@ interface OverpassResponse {
   elements: OverpassElement[];
 }
 
-async function runOverpassQuery(query: string): Promise<Result<OverpassResponse, ScoringError>> {
+async function runOverpassQuery(query: string, signal?: AbortSignal): Promise<Result<OverpassResponse, ScoringError>> {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), (OVERPASS_TIMEOUT_S + 5) * 1000);
+  // If an external signal aborts, propagate to our controller
+  const onAbort = () => controller.abort();
+  signal?.addEventListener('abort', onAbort);
 
   try {
     const response = await fetch(OVERPASS_ENDPOINT, {
@@ -123,15 +126,16 @@ async function runOverpassQuery(query: string): Promise<Result<OverpassResponse,
     );
   } finally {
     clearTimeout(timeout);
+    signal?.removeEventListener('abort', onAbort);
   }
 }
 
-async function runOverpassWithRetry(query: string): Promise<Result<OverpassResponse, ScoringError>> {
-  const first = await runOverpassQuery(query);
+async function runOverpassWithRetry(query: string, signal?: AbortSignal): Promise<Result<OverpassResponse, ScoringError>> {
+  const first = await runOverpassQuery(query, signal);
   if (first.ok) return first;
   // Single retry after 5s (Overpass rate-limits aggressively)
   await new Promise((r) => setTimeout(r, 5000));
-  return runOverpassQuery(query);
+  return runOverpassQuery(query, signal);
 }
 
 function getElementCoord(el: OverpassElement): LatLng | null {
@@ -144,19 +148,20 @@ function getElementCoord(el: OverpassElement): LatLng | null {
 
 export async function fetchGridInfrastructure(
   coordinate: LatLng,
+  signal?: AbortSignal,
 ): Promise<Result<GridInfrastructure, ScoringError>> {
   const key = cacheKey(coordinate, 'grid');
   const cached = gridCache.get(key);
   if (cached) return ok(cached);
 
   let searchRadiusKm = 50;
-  let result = await queryGridInfrastructure(coordinate, searchRadiusKm);
+  let result = await queryGridInfrastructure(coordinate, searchRadiusKm, signal);
   if (!result.ok) return result;
 
   // Expand to 100km if nothing found
   if (result.value.lineCount === 0 && result.value.substationCount === 0) {
     searchRadiusKm = 100;
-    result = await queryGridInfrastructure(coordinate, searchRadiusKm);
+    result = await queryGridInfrastructure(coordinate, searchRadiusKm, signal);
     if (!result.ok) return result;
   }
 
@@ -168,6 +173,7 @@ export async function fetchGridInfrastructure(
 async function queryGridInfrastructure(
   center: LatLng,
   radiusKm: number,
+  signal?: AbortSignal,
 ): Promise<Result<GridInfrastructure, ScoringError>> {
   const bbox = bboxString(bboxFromRadius(center, radiusKm));
   const query = `[out:json][timeout:${OVERPASS_TIMEOUT_S}];
@@ -178,7 +184,7 @@ async function queryGridInfrastructure(
 );
 out center;`;
 
-  const result = await runOverpassWithRetry(query);
+  const result = await runOverpassWithRetry(query, signal);
   if (!result.ok) return result;
 
   const elements = result.value.elements;
@@ -211,6 +217,7 @@ out center;`;
 
 export async function fetchLandUse(
   coordinate: LatLng,
+  signal?: AbortSignal,
 ): Promise<Result<LandUseResult, ScoringError>> {
   const key = cacheKey(coordinate, 'landuse');
   const cached = landUseCache.get(key);
@@ -246,7 +253,7 @@ export async function fetchLandUse(
 );
 out center;`;
 
-  const result = await runOverpassWithRetry(query);
+  const result = await runOverpassWithRetry(query, signal);
   if (!result.ok) return result;
 
   const hardConstraints: LandUseConstraint[] = [];
@@ -300,6 +307,7 @@ out center;`;
 
 export async function fetchRoadAccess(
   coordinate: LatLng,
+  signal?: AbortSignal,
 ): Promise<Result<RoadAccess, ScoringError>> {
   const key = cacheKey(coordinate, 'roads');
   const cached = roadCache.get(key);
@@ -316,7 +324,7 @@ export async function fetchRoadAccess(
 );
 out center;`;
 
-  const result = await runOverpassWithRetry(query);
+  const result = await runOverpassWithRetry(query, signal);
   if (!result.ok) return result;
 
   let nearestMajorRoadDistanceKm = Number.POSITIVE_INFINITY;
@@ -370,6 +378,7 @@ out center;`;
 
 export async function fetchNearbyWindFarms(
   coordinate: LatLng,
+  signal?: AbortSignal,
 ): Promise<Result<NearbyWindFarm[], ScoringError>> {
   const key = cacheKey(coordinate, 'windfarms');
   const cached = windFarmCache.get(key);
@@ -386,7 +395,7 @@ export async function fetchNearbyWindFarms(
 );
 out center;`;
 
-  const result = await runOverpassWithRetry(query);
+  const result = await runOverpassWithRetry(query, signal);
   if (!result.ok) return result;
 
   const farms: NearbyWindFarm[] = [];
