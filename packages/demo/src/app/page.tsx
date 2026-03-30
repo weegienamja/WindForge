@@ -113,7 +113,7 @@ export default function HomePage() {
           Wind Site Intelligence
         </h1>
         <p style={{ margin: '12px auto 0', maxWidth: 600, fontSize: '1.05rem', opacity: 0.85, lineHeight: 1.5 }}>
-          Click any location on the map to score wind resource, terrain, grid proximity, land use and planning feasibility — powered entirely by free, open data.
+          Click any location on the map to score wind resource, terrain, grid proximity, land use and planning feasibility - powered entirely by free, open data.
         </p>
       </header>
 
