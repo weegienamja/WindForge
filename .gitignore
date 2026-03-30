@@ -5,3 +5,5 @@ dist
 .next
 .env
 .env.local
+.vercel
+.env*.local

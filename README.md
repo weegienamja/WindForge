@@ -37,7 +37,7 @@ WindForge started as a simple site scorer and has grown into a comprehensive ass
 |                                                                  |
 |  Open-Elevation ---> Wind Analysis --------> Charts & Graphs     |
 |  (terrain/slope)    (trends, seasonal,      (12+ interactive     |
-|                      diurnal, Weibull)       React components)    |
+|                      diurnal, Weibull)       React components)   |
 |                                                                  |
 |  OSM Overpass -----> Noise Modelling ------> PDF Reports         |
 |  (grid, land use,   (ISO 9613-2, ETSU)     (full assessment)     |
@@ -54,7 +54,7 @@ WindForge started as a simple site scorer and has grown into a comprehensive ass
 |                      (speed-up, RIX)        (multi-site)         |
 |                                                                  |
 |                      Financial Model ------> Energy Yield        |
-|                      (LCOE, IRR, payback)   (AEP, P50/75/90)    |
+|                      (LCOE, IRR, payback)   (AEP, P50/75/90)     |
 |                                                                  |
 |                      Layout Optimiser                            |
 |                      (hill-climbing AEP)                         |
@@ -203,13 +203,13 @@ WindForge is built as a monorepo with a strict separation between the data engin
                             |
               +-------------+-------------+
               |                           |
-     +--------v--------+        +--------v--------+
-     |   @windforge     |        | @windforge-core |
-     |   (React UI)     |------->|  (Pure TS)      |
+     +--------v--------+         +--------v--------+
+     |   @windforge     |        | @windforge-core  |
+     |   (React UI)     |------->|  (Pure TS)       |
      |                  |        |                  |
      | - 19 Components  |        | - Scoring Engine |
      | - 3 Hooks        |        | - 15 Analysis    |
-     | - PDF Export      |        |   Modules       |
+     | - PDF Export     |        |   Modules        |
      | - Theming        |        | - 6 Data Sources |
      +------------------+        | - 12+ Turbines   |
                                  +------------------+
