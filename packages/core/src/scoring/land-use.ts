@@ -44,9 +44,24 @@ export function scoreLandUse(
   // Start from base score
   let score = 70;
 
-  // Deduct for soft constraints
+  // Deduplicate soft constraints by type — count occurrences but only penalise once per type
+  const softByType = new Map<string, { count: number; nearest: number; description: string }>();
   for (const sc of landUse.softConstraints) {
-    switch (sc.type) {
+    const existing = softByType.get(sc.type);
+    if (!existing) {
+      softByType.set(sc.type, { count: 1, nearest: sc.distanceKm, description: sc.description });
+    } else {
+      existing.count++;
+      if (sc.distanceKm < existing.nearest) {
+        existing.nearest = sc.distanceKm;
+        existing.description = sc.description;
+      }
+    }
+  }
+
+  // Deduct once per constraint type
+  for (const [type] of softByType) {
+    switch (type) {
       case 'residential':
         score -= 20;
         break;
@@ -101,8 +116,20 @@ function buildDetail(landUse: LandUseResult, score: number): string {
   }
 
   if (landUse.softConstraints.length > 0) {
-    const descriptions = landUse.softConstraints.map((sc) => sc.description);
-    parts.push(descriptions.join('. ') + '.');
+    // Deduplicate: group by type and summarise
+    const byType = new Map<string, { count: number; description: string }>();
+    for (const sc of landUse.softConstraints) {
+      const existing = byType.get(sc.type);
+      if (!existing) {
+        byType.set(sc.type, { count: 1, description: sc.description });
+      } else {
+        existing.count++;
+      }
+    }
+    const summaries = [...byType.values()].map((v) =>
+      v.count > 1 ? `${v.description} (${v.count} features)` : v.description,
+    );
+    parts.push(summaries.join('. ') + '.');
   }
 
   if (landUse.hardConstraints.length === 0 && landUse.softConstraints.length === 0 && landUse.positiveIndicators.length === 0) {
