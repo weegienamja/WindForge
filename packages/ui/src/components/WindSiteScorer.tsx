@@ -75,9 +75,11 @@ export function WindSiteScorer({
   }, [inputLat, inputLng, runAnalysis]);
 
   // Notify parent on analysis completion
-  if (analysis && onAnalysisComplete) {
-    onAnalysisComplete(analysis);
-  }
+  useEffect(() => {
+    if (analysis && onAnalysisComplete) {
+      onAnalysisComplete(analysis);
+    }
+  }, [analysis, onAnalysisComplete]);
 
   const cssVars = themeToCSS(theme ?? {});
 
