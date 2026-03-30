@@ -133,3 +133,82 @@ export { createCache } from './utils/index.js';
 export type { /** Generic cache interface. */ Cache } from './utils/index.js';
 /** Wind shear power law extrapolation utilities. */
 export { roughnessClassToAlpha, extrapolateWindSpeed, REFERENCE_HEIGHT_M, REFERENCE_HEIGHT_50M } from './utils/index.js';
+/** Geometry utilities for polygon operations. */
+export {
+  isPointInPolygon,
+  polygonAreaSqKm,
+  polygonCentroid,
+  pointToPolygonEdgeDistanceM,
+  circleBufferPolygon,
+  polygonOverlapAreaSqKm,
+  expandBoundingBox,
+  generateGridWithinPolygon,
+  rotateGrid,
+  computeBoundingBox,
+} from './utils/index.js';
+
+// ─── Site Assessment ───
+
+export type {
+  BoundingBox,
+  SiteBoundary,
+  SamplePoint,
+  AggregatedSiteScore,
+  SiteAssessmentMetadata,
+  SiteAssessment,
+} from './types/index.js';
+
+/** Create and parse site boundaries. */
+export { createBoundary, generateSampleGrid, parseBoundaryFromGeoJSON, parseBoundaryFromKML } from './site/index.js';
+/** Assess a site boundary with multi-point analysis. */
+export { assessSite } from './site/index.js';
+export type { SiteAssessmentOptions } from './site/site-assessment.js';
+
+// ─── Constraint Intelligence ───
+
+export type {
+  ConstraintSeverity,
+  ConstraintCategory,
+  ConstraintDefinition,
+  DetectedConstraint,
+  ExclusionZone,
+  NearestReceptorTable,
+  ConstraintSummary,
+  SiteConstraintReport,
+} from './types/index.js';
+
+export {
+  CONSTRAINT_DEFINITIONS,
+  getConstraintDefinition,
+  getMaxSetbackKm,
+} from './constraints/index.js';
+export { fetchConstraintData, clearConstraintCache } from './constraints/index.js';
+export { detectConstraints } from './constraints/index.js';
+export { computeExclusionZones } from './constraints/index.js';
+
+// ─── Turbine Library ───
+
+export type {
+  PowerCurvePoint,
+  ThrustCurvePoint,
+  TurbineModel,
+  TurbineLayoutEstimate,
+} from './types/index.js';
+
+export { getAllTurbines, getTurbineById, getTurbinesByPowerRange } from './turbines/index.js';
+export { parsePowerCurveCSV } from './turbines/index.js';
+
+// ─── Energy Yield ───
+
+export type {
+  LossItem,
+  LossStack,
+  PScenario,
+  AepAssumptions,
+  EnergyYieldResult,
+  AepOptions,
+  LossOverrides,
+} from './types/index.js';
+
+export { calculateAep } from './energy/index.js';
+export { estimateTurbineCapacity } from './energy/index.js';

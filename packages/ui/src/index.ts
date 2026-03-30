@@ -39,6 +39,30 @@ export { ExportButton } from './components/index.js';
 export type { ExportButtonProps } from './components/ExportButton.js';
 export type { HeatmapPoint } from './components/SiteMap.js';
 
+// ─── Phase 6: Site Assessment Components ───
+
+/** Editor for defining and uploading site boundaries (polygon, GeoJSON, KML). */
+export { SiteBoundaryEditor } from './components/index.js';
+export type { SiteBoundaryEditorProps } from './components/SiteBoundaryEditor.js';
+/** Panel showing detected constraints with severity badges and nearest receptor table. */
+export { ConstraintPanel } from './components/index.js';
+export type { ConstraintPanelProps } from './components/ConstraintPanel.js';
+/** SVG map of constraint locations relative to the site boundary. */
+export { ConstraintMap } from './components/index.js';
+export type { ConstraintMapProps } from './components/ConstraintMap.js';
+/** Grouped turbine model selector with power class categories. */
+export { TurbineSelector } from './components/index.js';
+export type { TurbineSelectorProps } from './components/TurbineSelector.js';
+/** Energy yield card showing AEP, P-scenarios, losses, and monthly production. */
+export { EnergyYieldCard } from './components/index.js';
+export type { EnergyYieldCardProps } from './components/EnergyYieldCard.js';
+/** Horizontal stacked bar chart for the AEP loss stack. */
+export { LossStackChart } from './components/index.js';
+export type { LossStackChartProps } from './components/LossStackChart.js';
+/** Full site assessment view combining scores, constraints, energy yield, and metadata. */
+export { SiteAssessmentView } from './components/index.js';
+export type { SiteAssessmentViewProps } from './components/SiteAssessmentView.js';
+
 // ─── Hooks ───
 
 /** React hook for running site analysis with loading/error state management. */

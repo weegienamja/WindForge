@@ -39,3 +39,44 @@ export type {
   SpeedDistributionBin,
   SpeedDistributionResult,
 } from './datasources.js';
+
+// --- Site assessment types ---
+export type {
+  BoundingBox,
+  SiteBoundary,
+  SamplePoint,
+  AggregatedSiteScore,
+  SiteAssessmentMetadata,
+  SiteAssessment,
+} from './site.js';
+
+// --- Constraint types ---
+export type {
+  ConstraintSeverity,
+  ConstraintCategory,
+  ConstraintDefinition,
+  DetectedConstraint,
+  ExclusionZone,
+  NearestReceptorTable,
+  ConstraintSummary,
+  SiteConstraintReport,
+} from './constraints.js';
+
+// --- Turbine types ---
+export type {
+  PowerCurvePoint,
+  ThrustCurvePoint,
+  TurbineModel,
+  TurbineLayoutEstimate,
+} from './turbines.js';
+
+// --- Energy types ---
+export type {
+  LossItem,
+  LossStack,
+  PScenario,
+  AepAssumptions,
+  EnergyYieldResult,
+  AepOptions,
+  LossOverrides,
+} from './energy.js';
