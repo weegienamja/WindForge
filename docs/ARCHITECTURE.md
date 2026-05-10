@@ -145,7 +145,7 @@ All incoming data passes through validation at system boundaries. Wind speeds ar
 | Turborepo | Task orchestration, build caching |
 | pnpm | Fast, disk-efficient package management with workspaces |
 | TypeScript | Type safety, strict mode across all packages |
-| Vitest | 931 tests across core, ui, mcp, and demo packages |
+| Vitest | 925 tests across core, ui, mcp, and demo packages |
 | Biome | Linting and formatting (replaces ESLint + Prettier) |
 | tsup | Bundling for npm publish (ESM + CJS + DTS) |
 | Next.js | Demo app (App Router) |

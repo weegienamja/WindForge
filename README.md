@@ -3,7 +3,7 @@
 Open-source wind site suitability with bias-corrected reanalysis and a Model Context Protocol server.
 
 [![npm version](https://img.shields.io/npm/v/@jamieblair/windforge-mcp?label=npm%20%40jamieblair%2Fwindforge-mcp)](https://www.npmjs.com/package/@jamieblair/windforge-mcp)
-[![Tests](https://img.shields.io/badge/tests-931%20passing-brightgreen)](#development)
+[![Tests](https://img.shields.io/badge/tests-925%20passing-brightgreen)](#development)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178c6)](https://www.typescriptlang.org/)
 [![CI](https://img.shields.io/github/actions/workflow/status/weegienamja/WindForge/ci.yml?branch=main&label=build)](https://github.com/weegienamja/WindForge/actions)
@@ -109,12 +109,12 @@ Node 20 or later and pnpm 9 or later are expected.
 ### Gates
 
 ```bash
-pnpm check          # Typecheck, lint, tests, em-dash audit, build verification
-pnpm test           # 931 tests across four packages
+pnpm check          # Typecheck, lint, tests, build verification
+pnpm test           # 925 tests across four packages
 pnpm test:watch     # Vitest UI
 ```
 
-The `pnpm check` script aggregates the typecheck, lint, full test run, em-dash audit, demo production build verification, and the MCP package validation. CI mirrors this gate.
+The `pnpm check` script aggregates the typecheck, lint, full test run, demo production build verification, and the MCP package validation. CI mirrors this gate.
 
 ### Publishing
 

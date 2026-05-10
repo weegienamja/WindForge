@@ -157,7 +157,7 @@ export default function LandingPage() {
             gap: 'var(--space-6)',
           }}
         >
-          <Stat eyebrow="Tests passing" value={<NumberTicker value={931} />} unit="vitest" />
+          <Stat eyebrow="Tests passing" value={<NumberTicker value={925} />} unit="vitest" />
           <Stat eyebrow="Scoring factors" value={<NumberTicker value={6} />} unit="weighted" />
           <Stat
             eyebrow="ERA5 · CERRA"

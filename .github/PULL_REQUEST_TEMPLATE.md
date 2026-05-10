@@ -15,6 +15,5 @@ What problem this solves, or what capability it adds.
 ## Checklist
 
 - [ ] `pnpm check` passes locally
-- [ ] No em dashes introduced (`pnpm audit:em-dashes` clean)
 - [ ] JSDoc on any new public exports
 - [ ] CHANGELOG.md updated if user-facing

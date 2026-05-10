@@ -1,7 +1,7 @@
 # WindForge Technical Specification
 
 **Version:** May 2026
-**Status:** All 931 tests passing (760 core + 24 UI + 69 MCP + 78 demo)
+**Status:** All 925 tests passing (760 core + 24 UI + 63 MCP + 78 demo)
 **Audience:** Engineers, AI agents, contributors needing a single document that explains *what WindForge is, what it measures, every file, and where to extend it*.
 
 ---

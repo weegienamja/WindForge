@@ -18,10 +18,6 @@ describe('tool description quality', () => {
         expect(tool.description.toLowerCase()).toContain('input');
         expect(tool.description.toLowerCase()).toMatch(/output|returns|return/);
       });
-
-      it('contains no em-dash characters', () => {
-        expect(tool.description).not.toMatch(/[\u2014\u2013]/);
-      });
     });
   }
 

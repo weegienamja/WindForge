@@ -13,7 +13,6 @@ The numeric gates assume a clean clone, `pnpm install`, and Node 20+.
 - [ ] `pnpm -r test` reports the headline test count, zero failures, zero skips.
 - [ ] `pnpm -r build` produces clean `dist/` output for `core`, `ui`, and
       `mcp` with no warnings.
-- [ ] `pnpm audit:em-dashes` exits zero (no U+2014 in source or docs).
 - [ ] `pnpm --filter @jamieblair/windforge-demo verify-build` exits zero
       (production Next build clean of warnings outside the allowlist).
 - [ ] `pnpm --filter @jamieblair/windforge-mcp validate-publish` exits zero

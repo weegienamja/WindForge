@@ -16,8 +16,8 @@ built no matter how much demand there is.
 - 12 plus built-in turbine models with full power curves.
 - React UI components: maps, charts, scoring panels, constraint visualisations.
 - MCP server exposing six tools to AI agents over stdio.
-- 931 automated tests, four-package monorepo, full typecheck and lint coverage.
-- Validation tooling: em-dash audit, demo production build verifier, MCP publish gate.
+- 925 automated tests, four-package monorepo, full typecheck and lint coverage.
+- Validation tooling: demo production build verifier and MCP publish gate.
 
 ## Considered, not committed
 

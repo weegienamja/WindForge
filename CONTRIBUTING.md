@@ -40,8 +40,6 @@ These are non-negotiable:
 - Zod schemas at every external boundary (HTTP, CLI args, environment).
 - Units in variable names: `distanceKm`, `speedMs`, `aepMwh`.
 - Test per source file. Vitest. New code without tests will not be merged.
-- No em dashes anywhere (code, comments, copy, docs, commit messages). The
-  `pnpm audit:em-dashes` script enforces this.
 - JSDoc on every public export.
 
 `pnpm check` must pass before a PR is mergeable. CI mirrors this gate.
