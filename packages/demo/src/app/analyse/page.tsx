@@ -1,6 +1,6 @@
-import { AnalyseShell } from './AnalyseShell';
+'use client';
 
-export const dynamic = 'force-dynamic';
+import { AnalyseShell } from './AnalyseShell';
 
 export default function AnalysePage() {
   return <AnalyseShell />;
