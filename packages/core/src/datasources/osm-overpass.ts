@@ -53,6 +53,13 @@ export interface NearbyWindFarm {
 
 // --- Caches (24h TTL) ---
 
+// Match grid-scale transmission voltages (>= 100 kV).
+// OSM stores voltage as a string and may contain semicolon-separated values
+// (e.g. "132000;33000") for combined-circuit lines. The previous regex pinned
+// to start/end of string and missed those entries. This pattern matches any
+// value of 6+ digits that is either standalone or surrounded by ';'.
+export const GRID_VOLTAGE_REGEX = '(^|;)[1-9][0-9]{5,}($|;)';
+
 const gridCache = createCache<GridInfrastructure>(CACHE_TTL_MS);
 const landUseCache = createCache<LandUseResult>(CACHE_TTL_MS);
 const roadCache = createCache<RoadAccess>(CACHE_TTL_MS);
@@ -178,7 +185,7 @@ async function queryGridInfrastructure(
   const bbox = bboxString(bboxFromRadius(center, radiusKm));
   const query = `[out:json][timeout:${OVERPASS_TIMEOUT_S}];
 (
-  way["power"="line"]["voltage"~"^[1-9][0-9]{5,}$"](${bbox});
+  way["power"="line"]["voltage"~"${GRID_VOLTAGE_REGEX}"](${bbox});
   node["power"="substation"](${bbox});
   way["power"="substation"](${bbox});
 );

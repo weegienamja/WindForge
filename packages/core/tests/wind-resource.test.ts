@@ -167,4 +167,40 @@ describe('scoreWindResource', () => {
       expect(rough.value.score).toBeGreaterThan(smooth.value.score);
     }
   });
+
+  it('lifts confidence to high when reconciliation confidence is high (short series)', () => {
+    const shortSeries = makeWindData({ dataYears: 1 });
+    const baseline = scoreWindResource(makeParams({ windData: shortSeries }));
+    expect(baseline.ok).toBe(true);
+    if (baseline.ok) {
+      expect(baseline.value.confidence).toBe('low');
+    }
+
+    const lifted = scoreWindResource(
+      makeParams({
+        windData: shortSeries,
+        reconciliation: {
+          corrected: shortSeries,
+          method: 'quantile',
+          reference: 'cerra',
+          confidence: 'high',
+          detail: 'Reconciled against CERRA over 36 months.',
+          diagnostics: {
+            overlapMonths: 36,
+            biasBeforeMs: 0.4,
+            biasAfterMs: 0.02,
+            rmseBeforeMs: 0.5,
+            rmseAfterMs: 0.15,
+            rSquared: 0.92,
+            ksStatistic: 0.08,
+          },
+        },
+      }),
+    );
+    expect(lifted.ok).toBe(true);
+    if (lifted.ok) {
+      expect(lifted.value.confidence).toBe('high');
+      expect(lifted.value.detail).toContain('Reconciled against CERRA');
+    }
+  });
 });

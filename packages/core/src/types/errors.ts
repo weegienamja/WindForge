@@ -5,6 +5,9 @@ export enum ScoringErrorCode {
   InvalidCoordinate = 'INVALID_COORDINATE',
   InvalidWeights = 'INVALID_WEIGHTS',
   Timeout = 'TIMEOUT',
+  Configuration = 'CONFIGURATION',
+  OutOfRange = 'OUT_OF_RANGE',
+  ParseError = 'PARSE_ERROR',
   Unknown = 'UNKNOWN',
 }
 

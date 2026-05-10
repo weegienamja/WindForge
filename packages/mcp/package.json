@@ -1,0 +1,61 @@
+{
+  "name": "@jamieblair/windforge-mcp",
+  "version": "0.1.0",
+  "description": "Model Context Protocol server exposing the WindForge wind site suitability engine",
+  "author": "Jamie Blair <jamie@jamieblair.co.uk>",
+  "license": "MIT",
+  "homepage": "https://github.com/jamieblair/wind-site-intelligence/tree/main/packages/mcp#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/jamieblair/wind-site-intelligence.git",
+    "directory": "packages/mcp"
+  },
+  "bugs": {
+    "url": "https://github.com/jamieblair/wind-site-intelligence/issues"
+  },
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "wind-energy",
+    "wind-turbine",
+    "site-suitability",
+    "renewable-energy",
+    "claude",
+    "cursor",
+    "agent-tools"
+  ],
+  "type": "module",
+  "main": "./dist/server.js",
+  "bin": {
+    "windforge-mcp": "./dist/server.js"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "dev": "tsx watch src/server.ts",
+    "start": "node dist/server.js",
+    "test": "vitest run",
+    "test:integration": "vitest run --config vitest.integration.config.ts",
+    "lint": "biome lint ./src",
+    "format": "biome format ./src --write",
+    "check": "tsc --noEmit",
+    "typecheck": "tsc --noEmit",
+    "validate-publish": "tsx scripts/validate-publish.ts",
+    "prepublishOnly": "pnpm test && pnpm build && pnpm validate-publish"
+  },
+  "dependencies": {
+    "@jamieblair/windforge-core": "workspace:*",
+    "@modelcontextprotocol/sdk": "^1.0.4",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@types/node": "^20",
+    "tsx": "^4.21.0",
+    "typescript": "^5.7.3",
+    "vitest": "^3.0.0"
+  }
+}

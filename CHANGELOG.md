@@ -21,7 +21,7 @@ All notable changes to this project will be documented in this file.
 - **Spatial Cache**: Tile-based spatial caching with LRU eviction for efficient repeated lookups across nearby coordinates
 - **Data Validation**: Input validation and cross-source consistency checks for wind data, elevation data, and Overpass responses
 - **Turbine Layout Optimiser**: Constraint-aware turbine placement with minimum spacing enforcement and boundary clipping
-- **678 tests** across 38 test files
+- **931 tests** across all four packages
 
 ### Changed
 

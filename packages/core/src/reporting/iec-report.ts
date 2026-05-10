@@ -7,6 +7,7 @@
 import type { SiteAssessment } from '../types/site.js';
 import type { TurbulenceResult, ExtremeWindResult } from '../types/wind-assessment.js';
 import type { EnergyYieldResult } from '../types/energy.js';
+import type { ReconciledWindData } from '../types/reconciliation.js';
 
 /** IEC site conditions report */
 export interface IecSiteReport {
@@ -77,6 +78,25 @@ export interface IecSiteReport {
     softConstraintCount: number;
     recommendation: string;
   };
+
+  /**
+   * Optional reanalysis bias-correction summary. Present when the wind
+   * resource was reconciled against ERA5 or CERRA via
+   * {@link reconcileWindData}.
+   */
+  dataReconciliation?: {
+    method: 'quantile' | 'variance' | 'linear' | 'none';
+    reference: 'cerra' | 'era5' | null;
+    overlapMonths: number;
+    biasBeforeMs: number;
+    biasAfterMs: number;
+    rmseBeforeMs: number;
+    rmseAfterMs: number;
+    rSquared: number;
+    ksStatistic: number;
+    confidence: 'high' | 'medium' | 'low';
+    detail: string;
+  };
 }
 
 /**
@@ -84,14 +104,19 @@ export interface IecSiteReport {
  *
  * Combines data from the site assessment, turbulence analysis, extreme wind
  * estimation, and energy yield calculation into a structured report.
+ *
+ * Pass an optional `reconciliation` to attach bias-correction diagnostics
+ * (lifts the report's wind-data confidence and is surfaced in the
+ * `dataReconciliation` block).
  */
 export function generateIecSiteReport(
   assessment: SiteAssessment,
   turbulence: TurbulenceResult,
   extremeWind: ExtremeWindResult,
   aep: EnergyYieldResult,
+  reconciliation?: ReconciledWindData | null,
 ): IecSiteReport {
-  return {
+  const report: IecSiteReport = {
     metadata: {
       generatedAt: new Date().toISOString(),
       standard: 'IEC 61400-1 Ed.4 / IEC 61400-12-1 Ed.2',
@@ -153,6 +178,24 @@ export function generateIecSiteReport(
       recommendation: assessment.constraints.summary.recommendation,
     },
   };
+
+  if (reconciliation && reconciliation.diagnostics) {
+    report.dataReconciliation = {
+      method: reconciliation.method,
+      reference: reconciliation.reference,
+      overlapMonths: reconciliation.diagnostics.overlapMonths,
+      biasBeforeMs: reconciliation.diagnostics.biasBeforeMs,
+      biasAfterMs: reconciliation.diagnostics.biasAfterMs,
+      rmseBeforeMs: reconciliation.diagnostics.rmseBeforeMs,
+      rmseAfterMs: reconciliation.diagnostics.rmseAfterMs,
+      rSquared: reconciliation.diagnostics.rSquared,
+      ksStatistic: reconciliation.diagnostics.ksStatistic,
+      confidence: reconciliation.confidence,
+      detail: reconciliation.detail,
+    };
+  }
+
+  return report;
 }
 
 /** Extract approximate annual mean wind speed from assessment factor details */

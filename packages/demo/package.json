@@ -7,22 +7,36 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "biome lint ./src"
+    "lint": "biome lint ./src",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit",
+    "gen:wind-field": "tsx scripts/generate-wind-field.ts",
+    "verify-build": "tsx scripts/verify-build.ts"
   },
   "dependencies": {
     "@jamieblair/windforge": "workspace:*",
     "@jamieblair/windforge-core": "workspace:*",
+    "framer-motion": "^12.38.0",
     "leaflet": "^1.9.4",
     "next": "^15.0.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
-    "react-leaflet": "^5.0.0"
+    "react-leaflet": "^5.0.0",
+    "recharts": "^3.8.1"
   },
   "devDependencies": {
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.2",
     "@types/leaflet": "^1.9.21",
     "@types/node": "25.5.0",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
-    "typescript": "^5.0.0"
+    "@vitejs/plugin-react": "^4.7.0",
+    "axe-core": "^4.11.4",
+    "jsdom": "^29.1.1",
+    "p-limit": "^7.3.0",
+    "tsx": "^4.21.0",
+    "typescript": "^5.0.0",
+    "vitest": "^3.0.0"
   }
 }

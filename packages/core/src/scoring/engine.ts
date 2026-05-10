@@ -5,16 +5,21 @@ import type {
   Warning,
   SiteAnalysis,
   AnalysisOptions,
+  ReconciliationMetadata,
 } from '../types/analysis.js';
 import { ScoringFactor } from '../types/analysis.js';
 import type { ScoringError } from '../types/errors.js';
 import { ScoringErrorCode, scoringError } from '../types/errors.js';
 import type { Result } from '../types/result.js';
 import { ok, err } from '../types/result.js';
-import { fetchWindData } from '../datasources/nasa-power.js';
+import { fetchWindData, fetchMonthlyWindHistory } from '../datasources/nasa-power.js';
 import { fetchElevationData } from '../datasources/open-elevation.js';
 import { fetchGridInfrastructure, fetchLandUse, fetchRoadAccess, fetchNearbyWindFarms } from '../datasources/osm-overpass.js';
 import { reverseGeocode } from '../datasources/nominatim.js';
+import { fetchEra5MonthlyHistory } from '../datasources/era5.js';
+import { fetchCerraMonthlyHistory, isInCerraDomain } from '../datasources/cerra.js';
+import { reconcileWindData } from '../analysis/reanalysis-reconciliation.js';
+import type { ReconciledWindData } from '../types/reconciliation.js';
 import { scoreWindResource } from './wind-resource.js';
 import { scoreTerrainSuitability } from './terrain-suitability.js';
 import { scoreGridProximity } from './grid-proximity.js';
@@ -115,13 +120,83 @@ export async function analyseSite(
   const roughnessClass = elevationResult?.ok ? elevationResult.value.roughnessClass : 1;
   const windShearAlpha = roughnessClassToAlpha(roughnessClass);
 
+  // --- Optional reanalysis bias correction ---
+  // Triggered only when the caller pre-fetched ERA5 / CERRA via options.reanalysis.
+  let reconciliation: ReconciledWindData | null = null;
+  let reconciliationMetadata: ReconciliationMetadata | null = null;
+  let era5 = options.reanalysis?.era5 ?? null;
+  let cerra = options.reanalysis?.cerra ?? null;
+  const reanalysisAttempted: ('era5' | 'cerra')[] = [];
+  const reanalysisSucceeded: ('era5' | 'cerra')[] = [];
+
+  // Auto-fetch ERA5 / CERRA if no caller override AND a CDS API key is configured.
+  const cdsApiKey = options.cdsApiKey ?? process.env.CDS_API_KEY ?? '';
+  if (windResult?.ok && !options.reanalysis && cdsApiKey.trim().length > 0) {
+    const fetches: Array<Promise<{ source: 'era5' | 'cerra'; result: Awaited<ReturnType<typeof fetchEra5MonthlyHistory>> }>> = [];
+    reanalysisAttempted.push('era5');
+    fetches.push(
+      fetchEra5MonthlyHistory(coordinate, { cdsApiKey, ...(signal ? { signal } : {}) }).then((result) => ({ source: 'era5' as const, result })),
+    );
+    if (isInCerraDomain(coordinate)) {
+      reanalysisAttempted.push('cerra');
+      fetches.push(
+        fetchCerraMonthlyHistory(coordinate, { cdsApiKey, ...(signal ? { signal } : {}) }).then((result) => ({ source: 'cerra' as const, result })),
+      );
+    }
+    const settled = await Promise.allSettled(fetches);
+    for (const s of settled) {
+      if (s.status !== 'fulfilled') continue;
+      if (!s.value.result.ok) {
+        sourcesFailed.push(s.value.source === 'era5' ? 'ERA5' : 'CERRA');
+        continue;
+      }
+      if (s.value.source === 'era5') {
+        era5 = s.value.result.value;
+        reanalysisSucceeded.push('era5');
+      } else {
+        cerra = s.value.result.value;
+        reanalysisSucceeded.push('cerra');
+      }
+    }
+  }
+
+  if (windResult?.ok && (era5 || cerra)) {
+    try {
+      const nasaHistorySettled = await fetchMonthlyWindHistory(coordinate, undefined, signal);
+      if (nasaHistorySettled.ok) {
+        const reconciled = reconcileWindData({
+          nasa: { summary: windResult.value, history: nasaHistorySettled.value },
+          era5: era5 ? { summary: era5.summary, history: era5.history } : null,
+          cerra: cerra ? { summary: cerra.summary, history: cerra.history } : null,
+        });
+        if (reconciled.ok) {
+          reconciliation = reconciled.value;
+          reconciliationMetadata = {
+            method: reconciled.value.method,
+            reference: reconciled.value.reference,
+            diagnostics: reconciled.value.diagnostics,
+            confidence: reconciled.value.confidence,
+            detail: reconciled.value.detail,
+          };
+          if (reconciled.value.reference === 'cerra') sourcesUsed.push('CERRA');
+          if (reconciled.value.reference === 'era5') sourcesUsed.push('ERA5');
+        }
+      }
+    } catch {
+      // Never let a reconciliation failure break the analysis.
+      reconciliation = null;
+    }
+  }
+
   // --- Wind resource ---
   if (windResult?.ok) {
+    const summaryForScoring = reconciliation?.corrected ?? windResult.value;
     const windScore = scoreWindResource({
-      windData: windResult.value,
+      windData: summaryForScoring,
       weight: weights.windResource,
       hubHeightM,
       windShearAlpha,
+      reconciliation,
     });
     if (windScore.ok) {
       factors.push(windScore.value);
@@ -239,6 +314,9 @@ export async function analyseSite(
       durationMs,
       hubHeightM,
       windShearAlpha,
+      ...(reconciliationMetadata ? { reconciliation: reconciliationMetadata } : {}),
+      ...(reanalysisAttempted.length > 0 ? { reanalysisAttempted } : {}),
+      ...(reanalysisSucceeded.length > 0 ? { reanalysisSucceeded } : {}),
     },
   });
 }

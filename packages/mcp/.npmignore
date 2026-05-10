@@ -1,0 +1,14 @@
+# Source and build config — only ship the compiled `dist/`.
+src/
+tests/
+tsconfig.json
+vitest.config.ts
+vitest.integration.config.ts
+.turbo/
+node_modules/
+
+# Editor / OS noise
+.vscode/
+.idea/
+.DS_Store
+*.log

@@ -392,6 +392,41 @@ export { performMcpAnalysis } from './analysis/index.js';
 
 export { assessDataQuality } from './analysis/index.js';
 
+// ─── Reanalysis Bias Correction ───
+
+export {
+  reconcileWindData,
+  alignByYearMonth,
+  computeBias,
+  computeRmse,
+  computeRSquared,
+  computeKsStatistic,
+  applyVarianceScaling,
+  applyQuantileMapping,
+  applyLinearScaling,
+} from './analysis/index.js';
+
+export type {
+  ReconciliationInput,
+  ReconciliationSource,
+} from './analysis/index.js';
+
+export { fetchReconciledWindHistory } from './analysis/index.js';
+export type {
+  FetchReconciledWindHistoryOptions,
+  ReconciledWindHistory,
+} from './analysis/index.js';
+
+export type {
+  BiasCorrectionMethod,
+  ReferenceSource,
+  ReconciledWindData,
+  ReconciliationDiagnostics,
+  ReconciliationMetadata,
+  ReanalysisOverride,
+  ReanalysisSource,
+} from './types/index.js';
+
 // ─── Visual Impact (Viewshed) ───
 
 export type { ViewshedCell, ViewshedResult } from './visual/index.js';
@@ -412,11 +447,11 @@ export { generateIecSiteReport } from './reporting/index.js';
 
 // ─── ERA5 / CERRA Data Sources ───
 
-export { fetchEra5WindData, uvToSpeedDirection, validateEra5ApiKey, clearEra5Cache } from './datasources/index.js';
-export type { Era5Options } from './datasources/index.js';
+export { fetchEra5WindData, uvToSpeedDirection, validateEra5ApiKey, clearEra5Cache, fetchEra5MonthlyHistory, parseEra5NetCdf } from './datasources/index.js';
+export type { Era5Options, Era5HistoryOptions } from './datasources/index.js';
 
-export { fetchCerraWindData, isInCerraDomain, clearCerraCache } from './datasources/index.js';
-export type { CerraOptions } from './datasources/index.js';
+export { fetchCerraWindData, isInCerraDomain, clearCerraCache, fetchCerraMonthlyHistory, parseCerraNetCdf } from './datasources/index.js';
+export type { CerraOptions, CerraHistoryOptions } from './datasources/index.js';
 
 // ─── Spatial Cache ───
 

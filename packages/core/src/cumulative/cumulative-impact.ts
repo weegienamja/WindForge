@@ -66,11 +66,15 @@ export function assessCumulativeImpact(
   const noiseOpts = options?.noiseOptions ?? {};
   const year = options?.year ?? 2024;
 
-  // Merge proposed + existing into a single list for cumulative calculation
+  // Merge proposed + existing into a single list for cumulative calculation.
+  // Use a dynamic offset based on the maximum proposed ID so we never collide,
+  // even if the caller supplies very large IDs (e.g. OSM-derived numbers).
+  const proposedMaxId = proposedTurbines.reduce((m, t) => (t.id > m ? t.id : m), 0);
+  const idOffset = proposedMaxId + 1;
   const allTurbines: TurbinePosition[] = [
     ...proposedTurbines,
-    ...existingTurbines.map((et) => ({
-      id: et.id + 10000, // offset IDs to avoid collision
+    ...existingTurbines.map((et, i) => ({
+      id: idOffset + i,
       location: et.location,
       hubHeightM: et.hubHeightM,
       rotorDiameterM: et.rotorDiameterM,

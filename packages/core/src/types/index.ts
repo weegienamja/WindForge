@@ -6,8 +6,11 @@ export type {
   Constraint,
   Warning,
   AnalysisMetadata,
+  ReconciliationMetadata,
   SiteAnalysis,
   AnalysisOptions,
+  ReanalysisOverride,
+  ReanalysisSource,
 } from './analysis.js';
 
 export { ScoringFactor } from './analysis.js';
@@ -17,6 +20,13 @@ export { ok, err } from './result.js';
 
 export type { ScoringError } from './errors.js';
 export { ScoringErrorCode, scoringError } from './errors.js';
+
+export type {
+  BiasCorrectionMethod,
+  ReferenceSource,
+  ReconciledWindData,
+  ReconciliationDiagnostics,
+} from './reconciliation.js';
 
 export type {
   WindDataPoint,

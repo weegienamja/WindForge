@@ -17,6 +17,10 @@ export interface WindDataSummary {
   dataYears: number;
   /** Reference measurement height in metres (2 or 50) */
   referenceHeightM?: number;
+  /** Optional Weibull shape parameter `k` fitted from monthly speeds. */
+  weibullK?: number;
+  /** Optional Weibull scale parameter `c` (m/s) fitted from monthly speeds. */
+  weibullC?: number;
 }
 
 export interface MonthlyWindAverage {

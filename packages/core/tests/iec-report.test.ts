@@ -339,4 +339,58 @@ describe('IEC Site Report', () => {
 
     expect(report.windConditions.annualMeanSpeedMs).toBe(0);
   });
+
+  it('omits dataReconciliation when no reconciliation is provided', () => {
+    const report = generateIecSiteReport(
+      makeSiteAssessment(),
+      makeTurbulenceResult(),
+      makeExtremeWindResult(),
+      makeAepResult(),
+    );
+    expect(report.dataReconciliation).toBeUndefined();
+  });
+
+  it('attaches reconciliation diagnostics when provided', () => {
+    const assessment = makeSiteAssessment();
+    const correctedSummary = {
+      coordinate: { lat: 55.86, lng: -4.25 },
+      monthlyAverages: [],
+      annualAverageSpeedMs: 7.2,
+      speedStdDevMs: 1.0,
+      prevailingDirectionDeg: 240,
+      directionalConsistency: 0.7,
+      dataYears: 1,
+    };
+    const report = generateIecSiteReport(
+      assessment,
+      makeTurbulenceResult(),
+      makeExtremeWindResult(),
+      makeAepResult(),
+      {
+        corrected: correctedSummary,
+        method: 'quantile',
+        reference: 'cerra',
+        confidence: 'high',
+        detail: 'Reconciled against CERRA over 36 months.',
+        diagnostics: {
+          overlapMonths: 36,
+          biasBeforeMs: 0.4,
+          biasAfterMs: 0.02,
+          rmseBeforeMs: 0.5,
+          rmseAfterMs: 0.15,
+          rSquared: 0.92,
+          ksStatistic: 0.08,
+        },
+      },
+    );
+
+    expect(report.dataReconciliation).toBeDefined();
+    expect(report.dataReconciliation?.method).toBe('quantile');
+    expect(report.dataReconciliation?.reference).toBe('cerra');
+    expect(report.dataReconciliation?.overlapMonths).toBe(36);
+    expect(report.dataReconciliation?.biasAfterMs).toBeCloseTo(0.02);
+    expect(report.dataReconciliation?.rmseAfterMs).toBeCloseTo(0.15);
+    expect(report.dataReconciliation?.confidence).toBe('high');
+    expect(report.dataReconciliation?.detail).toContain('CERRA');
+  });
 });

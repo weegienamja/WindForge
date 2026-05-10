@@ -24,17 +24,21 @@ export interface WindSpeedDistributionProps {
 }
 
 export function WindSpeedDistribution({ data, width, height = 300, className, theme: _theme, loading }: WindSpeedDistributionProps) {
-  if (loading) {
-    return <div className={className} style={{ height, background: 'linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%)', backgroundSize: '200% 100%', animation: 'wsi-shimmer 1.5s infinite', borderRadius: 8 }} aria-busy="true" aria-label="Loading wind speed distribution" />;
-  }
+  // Hooks must run unconditionally on every render (Rules of Hooks).
+  // Calling useMemo after an early return for `loading` previously violated this and
+  // caused React to throw when the loading prop toggled.
   const chartData = useMemo(() => {
-    if (!data.bins.length) return [];
+    if (!data?.bins?.length) return [];
     return data.bins.map((b: { binStart: number; binEnd: number; frequency: number; weibullFrequency: number }) => ({
       name: `${b.binStart}–${b.binEnd}`,
       frequency: Number((b.frequency * 100).toFixed(1)),
       weibull: Number((b.weibullFrequency * 100).toFixed(1)),
     }));
   }, [data]);
+
+  if (loading) {
+    return <div className={className} style={{ height, background: 'linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%)', backgroundSize: '200% 100%', animation: 'wsi-shimmer 1.5s infinite', borderRadius: 8 }} aria-busy="true" aria-label="Loading wind speed distribution" />;
+  }
 
   if (chartData.length === 0) {
     return <div className={className} style={{ padding: 20, textAlign: 'center', color: '#888' }}>No distribution data available</div>;

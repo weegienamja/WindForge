@@ -14,7 +14,8 @@ async function main(): Promise<void> {
   const lng = Number.parseFloat(args[1]!);
 
   const hubIdx = args.indexOf('--hub-height');
-  const hubHeightM = hubIdx !== -1 && args[hubIdx + 1] ? Number.parseFloat(args[hubIdx + 1]) : undefined;
+  const hubArg = hubIdx !== -1 ? args[hubIdx + 1] : undefined;
+  const hubHeightM = hubArg ? Number.parseFloat(hubArg) : undefined;
 
   if (Number.isNaN(lat) || Number.isNaN(lng)) {
     console.error('Error: Latitude and longitude must be valid numbers.');

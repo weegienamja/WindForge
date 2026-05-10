@@ -1,30 +1,65 @@
 import type { Metadata } from 'next';
 import type { ReactNode } from 'react';
+import { Geist, Fraunces, JetBrains_Mono } from 'next/font/google';
+import './globals.css';
+
+const geist = Geist({
+  subsets: ['latin'],
+  weight: ['400', '500', '600'],
+  variable: '--font-geist',
+  display: 'swap',
+});
+
+const fraunces = Fraunces({
+  subsets: ['latin'],
+  variable: '--font-fraunces',
+  display: 'swap',
+  axes: ['opsz'],
+});
+
+const jetbrainsMono = JetBrains_Mono({
+  subsets: ['latin'],
+  weight: ['400', '500'],
+  variable: '--font-jetbrains',
+  display: 'swap',
+});
 
 export const metadata: Metadata = {
-  title: 'Wind Site Intelligence',
+  title: 'WindForge · Wind site suitability, computed.',
   description:
-    'Score and visualise wind turbine site suitability. Combine meteorological, terrain, infrastructure and regulatory data into weighted, human-readable analysis.',
+    'Six-factor wind site scoring, bias-corrected against ERA5 and CERRA reanalysis. Open source, free APIs, callable from Claude Desktop and Cursor.',
+  authors: [{ name: 'Jamie Blair', url: 'https://jamieblair.co.uk' }],
+  keywords: [
+    'wind energy',
+    'wind site assessment',
+    'wind turbine siting',
+    'reanalysis bias correction',
+    'ERA5',
+    'CERRA',
+    'NASA POWER',
+    'MCP',
+    'open source',
+  ],
+  alternates: { canonical: 'https://wind.jamieblair.co.uk' },
   openGraph: {
-    title: 'Wind Site Intelligence',
+    title: 'WindForge · Wind site suitability, computed.',
     description:
-      'Decision-support tool for wind turbine siting. Click any location to get a scored breakdown of wind resource, terrain, grid proximity and planning feasibility.',
+      'Six-factor wind site scoring, bias-corrected against ERA5 and CERRA reanalysis. Open source, free APIs.',
     type: 'website',
     url: 'https://wind.jamieblair.co.uk',
-    siteName: 'Wind Site Intelligence',
+    siteName: 'WindForge',
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Wind Site Intelligence',
-    description:
-      'Score and visualise wind turbine site suitability with free, open data.',
+    title: 'WindForge · Wind site suitability, computed.',
+    description: 'Six-factor wind site scoring, bias-corrected against ERA5 and CERRA reanalysis.',
   },
   metadataBase: new URL('https://wind.jamieblair.co.uk'),
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
-    <html lang="en">
+    <html lang="en" className={`${geist.variable} ${fraunces.variable} ${jetbrainsMono.variable}`}>
       <head>
         <link
           rel="stylesheet"
@@ -34,7 +69,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         />
         <link rel="icon" href="/favicon.ico" sizes="any" />
       </head>
-      <body style={{ margin: 0, backgroundColor: '#f8fafc' }}>{children}</body>
+      <body>{children}</body>
     </html>
   );
 }

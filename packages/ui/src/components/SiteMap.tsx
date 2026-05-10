@@ -75,6 +75,14 @@ function BoundsWatcher({ onBoundsChange }: { onBoundsChange: (bounds: { south: n
     }, 500);
   }, [onBoundsChange]);
 
+  // Clear any pending debounce timer on unmount to avoid the callback firing
+  // against a stale/unmounted map and to prevent the closure from retaining the map.
+  useEffect(() => {
+    return () => {
+      if (timerRef.current) clearTimeout(timerRef.current);
+    };
+  }, []);
+
   useMapEvents({
     moveend(e) { emitBounds(e.target as LeafletMap); },
     zoomend(e) { emitBounds(e.target as LeafletMap); },

@@ -3,7 +3,24 @@ dist
 .turbo
 *.tsbuildinfo
 .next
+out
+build
+coverage
+
+# Environment files. Real keys never get committed. .env.example IS tracked.
 .env
 .env.local
+.env.*.local
+.env.development
+.env.production
+
 .vercel
-.env*.local
+
+# OS / editor noise
+.DS_Store
+Thumbs.db
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.idea

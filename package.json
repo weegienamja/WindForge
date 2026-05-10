@@ -14,7 +14,8 @@
     "test": "turbo test",
     "lint": "turbo lint",
     "format": "turbo format",
-    "check": "turbo check"
+    "check": "turbo check && pnpm audit:em-dashes && pnpm --filter @jamieblair/windforge-demo verify-build && pnpm --filter @jamieblair/windforge-mcp validate-publish",
+    "audit:em-dashes": "tsx scripts/audit-em-dashes.ts"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.4.9",

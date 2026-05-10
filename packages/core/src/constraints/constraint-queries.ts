@@ -66,7 +66,7 @@ export async function fetchConstraintData(
   node["heritage"](${bbox});
   way["railway"~"rail|light_rail"](${bbox});
   way["highway"~"motorway|trunk"](${bbox});
-  way["power"="line"]["voltage"~"^[1-9][0-9]{5,}$"](${bbox});
+  way["power"="line"]["voltage"~"(^|;)[1-9][0-9]{5,}($|;)"](${bbox});
   way["natural"="water"](${bbox});
   way["waterway"~"river|canal"](${bbox});
   relation["natural"="water"](${bbox});

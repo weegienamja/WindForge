@@ -4,6 +4,7 @@ import type { WindDataSummary } from '../types/datasources.js';
 import type { ScoringError } from '../types/errors.js';
 import type { Result } from '../types/result.js';
 import { ok } from '../types/result.js';
+import type { ReconciledWindData } from '../types/reconciliation.js';
 import { clamp, linearScale } from '../utils/geo.js';
 import { extrapolateWindSpeed, REFERENCE_HEIGHT_M } from '../utils/wind-shear.js';
 
@@ -17,12 +18,18 @@ export interface WindScoringParams {
   weight: number;
   hubHeightM: number;
   windShearAlpha: number;
+  /**
+   * Optional reanalysis bias-correction outcome. When `confidence === 'high'`
+   * the wind-resource factor's confidence ceiling is lifted to `'high'`
+   * regardless of `dataYears`.
+   */
+  reconciliation?: ReconciledWindData | null;
 }
 
 export function scoreWindResource(
   params: WindScoringParams,
 ): Result<FactorScore, ScoringError> {
-  const { windData, weight, hubHeightM, windShearAlpha } = params;
+  const { windData, weight, hubHeightM, windShearAlpha, reconciliation } = params;
 
   // Use the actual reference height from data (50m when available, 2m otherwise)
   const refHeight = windData.referenceHeightM ?? REFERENCE_HEIGHT_M;
@@ -42,8 +49,11 @@ export function scoreWindResource(
   const rawScore = speedScore * 0.6 + consistencyScore * 0.25 + directionalScore * 0.15;
   const score = Math.round(clamp(rawScore, 0, 100));
 
-  const confidence = determineConfidence(windData);
-  const detail = buildDetail(windData, hubSpeedMs, hubHeightM, refHeight, score, windShearAlpha);
+  const confidence = determineConfidence(windData, reconciliation ?? null);
+  let detail = buildDetail(windData, hubSpeedMs, hubHeightM, refHeight, score, windShearAlpha);
+  if (reconciliation && reconciliation.method !== 'none') {
+    detail = `${detail} ${reconciliation.detail}`;
+  }
 
   return ok({
     factor: ScoringFactor.WindResource,
@@ -73,7 +83,13 @@ function computeDirectionalScore(directionalConsistency: number): number {
   return linearScale(directionalConsistency, 0, 1, 0, 100);
 }
 
-function determineConfidence(windData: WindDataSummary): Confidence {
+function determineConfidence(
+  windData: WindDataSummary,
+  reconciliation: ReconciledWindData | null,
+): Confidence {
+  // Reanalysis-corrected with high confidence lifts the ceiling regardless
+  // of NASA dataYears.
+  if (reconciliation && reconciliation.confidence === 'high') return 'high';
   if (windData.dataYears >= 8) return 'high';
   if (windData.dataYears >= 4) return 'medium';
   return 'low';
