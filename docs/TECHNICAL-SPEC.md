@@ -1,6 +1,6 @@
 # WindForge Technical Specification
 
-**Version:** Opus 4.7 audit pass, May 2026
+**Version:** May 2026
 **Status:** All 931 tests passing (760 core + 24 UI + 69 MCP + 78 demo)
 **Audience:** Engineers, AI agents, contributors needing a single document that explains *what WindForge is, what it measures, every file, and where to extend it*.
 
