@@ -1,0 +1,21 @@
+{
+  "bounds": [
+    [
+      47.41374999999999,
+      -14.918749999999932
+    ],
+    [
+      63.90875,
+      3.421250000000075
+    ]
+  ],
+  "width": 3668,
+  "height": 3299,
+  "resolutionM": 500,
+  "heightM": 100,
+  "minMs": 4.11,
+  "maxMs": 18.36,
+  "stretchLoMs": 7.02,
+  "stretchHiMs": 11.29,
+  "source": "Global Wind Atlas v3 (DTU/World Bank), 100 m mean wind speed"
+}

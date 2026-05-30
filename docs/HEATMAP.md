@@ -129,3 +129,28 @@ Notes:
   (~5 points/min — each point hits four upstream APIs), and resumes if interrupted.
 - Keep the worker + tunnel windows open; closing them stops the feed (the live app
   then falls back to the last committed snapshot).
+
+## High-resolution wind layer (Global Wind Atlas, 500 m)
+
+The six-factor composite is capped at ~25 km because its wind input (NASA POWER)
+is ~50 km native — sampling finer just interpolates the same values. For genuinely
+fine-grained wind, `/map` has a separate **Wind Atlas** layer built from the
+**Global Wind Atlas** (DTU/World Bank), which already models mean wind at **250 m**.
+It's wind-resource only and rendered as a smooth raster overlay (millions of cells
+can't be clickable squares); click anywhere to run the full analysis at that point.
+
+Regenerate it (one-off; the source raster is large and git-ignored):
+
+```bash
+# 1) download the UK 100 m mean-wind GeoTIFF (~60 MB BigTIFF, 250 m res)
+curl -sL -o packages/demo/heatmap-data/GBR_wind-speed_100m.tif \
+  "https://globalwindatlas.info/api/gis/country/GBR/wind-speed/100"
+
+# 2) colour + downsample to 500 m -> public/gwa/uk-wind-100m.{png,json}
+pnpm --filter @jamieblair/windforge-demo gwa
+```
+
+`DOWNSAMPLE=1` keeps the native 250 m (bigger PNG); `DOWNSAMPLE=4` → 1 km (smaller).
+Other heights/layers: swap `/100` for `/50`/`/200`, or `wind-speed` for
+`power-density`, in the download URL. The committed PNG + bounds JSON are all the
+deployed app needs — no worker or API calls at runtime.
