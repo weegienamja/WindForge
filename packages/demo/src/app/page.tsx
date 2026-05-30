@@ -114,6 +114,25 @@ export default function LandingPage() {
             >
               Run an analysis
             </Link>
+            <Link
+              href="/map"
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                padding: '14px 28px',
+                background: 'transparent',
+                color: 'var(--text-primary)',
+                fontFamily: 'var(--font-sans)',
+                fontWeight: 500,
+                fontSize: 15,
+                letterSpacing: '0.01em',
+                textDecoration: 'none',
+                border: '1px solid var(--border-strong)',
+                borderRadius: 4,
+              }}
+            >
+              Explore the UK map
+            </Link>
             <a
               href={REPO_URL}
               target="_blank"

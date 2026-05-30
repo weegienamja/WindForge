@@ -1,0 +1,16 @@
+{
+  "meta": {
+    "bbox": { "south": 49.8, "north": 61.1, "west": -8.7, "east": 2.0 },
+    "spacingKm": 25,
+    "latStepDeg": 0.2246,
+    "lngStepDeg": 0.3835,
+    "hubHeightM": 100,
+    "total": 0,
+    "done": 0,
+    "failed": 0,
+    "complete": false,
+    "updatedAt": "1970-01-01T00:00:00.000Z",
+    "source": "seed (no data yet — run the worker)"
+  },
+  "cells": []
+}

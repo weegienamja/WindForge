@@ -16,6 +16,9 @@ coverage
 
 .vercel
 
+# Heatmap worker output / checkpoints (the live feed is generated, not committed)
+heatmap-data/
+
 # OS / editor noise
 .DS_Store
 Thumbs.db
