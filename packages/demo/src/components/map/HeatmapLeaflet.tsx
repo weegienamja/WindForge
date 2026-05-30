@@ -51,6 +51,7 @@ export function HeatmapLeaflet({ cells, meta, onPick }: HeatmapLeafletProps) {
             <Tooltip direction="top" opacity={1}>
               <div style={{ fontFamily: 'monospace', fontSize: 12 }}>
                 <strong>Score {cell.score}</strong>
+                {cell.offshore ? <> · offshore</> : null}
                 {typeof cell.windSpeedMs === 'number' ? <> · {cell.windSpeedMs.toFixed(1)} m/s</> : null}
                 {cell.hardConstraints ? <> · {cell.hardConstraints} hard limit{cell.hardConstraints === 1 ? '' : 's'}</> : null}
                 <br />

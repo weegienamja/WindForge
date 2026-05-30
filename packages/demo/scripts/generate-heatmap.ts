@@ -28,6 +28,7 @@ import pLimit from 'p-limit';
 import {
   analyseSite,
   isPointInPolygon,
+  pointToPolygonEdgeDistanceM,
   ScoringFactor,
   type FactorScore,
   type LatLng,
@@ -55,11 +56,18 @@ const HUB_M = num('HUB_M', 100);
 const PORT = num('PORT', 8088);
 const LIMIT = Number(process.env.LIMIT ?? 0) || 0;
 const OUT = process.env.OUT ?? './heatmap-data/uk.json';
+// How far offshore (km from the UK coastline) to include sea points. UK offshore
+// wind sits mostly within ~60 km; raise toward ~150 to reach Dogger Bank.
+const OFFSHORE_KM = num('OFFSHORE_KM', 60);
 const DRY_RUN = flags.has('--dry-run');
 const USE_MASK = !flags.has('--no-mask');
+const ONSHORE_ONLY = flags.has('--onshore-only');
 
-// Generous UK window; the land mask trims the sea. Excludes overseas territories.
-const UK_WINDOW = { south: 49.8, north: 61.1, west: -8.7, east: 2.0 };
+// Window covering Great Britain, NI and surrounding UK waters (incl. southern
+// North Sea). The masks below trim it to UK land + an offshore buffer.
+const UK_WINDOW = { south: 49.3, north: 61.3, west: -9.5, east: 3.6 };
+// Neighbouring coasts to exclude so their land isn't mistaken for UK sea.
+const NEIGHBOURS = ['Ireland', 'France', 'Belgium', 'Netherlands'];
 const NOMINATIM = 'https://nominatim.openstreetmap.org';
 const USER_AGENT = 'WindForge-Heatmap/0.1 (+https://wind.jamieblair.co.uk)';
 
@@ -75,13 +83,13 @@ function overallConfidence(factors: ReadonlyArray<FactorScore>): 'high' | 'mediu
 
 // ─── Land mask (UK boundary via Nominatim, with bbox fallback) ─────────────
 
-async function fetchUkRings(): Promise<LatLng[][]> {
-  const url = `${NOMINATIM}/search?country=United+Kingdom&format=jsonv2&polygon_geojson=1&limit=1`;
+async function fetchCountryRings(country: string): Promise<LatLng[][]> {
+  const url = `${NOMINATIM}/search?country=${encodeURIComponent(country)}&format=jsonv2&polygon_geojson=1&limit=1`;
   const res = await fetch(url, { headers: { 'User-Agent': USER_AGENT } });
-  if (!res.ok) throw new Error(`Nominatim ${res.status}`);
+  if (!res.ok) throw new Error(`Nominatim ${res.status} for ${country}`);
   const data = (await res.json()) as Array<{ geojson?: { type: string; coordinates: unknown } }>;
   const geo = data[0]?.geojson;
-  if (!geo) throw new Error('No geojson in Nominatim response');
+  if (!geo) throw new Error(`No geojson for ${country}`);
   const rings: LatLng[][] = [];
   const toRing = (coords: number[][]) => coords.map(([lng, lat]) => ({ lat: lat as number, lng: lng as number }));
   if (geo.type === 'Polygon') {
@@ -94,20 +102,46 @@ async function fetchUkRings(): Promise<LatLng[][]> {
   return rings.filter((r) => r.length >= 3);
 }
 
-function makeLandMask(rings: LatLng[][]): (p: LatLng) => boolean {
-  return (p: LatLng) => rings.some((ring) => isPointInPolygon(p, ring));
+const inAnyRing = (p: LatLng, rings: LatLng[][]) => rings.some((r) => isPointInPolygon(p, r));
+
+/**
+ * Classify a grid point relative to the UK. Returns null to skip (foreign land
+ * or open ocean beyond the offshore buffer), otherwise whether it is offshore.
+ */
+function makeClassifier(uk: LatLng[][], neighbours: LatLng[][]) {
+  const offshoreM = OFFSHORE_KM * 1000;
+  return (p: LatLng): { offshore: boolean } | null => {
+    if (inAnyRing(p, uk)) return { offshore: false };
+    if (ONSHORE_ONLY) return null;
+    if (inAnyRing(p, neighbours)) return null; // Irish/French/etc. land
+    // Sea point: include only if close enough to the UK coastline.
+    let nearest = Infinity;
+    for (const ring of uk) {
+      const d = pointToPolygonEdgeDistanceM(p, ring);
+      if (d < nearest) nearest = d;
+      if (nearest <= offshoreM) break;
+    }
+    return nearest <= offshoreM ? { offshore: true } : null;
+  };
 }
 
 // ─── Grid ──────────────────────────────────────────────────────────────────
 
-function buildGrid(onLand: (p: LatLng) => boolean): { points: LatLng[]; latStepDeg: number; lngStepDeg: number } {
+interface GridPoint extends LatLng {
+  offshore: boolean;
+}
+
+function buildGrid(
+  classify: (p: LatLng) => { offshore: boolean } | null,
+): { points: GridPoint[]; latStepDeg: number; lngStepDeg: number } {
   const midLat = (UK_WINDOW.north + UK_WINDOW.south) / 2;
   const { latStepDeg, lngStepDeg } = cellStepDeg(SPACING_KM, midLat);
-  const points: LatLng[] = [];
+  const points: GridPoint[] = [];
   for (let lat = UK_WINDOW.south + latStepDeg / 2; lat < UK_WINDOW.north; lat += latStepDeg) {
     for (let lng = UK_WINDOW.west + lngStepDeg / 2; lng < UK_WINDOW.east; lng += lngStepDeg) {
       const p = { lat: Number(lat.toFixed(4)), lng: Number(lng.toFixed(4)) };
-      if (onLand(p)) points.push(p);
+      const cls = classify(p);
+      if (cls) points.push({ ...p, offshore: cls.offshore });
     }
   }
   return { points, latStepDeg, lngStepDeg };
@@ -169,18 +203,19 @@ async function rateGate(): Promise<void> {
   lastStart = Date.now();
 }
 
-async function analysePoint(p: LatLng): Promise<HeatmapCell> {
+async function analysePoint(p: GridPoint): Promise<HeatmapCell> {
   await rateGate();
   try {
-    const result = await analyseSite({ coordinate: p, hubHeightM: HUB_M });
+    const result = await analyseSite({ coordinate: { lat: p.lat, lng: p.lng }, hubHeightM: HUB_M });
     if (!result.ok) {
-      return { lat: p.lat, lng: p.lng, score: null, error: result.error.code };
+      return { lat: p.lat, lng: p.lng, offshore: p.offshore, score: null, error: result.error.code };
     }
     const a = result.value;
     const wind = a.factors.find((f) => f.factor === ScoringFactor.WindResource);
     return {
       lat: p.lat,
       lng: p.lng,
+      offshore: p.offshore,
       score: Math.round(a.compositeScore),
       confidence: overallConfidence(a.factors),
       windScore: wind ? Math.round(wind.score) : null,
@@ -188,7 +223,7 @@ async function analysePoint(p: LatLng): Promise<HeatmapCell> {
       hardConstraints: a.hardConstraints.length,
     };
   } catch (err) {
-    return { lat: p.lat, lng: p.lng, score: null, error: err instanceof Error ? err.message : 'failed' };
+    return { lat: p.lat, lng: p.lng, offshore: p.offshore, score: null, error: err instanceof Error ? err.message : 'failed' };
   }
 }
 
@@ -212,20 +247,34 @@ function startServer(): void {
 // ─── Main ────────────────────────────────────────────────────────────────
 
 async function main(): Promise<void> {
-  let onLand: (p: LatLng) => boolean = () => true;
+  let classify: (p: LatLng) => { offshore: boolean } | null = () => ({ offshore: false });
   if (USE_MASK) {
     try {
       console.log('[mask] fetching UK boundary from Nominatim…');
-      const rings = await fetchUkRings();
-      onLand = makeLandMask(rings);
-      console.log(`[mask] ${rings.length} rings`);
+      const uk = await fetchCountryRings('United Kingdom');
+      console.log(`[mask] UK: ${uk.length} rings`);
+      const neighbours: LatLng[][] = [];
+      if (!ONSHORE_ONLY) {
+        for (const name of NEIGHBOURS) {
+          await sleep(1100); // Nominatim courtesy rate limit
+          try {
+            const rings = await fetchCountryRings(name);
+            neighbours.push(...rings);
+            console.log(`[mask] ${name}: ${rings.length} rings (exclude)`);
+          } catch (err) {
+            console.warn(`[mask] ${name} failed:`, err instanceof Error ? err.message : err);
+          }
+        }
+      }
+      classify = makeClassifier(uk, neighbours);
     } catch (err) {
-      console.warn('[mask] failed, falling back to bbox:', err instanceof Error ? err.message : err);
+      console.warn('[mask] failed, gridding the whole window:', err instanceof Error ? err.message : err);
     }
   }
 
-  const { points: allPoints, latStepDeg, lngStepDeg } = buildGrid(onLand);
+  const { points: allPoints, latStepDeg, lngStepDeg } = buildGrid(classify);
   const points = LIMIT > 0 ? allPoints.slice(0, LIMIT) : allPoints;
+  const offshoreCount = points.filter((p) => p.offshore).length;
 
   meta = {
     bbox: UK_WINDOW,
@@ -242,7 +291,7 @@ async function main(): Promise<void> {
   };
 
   console.log(
-    `[plan] ${points.length} land points · spacing ${SPACING_KM}km · concurrency ${CONCURRENCY} · delay ${DELAY_MS}ms`,
+    `[plan] ${points.length} points (${points.length - offshoreCount} onshore + ${offshoreCount} offshore${ONSHORE_ONLY ? '' : ` ≤${OFFSHORE_KM}km`}) · spacing ${SPACING_KM}km · concurrency ${CONCURRENCY} · delay ${DELAY_MS}ms`,
   );
   const estMin = Math.round((points.length * DELAY_MS) / 60000);
   console.log(`[plan] rough lower bound ≈ ${estMin} min (network will add more)`);
