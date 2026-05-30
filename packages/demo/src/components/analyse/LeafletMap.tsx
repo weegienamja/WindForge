@@ -55,6 +55,24 @@ function ClickToPick({ onPick }: { onPick?: (coordinate: LatLng) => void }) {
   return null;
 }
 
+/**
+ * Keeps Leaflet's internal size in sync with its container. Without this the
+ * map only paints tiles for the size it had at mount, leaving blank areas if
+ * the panel later grows (e.g. responsive layout or sticky-height changes).
+ */
+function ResizeHandler() {
+  const map = useMap();
+  useEffect(() => {
+    map.invalidateSize();
+    const el = map.getContainer();
+    if (typeof ResizeObserver === 'undefined') return;
+    const observer = new ResizeObserver(() => map.invalidateSize());
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [map]);
+  return null;
+}
+
 /** Flies the map to the active coordinate whenever it changes. */
 function Recenter({ coordinate }: { coordinate: LatLng | null }) {
   const map = useMap();
@@ -99,6 +117,7 @@ export function LeafletMap({
         opacity={0.85}
       />
       {onPick ? <ClickToPick onPick={onPick} /> : null}
+      <ResizeHandler />
       <Recenter coordinate={coordinate} />
 
       {/* Preset quick-pick pins — shown until the user picks their own point. */}

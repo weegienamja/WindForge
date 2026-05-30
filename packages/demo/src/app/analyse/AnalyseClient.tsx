@@ -369,13 +369,28 @@ function AnalysePageInner() {
           display: 'grid',
           gridTemplateColumns: isMobile ? '1fr' : 'minmax(0, 60%) minmax(0, 40%)',
           gap: isMobile ? 'var(--space-4)' : 'var(--space-5)',
+          // Don't let the map cell stretch to the (much taller) results column —
+          // on desktop it sticks in view while the results scroll beside it.
+          alignItems: 'start',
         }}
       >
-        <div style={{ minHeight: isMobile ? 320 : 480 }}>
+        <div
+          style={
+            isMobile
+              ? { height: 320 }
+              : {
+                  position: 'sticky',
+                  top: 88,
+                  height: 'calc(100vh - 112px)',
+                  minHeight: 460,
+                  maxHeight: 760,
+                }
+          }
+        >
           <MapPanel
             coordinate={coordinate}
             loading={status === 'running'}
-            minHeight={isMobile ? 320 : 480}
+            minHeight={isMobile ? 320 : 460}
             onPick={(c) => runAt(c.lat, c.lng, hub)}
             presets={EXAMPLE_SITES.map((s) => ({ name: s.name, lat: s.lat, lng: s.lng }))}
           />
