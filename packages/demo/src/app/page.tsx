@@ -8,7 +8,7 @@ import { SectionHeading } from '../components/primitives/SectionHeading';
 import { CopyableCommand } from '../components/primitives/CopyableCommand';
 import { Footer } from '../components/Footer';
 
-const REPO_URL = 'https://github.com/jamieblair/wind-site-intelligence';
+const REPO_URL = 'https://github.com/weegienamja/WindForge';
 const MCP_README_URL = `${REPO_URL}/tree/main/packages/mcp`;
 const MCP_TOOLS = [
   'analyse_site',
