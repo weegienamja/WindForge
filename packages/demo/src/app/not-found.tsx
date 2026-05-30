@@ -43,7 +43,7 @@ export default function NotFound() {
           className="t-mono-data"
           style={{ color: 'var(--text-tertiary)', fontSize: 12, marginTop: 'var(--space-4)' }}
         >
-          requested_path: 404
+          status: 404 · not_found
         </p>
         <div
           style={{

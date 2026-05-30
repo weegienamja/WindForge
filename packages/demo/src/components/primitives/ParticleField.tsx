@@ -144,9 +144,15 @@ export function ParticleField({
     const reduceMotion =
       typeof window !== 'undefined' &&
       window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    const lowDensity =
-      typeof window !== 'undefined' && window.matchMedia('(max-width: 1280px)').matches;
-    const particleCount = lowDensity ? 1500 : 3000;
+    const matches = (q: string) =>
+      typeof window !== 'undefined' && window.matchMedia(q).matches;
+    // Scale particle density to the viewport so phones stay smooth and
+    // battery-friendly while desktops get the full dense field.
+    const particleCount = matches('(max-width: 767px)')
+      ? 600
+      : matches('(max-width: 1280px)')
+        ? 1500
+        : 3000;
 
     let width = 0;
     let height = 0;

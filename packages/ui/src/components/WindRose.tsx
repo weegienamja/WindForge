@@ -102,7 +102,9 @@ export function WindRose({ data, bands, size = 400, className, theme: _theme }: 
     'div',
     {
       className,
-      style: { width: size, height: size },
+      // Responsive: fill the available width up to `size`, staying square via
+      // aspect-ratio so the rose never overflows on narrow (mobile) viewports.
+      style: { width: '100%', maxWidth: size, aspectRatio: '1 / 1', margin: '0 auto' },
       role: 'img',
       'aria-label': 'Wind rose chart showing directional wind frequency by speed band',
     },

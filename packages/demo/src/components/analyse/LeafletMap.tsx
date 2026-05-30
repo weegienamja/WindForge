@@ -5,13 +5,16 @@ import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 import type { LatLng } from '@jamieblair/windforge-core';
 
-// Fix default Leaflet marker assets when bundled by Next.
+// Fix default Leaflet marker assets when bundled by Next. Served locally from
+// /public/leaflet so the map renders without a third-party CDN dependency.
 const icon = L.icon({
-  iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
-  iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
-  shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
+  iconUrl: '/leaflet/marker-icon.png',
+  iconRetinaUrl: '/leaflet/marker-icon-2x.png',
+  shadowUrl: '/leaflet/marker-shadow.png',
   iconSize: [25, 41],
   iconAnchor: [12, 41],
+  popupAnchor: [1, -34],
+  shadowSize: [41, 41],
 });
 
 export type LeafletMapProps = {
