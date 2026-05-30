@@ -38,25 +38,31 @@ import pLimit from 'p-limit';
 import {
   analyseSite,
   calculateAep,
+  calculateIrr,
   calculateLcoe,
+  calculatePayback,
   DEFAULT_FINANCIAL_PARAMS,
+  fetchElevationData,
+  fetchGridInfrastructure,
+  fetchRoadAccess,
   fetchWindData,
   getAllTurbines,
   isPointInPolygon,
   pointToPolygonEdgeDistanceM,
+  reverseGeocode,
   ScoringFactor,
   type FactorScore,
   type LatLng,
+  type Result,
   type TurbineModel,
 } from '@jamieblair/windforge-core';
 import {
   cellStepDeg,
   parseWindSpeedMs,
-  type HeatmapCell,
   type HeatmapData,
   type HeatmapMeta,
 } from '../src/lib/heatmap';
-import { HeatmapStore } from './lib/heatmap-store';
+import { WindForgeDB, type CellRecord } from './lib/heatmap-store';
 import { buildLanduseMask, type LandClass } from './lib/landuse-mask';
 
 // ─── Config ──────────────────────────────────────────────────────────────
@@ -111,22 +117,9 @@ const REF_TURBINE: TurbineModel | undefined =
   getAllTurbines().find((t) => Math.abs(t.ratedPowerKw - 2000) < 250) ?? getAllTurbines()[0];
 const REF_PRICE = DEFAULT_FINANCIAL_PARAMS.energyPricePerMwh;
 
-async function computeEconomics(
-  p: LatLng,
-): Promise<{ capacityFactor: number | null; lcoePerMwh: number | null; subsidyFree: boolean }> {
-  if (!REF_TURBINE) return { capacityFactor: null, lcoePerMwh: null, subsidyFree: false };
-  // Wind data was already fetched by analyseSite for this coordinate, so this
-  // is a cache hit.
-  const wind = await fetchWindData(p);
-  if (!wind.ok) return { capacityFactor: null, lcoePerMwh: null, subsidyFree: false };
-  const aep = calculateAep(wind.value, REF_TURBINE, { hubHeightM: HUB_M });
-  if (!aep.ok) return { capacityFactor: null, lcoePerMwh: null, subsidyFree: false };
-  const lcoe = Math.round(calculateLcoe(aep.value).lcoePerMwh);
-  return {
-    capacityFactor: Number(aep.value.netCapacityFactor.toFixed(3)),
-    lcoePerMwh: lcoe,
-    subsidyFree: lcoe <= REF_PRICE,
-  };
+/** Unwrap a settled `Result<T>` to its value, or null on failure. */
+function settledOk<T>(s: PromiseSettledResult<Result<T, unknown>>): T | null {
+  return s.status === 'fulfilled' && s.value.ok ? s.value.value : null;
 }
 
 function overallConfidence(factors: ReadonlyArray<FactorScore>): 'high' | 'medium' | 'low' {
@@ -219,7 +212,7 @@ function buildGrid(
 
 // ─── State + persistence (SQLite + capped JSON snapshot) ───────────────────
 
-const store = new HeatmapStore(DB_PATH);
+const store = new WindForgeDB(DB_PATH);
 let meta: HeatmapMeta;
 let doneCount = 0;
 
@@ -264,32 +257,143 @@ async function rateGate(): Promise<void> {
   lastStart = Date.now();
 }
 
-async function analysePoint(p: GridPoint): Promise<HeatmapCell> {
+const factorScore = (a: { factors: ReadonlyArray<FactorScore> }, f: ScoringFactor) =>
+  a.factors.find((x) => x.factor === f);
+
+async function analysePoint(p: GridPoint): Promise<CellRecord> {
   await rateGate();
+  const coord = { lat: p.lat, lng: p.lng };
+  const base: CellRecord = { id: cellId(p.lat, p.lng), lat: p.lat, lng: p.lng, offshore: p.offshore, landClass: p.landuse ?? null };
   try {
-    const result = await analyseSite({ coordinate: { lat: p.lat, lng: p.lng }, hubHeightM: HUB_M });
-    if (!result.ok) {
-      return { lat: p.lat, lng: p.lng, offshore: p.offshore, landuse: p.landuse, score: null, error: result.error.code };
-    }
+    const result = await analyseSite({ coordinate: coord, hubHeightM: HUB_M });
+    if (!result.ok) return { ...base, error: result.error.code, compositeScore: null };
     const a = result.value;
-    const wind = a.factors.find((f) => f.factor === ScoringFactor.WindResource);
-    const econ = await computeEconomics({ lat: p.lat, lng: p.lng });
+
+    // Pull the raw per-source data (in-process cache hits after analyseSite).
+    const [windR, elevR, gridR, roadR, geoR] = await Promise.allSettled([
+      fetchWindData(coord),
+      fetchElevationData(coord),
+      fetchGridInfrastructure(coord),
+      fetchRoadAccess(coord),
+      reverseGeocode(coord),
+    ]);
+    const wind = settledOk(windR);
+    const elev = settledOk(elevR);
+    const grid = settledOk(gridR);
+    const road = settledOk(roadR);
+    const geo = settledOk(geoR);
+
+    // Energy yield + economics for the reference turbine.
+    let energy: CellRecord['energy'] = null;
+    let economics: CellRecord['economics'] = null;
+    if (wind && REF_TURBINE) {
+      const aepR = calculateAep(wind, REF_TURBINE, { hubHeightM: HUB_M });
+      if (aepR.ok) {
+        const y = aepR.value;
+        energy = {
+          turbineId: REF_TURBINE.id,
+          hubHeightM: HUB_M,
+          grossCapacityFactor: y.grossCapacityFactor,
+          netCapacityFactor: y.netCapacityFactor,
+          grossAepMwh: y.grossAepMwh,
+          netAepMwh: y.netAepMwh,
+          p50Mwh: y.p50.aepMwh,
+          p75Mwh: y.p75.aepMwh,
+          p90Mwh: y.p90.aepMwh,
+          totalLossPct: y.losses.totalLossPct,
+          wakeLossPct: y.losses.wakeLossPct,
+        };
+        const lcoe = calculateLcoe(y);
+        const irr = calculateIrr(y);
+        const payback = calculatePayback(y);
+        economics = {
+          lcoePerMwh: Math.round(lcoe.lcoePerMwh),
+          irrPct: irr.converged ? Number((irr.irr * 100).toFixed(1)) : null,
+          simplePaybackYears: Number.isFinite(payback.simplePaybackYears) ? payback.simplePaybackYears : null,
+          capexGbp: lcoe.breakdown.capex,
+          energyPricePerMwh: REF_PRICE,
+          subsidyFree: Math.round(lcoe.lcoePerMwh) <= REF_PRICE,
+        };
+      }
+    }
+
+    const recon = a.metadata.reconciliation;
+    const windF = factorScore(a, ScoringFactor.WindResource);
+
     return {
-      lat: p.lat,
-      lng: p.lng,
-      offshore: p.offshore,
-      landuse: p.landuse,
-      score: Math.round(a.compositeScore),
-      confidence: overallConfidence(a.factors),
-      windScore: wind ? Math.round(wind.score) : null,
-      windSpeedMs: parseWindSpeedMs(wind?.detail),
-      hardConstraints: a.hardConstraints.length,
-      capacityFactor: econ.capacityFactor,
-      lcoePerMwh: econ.lcoePerMwh,
-      subsidyFree: econ.subsidyFree,
+      ...base,
+      wind: wind
+        ? {
+            annualAvgSpeedMs: wind.annualAverageSpeedMs,
+            speedStdDevMs: wind.speedStdDevMs,
+            prevailingDirectionDeg: wind.prevailingDirectionDeg,
+            directionalConsistency: wind.directionalConsistency,
+            dataYears: wind.dataYears,
+            referenceHeightM: wind.referenceHeightM ?? null,
+            weibullK: wind.weibullK ?? null,
+            weibullC: wind.weibullC ?? null,
+          }
+        : null,
+      terrain: elev
+        ? { elevationM: elev.elevationM, slopePercent: elev.slopePercent, aspectDeg: elev.aspectDeg, roughnessClass: elev.roughnessClass }
+        : null,
+      grid: grid
+        ? {
+            nearestLineDistanceKm: grid.nearestLineDistanceKm,
+            nearestSubstationDistanceKm: grid.nearestSubstationDistanceKm,
+            lineCount: grid.lineCount,
+            substationCount: grid.substationCount,
+          }
+        : null,
+      road: road
+        ? { nearestMajorRoadDistanceKm: road.nearestMajorRoadDistanceKm, nearestMajorRoadType: road.nearestMajorRoadType, bestRoadCategory: road.bestRoadCategory }
+        : null,
+      geocode: geo
+        ? { countryCode: geo.countryCode, country: geo.country, region: geo.region, displayName: geo.displayName }
+        : null,
+      reanalysis:
+        recon && recon.diagnostics
+          ? {
+              method: recon.method,
+              reference: recon.reference ?? null,
+              biasBeforeMs: recon.diagnostics.biasBeforeMs,
+              biasAfterMs: recon.diagnostics.biasAfterMs,
+              rmseBeforeMs: recon.diagnostics.rmseBeforeMs,
+              rmseAfterMs: recon.diagnostics.rmseAfterMs,
+              rSquared: recon.diagnostics.rSquared,
+              ksStatistic: recon.diagnostics.ksStatistic,
+              confidence: recon.confidence,
+            }
+          : null,
+      energy,
+      economics,
+      factors: a.factors.map((f) => ({
+        factor: f.factor,
+        score: Math.round(f.score),
+        weight: f.weight,
+        confidence: f.confidence,
+        detail: f.detail,
+      })),
+      constraints: [
+        ...a.hardConstraints.map((c) => ({ kind: 'hard' as const, factor: c.factor ?? null, severity: c.severity ?? null, description: c.description })),
+        ...a.warnings.map((w) => ({ kind: 'warning' as const, factor: w.factor ?? null, severity: null, description: w.description })),
+      ],
+      compositeScore: Math.round(a.compositeScore),
+      overallConfidence: overallConfidence(a.factors),
+      hardConstraintCount: a.hardConstraints.length,
+      windScore: windF ? Math.round(windF.score) : null,
+      terrainScore: factorScore(a, ScoringFactor.TerrainSuitability)?.score ?? null,
+      gridScore: factorScore(a, ScoringFactor.GridProximity)?.score ?? null,
+      landuseScore: factorScore(a, ScoringFactor.LandUseCompatibility)?.score ?? null,
+      planningScore: factorScore(a, ScoringFactor.PlanningFeasibility)?.score ?? null,
+      accessScore: factorScore(a, ScoringFactor.AccessLogistics)?.score ?? null,
+      windSpeedMs: parseWindSpeedMs(windF?.detail),
+      capacityFactor: energy ? Number(energy.netCapacityFactor.toFixed(3)) : null,
+      lcoePerMwh: economics?.lcoePerMwh ?? null,
+      subsidyFree: economics?.subsidyFree ?? false,
     };
   } catch (err) {
-    return { lat: p.lat, lng: p.lng, offshore: p.offshore, landuse: p.landuse, score: null, error: err instanceof Error ? err.message : 'failed' };
+    return { ...base, error: err instanceof Error ? err.message : 'failed', compositeScore: null };
   }
 }
 
@@ -373,13 +477,25 @@ async function main(): Promise<void> {
   console.log(
     `[plan] ${points.length} points (${points.length - offshoreCount} onshore + ${offshoreCount} offshore${ONSHORE_ONLY ? '' : ` ≤${OFFSHORE_KM}km`})${USE_LANDUSE ? ` · ${builtSkipped} built-up skipped` : ''} · spacing ${SPACING_KM}km · concurrency ${CONCURRENCY} · delay ${DELAY_MS}ms`,
   );
+  const acres = ((SPACING_KM * 1000) ** 2 / 4046.86).toFixed(1);
   const estHours = ((points.length * DELAY_MS) / 3_600_000).toFixed(1);
-  console.log(`[plan] rough lower bound ≈ ${estHours} h (network will add more)`);
-  if (DRY_RUN) return;
+  console.log(`[plan] cell ≈ ${acres} acres · rough lower bound ≈ ${estHours} h (network will add more)`);
+  if (DRY_RUN) {
+    store.close();
+    return;
+  }
 
-  const migrated = store.migrateFromJson(OUT, cellId);
+  const migrated = store.migrateFromJson(OUT);
   if (migrated > 0) console.log(`[migrate] imported ${migrated} cells from ${OUT} into ${DB_PATH}`);
   console.log(`[store] ${DB_PATH} holds ${store.count()} cells`);
+  store.startRun({
+    bbox: `${WINDOW.south},${WINDOW.west},${WINDOW.north},${WINDOW.east}`,
+    spacingKm: SPACING_KM,
+    acres: Number(((SPACING_KM * 1000) ** 2 / 4046.86).toFixed(1)),
+    hubM: HUB_M,
+    totalPlanned: points.length,
+    notes: USE_LANDUSE ? 'built-up excluded' : '',
+  });
   startServer();
 
   const todo = points.filter((p) => !store.has(cellId(p.lat, p.lng)));
@@ -390,8 +506,8 @@ async function main(): Promise<void> {
   await Promise.all(
     todo.map((p) =>
       limit(async () => {
-        const cell = await analysePoint(p);
-        store.upsert(cellId(p.lat, p.lng), cell);
+        const rec = await analysePoint(p);
+        store.upsertCell(rec);
         doneCount += 1;
         if (doneCount % 25 === 0 || doneCount === points.length) {
           console.log(`[run] ${doneCount}/${points.length}  (${Math.round((doneCount / points.length) * 100)}%)`);

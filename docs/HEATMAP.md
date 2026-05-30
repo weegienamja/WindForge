@@ -66,11 +66,26 @@ A `Ctrl-C` saves a checkpoint; re-running resumes where it left off.
 
 ### Datapoint database, resolution & land use
 
-- **Storage is SQLite** (`heatmap-data/uk.db`, built-in `node:sqlite` — no native
-  build). One indexed row per analysed cell; runs resume by checking the DB, so it
-  scales to millions of points without rewriting a JSON blob. A legacy `uk.json` is
-  imported automatically on first run. Query it with any SQLite tool, e.g.
-  `SELECT lat,lng,score,lcoe_per_mwh FROM cells WHERE subsidy_free=1 ORDER BY score DESC;`
+- **Storage is a normalised SQLite database** (built-in `node:sqlite`, no native
+  build), with a table per upstream API plus a query-ready `site_assessment`
+  summary — open it in DBeaver:
+  `cells`, `wind_resource` (NASA POWER), `terrain` (Open-Elevation),
+  `grid_access` (OSM), `geocode` (Nominatim), `reanalysis` (ERA5/CERRA),
+  `energy_yield`, `economics`, `factor_scores`, `constraints`, `site_assessment`,
+  `runs`, `meta`. Runs resume by checking the DB, so it scales to millions of
+  points. `pnpm --filter @jamieblair/windforge-demo db:init` creates an empty DB.
+
+  ```sql
+  SELECT lat, lng, composite_score, lcoe_per_mwh FROM site_assessment
+  WHERE subsidy_free = 1 AND land_class = 'farmland' ORDER BY composite_score DESC;
+  ```
+
+- **Local desktop collection** — point `DB` at any drive (e.g.
+  `DB="F:\WindForge database\windforge.db"`). The double-click launchers in
+  [`packages/demo/scripts/launchers/`](../packages/demo/scripts/launchers/)
+  (`start-worker.bat`, and `WindForge Control.bat` → a PowerShell GUI with
+  start/stop, area/cell-size/farmland options and live progress) are designed to
+  live next to the database on the target machine.
 - **Sub-km / 1-acre runs** are for a bounded `BBOX` (UK-wide at 1 acre is billions of
   points). Example — a 1-acre, farmland-only sweep of a small area, run slowly:
   ```bash
