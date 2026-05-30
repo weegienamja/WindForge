@@ -377,6 +377,7 @@ function AnalysePageInner() {
             loading={status === 'running'}
             minHeight={isMobile ? 320 : 480}
             onPick={(c) => runAt(c.lat, c.lng, hub)}
+            presets={EXAMPLE_SITES.map((s) => ({ name: s.name, lat: s.lat, lng: s.lng }))}
           />
         </div>
         <div
