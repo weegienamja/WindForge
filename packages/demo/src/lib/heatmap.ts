@@ -12,10 +12,18 @@ export interface HeatmapCell {
   windSpeedMs?: number | null;
   windScore?: number | null;
   hardConstraints?: number;
+  /** Net capacity factor (0-1) for the reference turbine. */
+  capacityFactor?: number | null;
+  /** Levelised cost of energy (£/MWh) for the reference turbine. */
+  lcoePerMwh?: number | null;
+  /** True when LCOE is at/below the reference market price (no subsidy needed). */
+  subsidyFree?: boolean;
   /** True for sea points (offshore) vs UK land (onshore). */
   offshore?: boolean;
   error?: string;
 }
+
+export type HeatmapMetric = 'suitability' | 'wind' | 'economics';
 
 export interface HeatmapBBox {
   south: number;
@@ -90,6 +98,38 @@ export function scoreColor(score: number): string {
   const g = Math.round(lerp(lo.rgb[1], hi.rgb[1], t));
   const b = Math.round(lerp(lo.rgb[2], hi.rgb[2], t));
   return `#${[r, g, b].map((c) => c.toString(16).padStart(2, '0')).join('')}`;
+}
+
+/**
+ * Build a colour function that stretches the palette across the *actual* spread
+ * of the data (5th–95th percentile), so tightly-clustered scores still show
+ * contrast instead of all reading as one shade. `invert` for metrics where lower
+ * is better (e.g. LCOE). Returns the domain used, for the legend.
+ */
+export function makeRelativeColor(
+  values: number[],
+  opts?: { invert?: boolean },
+): { color: (v: number) => string; lo: number; hi: number } {
+  const invert = opts?.invert ?? false;
+  const xs = values.filter((v) => Number.isFinite(v)).sort((a, b) => a - b);
+  if (xs.length === 0) {
+    return { color: () => scoreColor(50), lo: 0, hi: 1 };
+  }
+  const q = (p: number) => xs[Math.min(xs.length - 1, Math.max(0, Math.round(p * (xs.length - 1))))] as number;
+  let lo = q(0.05);
+  let hi = q(0.95);
+  if (hi <= lo) {
+    lo = xs[0] as number;
+    hi = xs[xs.length - 1] as number;
+  }
+  if (hi <= lo) hi = lo + 1;
+  const color = (v: number) => {
+    let t = (v - lo) / (hi - lo);
+    t = Math.max(0, Math.min(1, t));
+    if (invert) t = 1 - t;
+    return scoreColor(t * 100);
+  };
+  return { color, lo, hi };
 }
 
 /** Degree cell size for a spacing in km at a given latitude (for drawing). */

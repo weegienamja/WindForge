@@ -8,15 +8,18 @@ export interface HeatmapLeafletProps {
   cells: HeatmapCell[];
   meta: HeatmapMeta;
   onPick?: (cell: HeatmapCell) => void;
+  /** Cell → fill colour. Defaults to the absolute suitability ramp. */
+  colorFor?: (cell: HeatmapCell) => string;
 }
 
 /**
  * Renders the suitability grid as coloured rectangles over a dark basemap.
  * Canvas rendering (`preferCanvas`) keeps thousands of cells smooth.
  */
-export function HeatmapLeaflet({ cells, meta, onPick }: HeatmapLeafletProps) {
+export function HeatmapLeaflet({ cells, meta, onPick, colorFor }: HeatmapLeafletProps) {
   const halfLat = meta.latStepDeg / 2;
   const halfLng = meta.lngStepDeg / 2;
+  const fill = colorFor ?? ((c: HeatmapCell) => scoreColor(c.score ?? 0));
 
   return (
     <MapContainer
@@ -43,8 +46,8 @@ export function HeatmapLeaflet({ cells, meta, onPick }: HeatmapLeafletProps) {
             bounds={bounds}
             pathOptions={{
               stroke: false,
-              fillColor: scoreColor(cell.score),
-              fillOpacity: 0.62,
+              fillColor: fill(cell),
+              fillOpacity: 0.66,
             }}
             eventHandlers={onPick ? { click: () => onPick(cell) } : undefined}
           >
@@ -53,6 +56,13 @@ export function HeatmapLeaflet({ cells, meta, onPick }: HeatmapLeafletProps) {
                 <strong>Score {cell.score}</strong>
                 {cell.offshore ? <> · offshore</> : null}
                 {typeof cell.windSpeedMs === 'number' ? <> · {cell.windSpeedMs.toFixed(1)} m/s</> : null}
+                {typeof cell.lcoePerMwh === 'number' ? (
+                  <>
+                    {' '}
+                    · £{cell.lcoePerMwh}/MWh{cell.subsidyFree ? ' (subsidy-free)' : ''}
+                  </>
+                ) : null}
+                {typeof cell.capacityFactor === 'number' ? <> · CF {(cell.capacityFactor * 100).toFixed(0)}%</> : null}
                 {cell.hardConstraints ? <> · {cell.hardConstraints} hard limit{cell.hardConstraints === 1 ? '' : 's'}</> : null}
                 <br />
                 {cell.lat.toFixed(3)}, {cell.lng.toFixed(3)}
