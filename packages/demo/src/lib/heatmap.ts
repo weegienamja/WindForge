@@ -12,6 +12,8 @@ export interface HeatmapCell {
   windSpeedMs?: number | null;
   windScore?: number | null;
   hardConstraints?: number;
+  /** OSM land-use class for the cell: 'farmland' | 'open' | 'built' | etc. */
+  landuse?: string | null;
   /** Net capacity factor (0-1) for the reference turbine. */
   capacityFactor?: number | null;
   /** Levelised cost of energy (£/MWh) for the reference turbine. */
