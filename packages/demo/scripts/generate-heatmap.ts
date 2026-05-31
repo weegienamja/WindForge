@@ -34,7 +34,6 @@
 import { createServer } from 'node:http';
 import { mkdir, rename, writeFile } from 'node:fs/promises';
 import { dirname } from 'node:path';
-import pLimit from 'p-limit';
 import {
   analyseSite,
   calculateAep,
@@ -49,6 +48,7 @@ import {
   getAllTurbines,
   isPointInPolygon,
   pointToPolygonEdgeDistanceM,
+  polygonAreaSqKm,
   reverseGeocode,
   ScoringFactor,
   type FactorScore,
@@ -150,22 +150,63 @@ async function fetchCountryRings(country: string): Promise<LatLng[][]> {
   return rings.filter((r) => r.length >= 3);
 }
 
-const inAnyRing = (p: LatLng, rings: LatLng[][]) => rings.some((r) => isPointInPolygon(p, r));
+// Bounding box per ring so we can cheaply reject points before the (expensive)
+// point-in-polygon / edge-distance tests — essential at fine spacing where the
+// grid has millions of points.
+interface RingBox {
+  ring: LatLng[];
+  s: number;
+  w: number;
+  n: number;
+  e: number;
+}
+function ringBox(ring: LatLng[]): RingBox {
+  let s = Infinity;
+  let w = Infinity;
+  let n = -Infinity;
+  let e = -Infinity;
+  for (const p of ring) {
+    if (p.lat < s) s = p.lat;
+    if (p.lat > n) n = p.lat;
+    if (p.lng < w) w = p.lng;
+    if (p.lng > e) e = p.lng;
+  }
+  return { ring, s, w, n, e };
+}
+const inBox = (p: LatLng, b: RingBox, pad = 0) =>
+  p.lat >= b.s - pad && p.lat <= b.n + pad && p.lng >= b.w - pad && p.lng <= b.e + pad;
 
 /**
  * Classify a grid point relative to the UK. Returns null to skip (foreign land
  * or open ocean beyond the offshore buffer), otherwise whether it is offshore.
+ * Bounding-box pre-checks keep this fast over millions of points.
  */
 function makeClassifier(uk: LatLng[][], neighbours: LatLng[][]) {
   const offshoreM = OFFSHORE_KM * 1000;
+  const padDeg = OFFSHORE_KM / 111.32; // offshore buffer as a latitude pad
+  const ukBoxes = uk.map(ringBox);
+  const nbBoxes = neighbours.map(ringBox);
+  const inAny = (p: LatLng, boxes: RingBox[], pad = 0) => {
+    for (const b of boxes) if (inBox(p, b, pad) && isPointInPolygon(p, b.ring)) return true;
+    return false;
+  };
   return (p: LatLng): { offshore: boolean } | null => {
-    if (inAnyRing(p, uk)) return { offshore: false };
+    if (inAny(p, ukBoxes)) return { offshore: false };
     if (ONSHORE_ONLY) return null;
-    if (inAnyRing(p, neighbours)) return null; // Irish/French/etc. land
-    // Sea point: include only if close enough to the UK coastline.
+    if (inAny(p, nbBoxes)) return null; // Irish/French/etc. land
+    // Sea point: only worth measuring if it's near a UK ring's bbox at all.
+    let near = false;
+    for (const b of ukBoxes) {
+      if (inBox(p, b, padDeg)) {
+        near = true;
+        break;
+      }
+    }
+    if (!near) return null;
     let nearest = Infinity;
-    for (const ring of uk) {
-      const d = pointToPolygonEdgeDistanceM(p, ring);
+    for (const b of ukBoxes) {
+      if (!inBox(p, b, padDeg)) continue;
+      const d = pointToPolygonEdgeDistanceM(p, b.ring);
       if (d < nearest) nearest = d;
       if (nearest <= offshoreM) break;
     }
@@ -180,34 +221,54 @@ interface GridPoint extends LatLng {
   landuse?: LandClass;
 }
 
-function buildGrid(
+function gridSteps(): { latStepDeg: number; lngStepDeg: number } {
+  return cellStepDeg(SPACING_KM, (WINDOW.north + WINDOW.south) / 2);
+}
+
+/**
+ * Stream kept grid points lazily, so analysis starts immediately and memory
+ * stays bounded even for a 14M-point, whole-UK 20-acre grid. `onScan` reports
+ * raw cells scanned (most are rejected sea / foreign land).
+ */
+function* gridPoints(
   classify: (p: LatLng) => { offshore: boolean } | null,
   landClassify: ((p: LatLng) => LandClass) | null,
-): { points: GridPoint[]; latStepDeg: number; lngStepDeg: number; builtSkipped: number } {
-  const midLat = (WINDOW.north + WINDOW.south) / 2;
-  const { latStepDeg, lngStepDeg } = cellStepDeg(SPACING_KM, midLat);
-  // Sub-100 m grids need more decimals than 4 to stay distinct.
+  steps: { latStepDeg: number; lngStepDeg: number },
+  onScan?: (scanned: number) => void,
+): Generator<GridPoint> {
+  const { latStepDeg, lngStepDeg } = steps;
   const round = (v: number) => Number(v.toFixed(latStepDeg < 0.01 ? 6 : 4));
-  const points: GridPoint[] = [];
-  let builtSkipped = 0;
+  let scanned = 0;
   for (let lat = WINDOW.south + latStepDeg / 2; lat < WINDOW.north; lat += latStepDeg) {
     for (let lng = WINDOW.west + lngStepDeg / 2; lng < WINDOW.east; lng += lngStepDeg) {
+      scanned += 1;
+      if (onScan && scanned % 1_000_000 === 0) onScan(scanned);
       const p = { lat: round(lat), lng: round(lng) };
       const cls = classify(p);
       if (!cls) continue;
       let landuse: LandClass | undefined;
       if (landClassify && !cls.offshore) {
         landuse = landClassify(p);
-        if (landuse === 'built') {
-          builtSkipped += 1;
-          continue; // never site a turbine in housing/industrial land
-        }
+        if (landuse === 'built') continue; // never site a turbine in built-up land
         if (FARMLAND_ONLY && landuse !== 'farmland') continue;
       }
-      points.push({ ...p, offshore: cls.offshore, landuse });
+      yield { lat: p.lat, lng: p.lng, offshore: cls.offshore, landuse };
     }
   }
-  return { points, latStepDeg, lngStepDeg, builtSkipped };
+}
+
+/** Rough count of cells we expect to keep, for the progress bar. */
+function estimateTotal(uk: LatLng[][], steps: { latStepDeg: number; lngStepDeg: number }): number {
+  const cellKm2 = SPACING_KM * SPACING_KM;
+  if (uk.length === 0) {
+    const latSteps = Math.ceil((WINDOW.north - WINDOW.south) / steps.latStepDeg);
+    const lngSteps = Math.ceil((WINDOW.east - WINDOW.west) / steps.lngStepDeg);
+    return latSteps * lngSteps;
+  }
+  let landKm2 = 0;
+  for (const r of uk) landKm2 += polygonAreaSqKm(r);
+  const offshoreFactor = ONSHORE_ONLY ? 1 : 1.4;
+  return Math.round((landKm2 * offshoreFactor) / cellKm2);
 }
 
 // ─── State + persistence (SQLite + capped JSON snapshot) ───────────────────
@@ -215,6 +276,7 @@ function buildGrid(
 const store = new WindForgeDB(DB_PATH);
 let meta: HeatmapMeta;
 let doneCount = 0;
+let scanComplete = false;
 
 function snapshot(): HeatmapData {
   // Capped, decimated sample for the browser; the DB holds everything.
@@ -224,7 +286,7 @@ function snapshot(): HeatmapData {
       ...meta,
       done: doneCount,
       failed: 0,
-      complete: doneCount >= meta.total,
+      complete: scanComplete,
       updatedAt: new Date().toISOString(),
     },
     cells,
@@ -418,10 +480,12 @@ function startServer(): void {
 
 async function main(): Promise<void> {
   let classify: (p: LatLng) => { offshore: boolean } | null = () => ({ offshore: false });
+  let ukRings: LatLng[][] = [];
   if (USE_MASK) {
     try {
       console.log('[mask] fetching UK boundary from Nominatim…');
       const uk = await fetchCountryRings('United Kingdom');
+      ukRings = uk;
       console.log(`[mask] UK: ${uk.length} rings`);
       const neighbours: LatLng[][] = [];
       if (!ONSHORE_ONLY) {
@@ -456,17 +520,17 @@ async function main(): Promise<void> {
     console.log(`[landuse] ${mask.stats.polys} polygons across ${mask.stats.tiles} tiles`);
   }
 
-  const { points: allPoints, latStepDeg, lngStepDeg, builtSkipped } = buildGrid(classify, landClassify);
-  const points = LIMIT > 0 ? allPoints.slice(0, LIMIT) : allPoints;
-  const offshoreCount = points.filter((p) => p.offshore).length;
+  const steps = gridSteps();
+  const estTotal = estimateTotal(ukRings, steps);
+  const acres = ((SPACING_KM * 1000) ** 2 / 4046.86).toFixed(1);
 
   meta = {
     bbox: WINDOW,
     spacingKm: SPACING_KM,
-    latStepDeg,
-    lngStepDeg,
+    latStepDeg: steps.latStepDeg,
+    lngStepDeg: steps.lngStepDeg,
     hubHeightM: HUB_M,
-    total: points.length,
+    total: estTotal,
     done: 0,
     failed: 0,
     complete: false,
@@ -474,12 +538,10 @@ async function main(): Promise<void> {
     source: `analyseSite (six-factor composite)${USE_LANDUSE ? ', built-up excluded' : ''}`,
   };
 
+  const estHours = ((estTotal * DELAY_MS) / 3_600_000).toFixed(1);
   console.log(
-    `[plan] ${points.length} points (${points.length - offshoreCount} onshore + ${offshoreCount} offshore${ONSHORE_ONLY ? '' : ` ≤${OFFSHORE_KM}km`})${USE_LANDUSE ? ` · ${builtSkipped} built-up skipped` : ''} · spacing ${SPACING_KM}km · concurrency ${CONCURRENCY} · delay ${DELAY_MS}ms`,
+    `[plan] cell ≈ ${acres} acres · ~${estTotal.toLocaleString()} cells (estimate) · concurrency ${CONCURRENCY} · delay ${DELAY_MS}ms · lower bound ≈ ${estHours} h`,
   );
-  const acres = ((SPACING_KM * 1000) ** 2 / 4046.86).toFixed(1);
-  const estHours = ((points.length * DELAY_MS) / 3_600_000).toFixed(1);
-  console.log(`[plan] cell ≈ ${acres} acres · rough lower bound ≈ ${estHours} h (network will add more)`);
   if (DRY_RUN) {
     store.close();
     return;
@@ -491,31 +553,42 @@ async function main(): Promise<void> {
   store.startRun({
     bbox: `${WINDOW.south},${WINDOW.west},${WINDOW.north},${WINDOW.east}`,
     spacingKm: SPACING_KM,
-    acres: Number(((SPACING_KM * 1000) ** 2 / 4046.86).toFixed(1)),
+    acres: Number(acres),
     hubM: HUB_M,
-    totalPlanned: points.length,
+    totalPlanned: estTotal,
     notes: USE_LANDUSE ? 'built-up excluded' : '',
   });
   startServer();
 
-  const todo = points.filter((p) => !store.has(cellId(p.lat, p.lng)));
-  doneCount = points.length - todo.length;
-  console.log(`[run] ${todo.length} remaining (${doneCount} already done)`);
+  // Stream the grid through a bounded worker pool so analysis starts at once
+  // and memory stays flat. A new `run` here skips cells already in the DB.
+  doneCount = store.count();
+  console.log(`[run] streaming the grid (resume: ${doneCount} cells already stored)…`);
+  const it = gridPoints(classify, landClassify, steps, (n) => console.log(`[grid] scanned ${n.toLocaleString()} cells…`));
+  let limited = 0;
+  const pull = (): GridPoint | null => {
+    if (LIMIT > 0 && limited >= LIMIT) return null;
+    const r = it.next();
+    if (r.done) return null;
+    limited += 1;
+    return r.value;
+  };
 
-  const limit = pLimit(CONCURRENCY);
-  await Promise.all(
-    todo.map((p) =>
-      limit(async () => {
-        const rec = await analysePoint(p);
-        store.upsertCell(rec);
-        doneCount += 1;
-        if (doneCount % 25 === 0 || doneCount === points.length) {
-          console.log(`[run] ${doneCount}/${points.length}  (${Math.round((doneCount / points.length) * 100)}%)`);
-        }
-        saveSoon();
-      }),
-    ),
-  );
+  async function worker(): Promise<void> {
+    let p: GridPoint | null;
+    while ((p = pull()) !== null) {
+      if (store.has(cellId(p.lat, p.lng))) continue;
+      const rec = await analysePoint(p);
+      store.upsertCell(rec);
+      doneCount += 1;
+      if (doneCount % 25 === 0) {
+        console.log(`[run] ${doneCount.toLocaleString()} / ~${estTotal.toLocaleString()} cells`);
+      }
+      saveSoon();
+    }
+  }
+  await Promise.all(Array.from({ length: CONCURRENCY }, () => worker()));
+  scanComplete = true;
 
   await mkdir(dirname(OUT), { recursive: true });
   await writeFile(OUT, JSON.stringify(snapshot()));
