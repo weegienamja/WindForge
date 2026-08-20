@@ -11,6 +11,7 @@
     "test": "vitest run",
     "typecheck": "tsc --noEmit",
     "gen:wind-field": "tsx scripts/generate-wind-field.ts",
+    "heatmap": "tsx scripts/generate-heatmap.ts",
     "verify-build": "tsx scripts/verify-build.ts"
   },
   "dependencies": {
