@@ -92,3 +92,40 @@ The Vercel site is HTTPS, so a plain `http://` feed will be blocked as mixed con
 Easiest fix: put the worker behind a reverse proxy with TLS (Caddy one-liner:
 `caddy reverse-proxy --from your-domain --to :8088`), or upload the checkpoint file
 periodically to object storage / a CDN and point `?src=` at that URL.
+
+## Live fill from your own machine (no server)
+
+Run the worker locally and tunnel it so the **deployed** `/map` fills in as each
+point is computed (it polls the feed every ~6 s). One command:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File packages\demo\scripts\heatmap-live.ps1
+```
+
+That script builds core, starts the worker in a new window (serving
+`http://localhost:8088/heatmap.json`), opens a public HTTPS tunnel, and prints +
+opens the `…/map?src=<tunnel>/heatmap.json` URL. It uses **Cloudflare Tunnel** if
+`cloudflared` is installed (`winget install Cloudflare.cloudflared`), otherwise
+falls back to **`ssh -R … localhost.run`** which needs no install on Windows 10/11.
+
+Prefer to do it by hand? Two terminals:
+
+```powershell
+# 1) the worker
+pnpm --filter @jamieblair/windforge-demo heatmap
+
+# 2) a public HTTPS tunnel to it (no install):
+ssh -o StrictHostKeyChecking=accept-new -R 80:localhost:8088 nokey@localhost.run
+#   → prints e.g. https://abcd1234.lhr.life
+```
+
+Then open `https://wind.jamieblair.co.uk/map?src=https://abcd1234.lhr.life/heatmap.json`.
+
+Notes:
+- The tunnel URL changes each run; for a permanent default set
+  `NEXT_PUBLIC_HEATMAP_URL` in Vercel to a **named** Cloudflare tunnel URL.
+- It's near-live, not literally per-point: the page polls every few seconds and
+  shows every point finished since the last poll. The full grid takes ~3 h
+  (~5 points/min — each point hits four upstream APIs), and resumes if interrupted.
+- Keep the worker + tunnel windows open; closing them stops the feed (the live app
+  then falls back to the last committed snapshot).
