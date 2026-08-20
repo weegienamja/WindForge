@@ -221,6 +221,13 @@ function Legend() {
         <span>50</span>
         <span>100</span>
       </div>
+      <p
+        className="t-caption"
+        style={{ margin: '8px 0 0', fontSize: 10, color: 'var(--text-tertiary)', lineHeight: 1.4 }}
+      >
+        Onshore + offshore (≤60 km). Offshore scores are wind-resource-led; they
+        don't yet model water depth or distance to grid.
+      </p>
     </div>
   );
 }
@@ -270,7 +277,7 @@ function EmptyOverlay({ error, url }: { error: string | null; url: string }) {
 }
 
 const FALLBACK_META = {
-  bbox: { south: 49.8, north: 61.1, west: -8.7, east: 2.0 },
+  bbox: { south: 49.3, north: 61.3, west: -9.5, east: 3.6 },
   spacingKm: 25,
   latStepDeg: 0.2246,
   lngStepDeg: 0.3835,

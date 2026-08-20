@@ -12,6 +12,8 @@ export interface HeatmapCell {
   windSpeedMs?: number | null;
   windScore?: number | null;
   hardConstraints?: number;
+  /** True for sea points (offshore) vs UK land (onshore). */
+  offshore?: boolean;
   error?: string;
 }
 

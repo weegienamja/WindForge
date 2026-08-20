@@ -1,6 +1,6 @@
 {
   "meta": {
-    "bbox": { "south": 49.8, "north": 61.1, "west": -8.7, "east": 2.0 },
+    "bbox": { "south": 49.3, "north": 61.3, "west": -9.5, "east": 3.6 },
     "spacingKm": 25,
     "latStepDeg": 0.2246,
     "lngStepDeg": 0.3835,

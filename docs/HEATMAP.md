@@ -32,9 +32,11 @@ pnpm --filter @jamieblair/windforge-demo heatmap
 
 It will:
 
-1. fetch the UK boundary from Nominatim and build a land mask (falls back to the
-   bounding box if that fails),
-2. generate the land grid and **resume** from `./heatmap-data/uk.json` if present,
+1. fetch the UK boundary from Nominatim (plus neighbouring coasts — Ireland,
+   France, Belgium, Netherlands — to exclude their land) and classify each grid
+   point as **onshore** (UK land) or **offshore** (sea within `OFFSHORE_KM` of the
+   UK coast); foreign land and open ocean beyond the buffer are skipped,
+2. generate the grid and **resume** from `./heatmap-data/uk.json` if present,
 3. analyse each point with a global rate gate + low concurrency, writing the
    checkpoint as it goes,
 4. serve the growing grid at `http://0.0.0.0:8088/heatmap.json` (CORS `*`).
@@ -46,6 +48,7 @@ A `Ctrl-C` saves a checkpoint; re-running resumes where it left off.
 | Var | Default | Notes |
 |-----|---------|-------|
 | `SPACING_KM` | `25` | Grid spacing. Lower = far more points + Overpass load. |
+| `OFFSHORE_KM` | `60` | How far offshore to include sea points. Raise toward ~150 to reach Dogger Bank (many more points). |
 | `CONCURRENCY` | `2` | Parallel analyses. Keep low to stay under Overpass limits. |
 | `DELAY_MS` | `700` | Min ms between analysis starts (global rate gate). |
 | `HUB_M` | `100` | Hub height. |
@@ -53,7 +56,14 @@ A `Ctrl-C` saves a checkpoint; re-running resumes where it left off.
 | `OUT` | `./heatmap-data/uk.json` | Checkpoint + resume file. |
 | `LIMIT` | `0` | Cap point count (great for a quick smoke test). |
 | `--dry-run` | – | Print the planned point count and exit. |
-| `--no-mask` | – | Skip the land mask (grid the whole bbox). |
+| `--onshore-only` | – | UK land only (skip the offshore buffer). |
+| `--no-mask` | – | Skip all masks (grid the whole window). |
+
+> **Offshore caveat:** the engine scores offshore points from wind resource with
+> neutral terrain/grid/constraints — it does **not** model water depth (bathymetry)
+> or distance to a grid connection, so offshore scores are an optimistic
+> wind-resource proxy, not a full feasibility verdict. A future bathymetry layer
+> would close that gap.
 
 Smoke test first:
 
