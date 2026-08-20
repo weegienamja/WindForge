@@ -9,20 +9,30 @@
  *   pnpm --filter @jamieblair/windforge-core build
  *   pnpm --filter @jamieblair/windforge-demo heatmap
  *
+ * Datapoints are written to a SQLite database (built-in node:sqlite) so runs
+ * resume and scale to millions of points; a capped JSON snapshot is also served
+ * for the live /map feed.
+ *
  * Env / flags (all optional):
- *   SPACING_KM=25        grid spacing in km (default 25 ≈ NASA POWER native res)
+ *   SPACING_KM=25        grid spacing in km (e.g. 0.064 ≈ 1 acre; goes super slow)
+ *   BBOX=s,w,n,e         restrict to an area of interest (default: whole UK)
  *   CONCURRENCY=2        parallel analyses (keep low — Overpass is strict)
  *   DELAY_MS=700         min ms between analysis starts (global rate gate)
  *   HUB_M=100            hub height
  *   PORT=8088            HTTP port for the live feed (/heatmap.json)
- *   OUT=./heatmap-data/uk.json   checkpoint file (also the resume source)
+ *   DB=./heatmap-data/uk.db      SQLite datapoint store (resume source)
+ *   OUT=./heatmap-data/uk.json   capped JSON snapshot for the live feed
+ *   MAX_FEED=15000       cap cells in the snapshot/feed (DB keeps everything)
  *   LIMIT=0              cap number of points (0 = no cap; handy for testing)
+ *   --landuse            skip built-up land (housing/industrial) via OSM landuse
+ *   --farmland-only      keep only farmland/open land (implies --landuse)
  *   --dry-run            print the plan (point count) and exit, no API calls
+ *   --onshore-only       UK land only (skip the offshore buffer)
  *   --no-mask            skip the UK land mask (grid the whole bbox)
  */
 
 import { createServer } from 'node:http';
-import { mkdir, readFile, rename, writeFile } from 'node:fs/promises';
+import { mkdir, rename, writeFile } from 'node:fs/promises';
 import { dirname } from 'node:path';
 import pLimit from 'p-limit';
 import {
@@ -46,6 +56,8 @@ import {
   type HeatmapData,
   type HeatmapMeta,
 } from '../src/lib/heatmap';
+import { HeatmapStore } from './lib/heatmap-store';
+import { buildLanduseMask, type LandClass } from './lib/landuse-mask';
 
 // ─── Config ──────────────────────────────────────────────────────────────
 
@@ -62,23 +74,36 @@ const HUB_M = num('HUB_M', 100);
 const PORT = num('PORT', 8088);
 const LIMIT = Number(process.env.LIMIT ?? 0) || 0;
 const OUT = process.env.OUT ?? './heatmap-data/uk.json';
+const DB_PATH = process.env.DB ?? './heatmap-data/uk.db';
+const MAX_FEED = num('MAX_FEED', 15000);
 // How far offshore (km from the UK coastline) to include sea points. UK offshore
 // wind sits mostly within ~60 km; raise toward ~150 to reach Dogger Bank.
 const OFFSHORE_KM = num('OFFSHORE_KM', 60);
 const DRY_RUN = flags.has('--dry-run');
 const USE_MASK = !flags.has('--no-mask');
 const ONSHORE_ONLY = flags.has('--onshore-only');
+const FARMLAND_ONLY = flags.has('--farmland-only');
+const USE_LANDUSE = FARMLAND_ONLY || flags.has('--landuse');
 
-// Window covering Great Britain, NI and surrounding UK waters (incl. southern
-// North Sea). The masks below trim it to UK land + an offshore buffer.
+// Default window covers Great Britain, NI and surrounding UK waters; BBOX env
+// (south,west,north,east) restricts to an area of interest for fine runs.
 const UK_WINDOW = { south: 49.3, north: 61.3, west: -9.5, east: 3.6 };
+function parseBbox(): typeof UK_WINDOW {
+  const raw = process.env.BBOX;
+  if (!raw) return UK_WINDOW;
+  const [s, w, n, e] = raw.split(',').map(Number);
+  if ([s, w, n, e].some((v) => !Number.isFinite(v))) return UK_WINDOW;
+  return { south: s as number, west: w as number, north: n as number, east: e as number };
+}
+const WINDOW = parseBbox();
 // Neighbouring coasts to exclude so their land isn't mistaken for UK sea.
 const NEIGHBOURS = ['Ireland', 'France', 'Belgium', 'Netherlands'];
 const NOMINATIM = 'https://nominatim.openstreetmap.org';
 const USER_AGENT = 'WindForge-Heatmap/0.1 (+https://wind.jamieblair.co.uk)';
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
-const cellId = (lat: number, lng: number) => `${lat.toFixed(3)},${lng.toFixed(3)}`;
+// 5 decimals ≈ 1.1 m, fine enough to keep sub-100 m (e.g. 1-acre) cells distinct.
+const cellId = (lat: number, lng: number) => `${lat.toFixed(5)},${lng.toFixed(5)}`;
 
 // Reference turbine (~2 MW) and market price used for the per-cell economics so
 // every point is compared on the same basis.
@@ -159,48 +184,54 @@ function makeClassifier(uk: LatLng[][], neighbours: LatLng[][]) {
 
 interface GridPoint extends LatLng {
   offshore: boolean;
+  landuse?: LandClass;
 }
 
 function buildGrid(
   classify: (p: LatLng) => { offshore: boolean } | null,
-): { points: GridPoint[]; latStepDeg: number; lngStepDeg: number } {
-  const midLat = (UK_WINDOW.north + UK_WINDOW.south) / 2;
+  landClassify: ((p: LatLng) => LandClass) | null,
+): { points: GridPoint[]; latStepDeg: number; lngStepDeg: number; builtSkipped: number } {
+  const midLat = (WINDOW.north + WINDOW.south) / 2;
   const { latStepDeg, lngStepDeg } = cellStepDeg(SPACING_KM, midLat);
+  // Sub-100 m grids need more decimals than 4 to stay distinct.
+  const round = (v: number) => Number(v.toFixed(latStepDeg < 0.01 ? 6 : 4));
   const points: GridPoint[] = [];
-  for (let lat = UK_WINDOW.south + latStepDeg / 2; lat < UK_WINDOW.north; lat += latStepDeg) {
-    for (let lng = UK_WINDOW.west + lngStepDeg / 2; lng < UK_WINDOW.east; lng += lngStepDeg) {
-      const p = { lat: Number(lat.toFixed(4)), lng: Number(lng.toFixed(4)) };
+  let builtSkipped = 0;
+  for (let lat = WINDOW.south + latStepDeg / 2; lat < WINDOW.north; lat += latStepDeg) {
+    for (let lng = WINDOW.west + lngStepDeg / 2; lng < WINDOW.east; lng += lngStepDeg) {
+      const p = { lat: round(lat), lng: round(lng) };
       const cls = classify(p);
-      if (cls) points.push({ ...p, offshore: cls.offshore });
+      if (!cls) continue;
+      let landuse: LandClass | undefined;
+      if (landClassify && !cls.offshore) {
+        landuse = landClassify(p);
+        if (landuse === 'built') {
+          builtSkipped += 1;
+          continue; // never site a turbine in housing/industrial land
+        }
+        if (FARMLAND_ONLY && landuse !== 'farmland') continue;
+      }
+      points.push({ ...p, offshore: cls.offshore, landuse });
     }
   }
-  return { points, latStepDeg, lngStepDeg };
+  return { points, latStepDeg, lngStepDeg, builtSkipped };
 }
 
-// ─── State + persistence ─────────────────────────────────────────────────
+// ─── State + persistence (SQLite + capped JSON snapshot) ───────────────────
 
-const results = new Map<string, HeatmapCell>();
+const store = new HeatmapStore(DB_PATH);
 let meta: HeatmapMeta;
-
-async function loadCheckpoint(): Promise<void> {
-  try {
-    const raw = await readFile(OUT, 'utf8');
-    const data = JSON.parse(raw) as HeatmapData;
-    for (const cell of data.cells ?? []) results.set(cellId(cell.lat, cell.lng), cell);
-    console.log(`[resume] loaded ${results.size} cells from ${OUT}`);
-  } catch {
-    // Fresh start.
-  }
-}
+let doneCount = 0;
 
 function snapshot(): HeatmapData {
-  const cells = [...results.values()];
+  // Capped, decimated sample for the browser; the DB holds everything.
+  const cells = store.sample(MAX_FEED);
   return {
     meta: {
       ...meta,
-      done: cells.length,
-      failed: cells.filter((c) => c.error).length,
-      complete: cells.length >= meta.total,
+      done: doneCount,
+      failed: 0,
+      complete: doneCount >= meta.total,
       updatedAt: new Date().toISOString(),
     },
     cells,
@@ -208,7 +239,7 @@ function snapshot(): HeatmapData {
 }
 
 let saveScheduled = false;
-async function saveSoon(): Promise<void> {
+function saveSoon(): void {
   if (saveScheduled) return;
   saveScheduled = true;
   setTimeout(async () => {
@@ -238,7 +269,7 @@ async function analysePoint(p: GridPoint): Promise<HeatmapCell> {
   try {
     const result = await analyseSite({ coordinate: { lat: p.lat, lng: p.lng }, hubHeightM: HUB_M });
     if (!result.ok) {
-      return { lat: p.lat, lng: p.lng, offshore: p.offshore, score: null, error: result.error.code };
+      return { lat: p.lat, lng: p.lng, offshore: p.offshore, landuse: p.landuse, score: null, error: result.error.code };
     }
     const a = result.value;
     const wind = a.factors.find((f) => f.factor === ScoringFactor.WindResource);
@@ -247,6 +278,7 @@ async function analysePoint(p: GridPoint): Promise<HeatmapCell> {
       lat: p.lat,
       lng: p.lng,
       offshore: p.offshore,
+      landuse: p.landuse,
       score: Math.round(a.compositeScore),
       confidence: overallConfidence(a.factors),
       windScore: wind ? Math.round(wind.score) : null,
@@ -257,7 +289,7 @@ async function analysePoint(p: GridPoint): Promise<HeatmapCell> {
       subsidyFree: econ.subsidyFree,
     };
   } catch (err) {
-    return { lat: p.lat, lng: p.lng, offshore: p.offshore, score: null, error: err instanceof Error ? err.message : 'failed' };
+    return { lat: p.lat, lng: p.lng, offshore: p.offshore, landuse: p.landuse, score: null, error: err instanceof Error ? err.message : 'failed' };
   }
 }
 
@@ -306,12 +338,26 @@ async function main(): Promise<void> {
     }
   }
 
-  const { points: allPoints, latStepDeg, lngStepDeg } = buildGrid(classify);
+  // Optional OSM land-use mask: skip built-up land (housing/industrial).
+  let landClassify: ((p: LatLng) => LandClass) | null = null;
+  if (USE_LANDUSE) {
+    console.log(`[landuse] fetching OSM land use over the window (tiled)…`);
+    const mask = await buildLanduseMask(WINDOW, {
+      cacheDir: './heatmap-data/landuse',
+      onProgress: (d, t) => {
+        if (d % 10 === 0 || d === t) console.log(`[landuse] tile ${d}/${t}`);
+      },
+    });
+    landClassify = mask.classify;
+    console.log(`[landuse] ${mask.stats.polys} polygons across ${mask.stats.tiles} tiles`);
+  }
+
+  const { points: allPoints, latStepDeg, lngStepDeg, builtSkipped } = buildGrid(classify, landClassify);
   const points = LIMIT > 0 ? allPoints.slice(0, LIMIT) : allPoints;
   const offshoreCount = points.filter((p) => p.offshore).length;
 
   meta = {
-    bbox: UK_WINDOW,
+    bbox: WINDOW,
     spacingKm: SPACING_KM,
     latStepDeg,
     lngStepDeg,
@@ -321,49 +367,51 @@ async function main(): Promise<void> {
     failed: 0,
     complete: false,
     updatedAt: new Date().toISOString(),
-    source: 'analyseSite (six-factor composite)',
+    source: `analyseSite (six-factor composite)${USE_LANDUSE ? ', built-up excluded' : ''}`,
   };
 
   console.log(
-    `[plan] ${points.length} points (${points.length - offshoreCount} onshore + ${offshoreCount} offshore${ONSHORE_ONLY ? '' : ` ≤${OFFSHORE_KM}km`}) · spacing ${SPACING_KM}km · concurrency ${CONCURRENCY} · delay ${DELAY_MS}ms`,
+    `[plan] ${points.length} points (${points.length - offshoreCount} onshore + ${offshoreCount} offshore${ONSHORE_ONLY ? '' : ` ≤${OFFSHORE_KM}km`})${USE_LANDUSE ? ` · ${builtSkipped} built-up skipped` : ''} · spacing ${SPACING_KM}km · concurrency ${CONCURRENCY} · delay ${DELAY_MS}ms`,
   );
-  const estMin = Math.round((points.length * DELAY_MS) / 60000);
-  console.log(`[plan] rough lower bound ≈ ${estMin} min (network will add more)`);
+  const estHours = ((points.length * DELAY_MS) / 3_600_000).toFixed(1);
+  console.log(`[plan] rough lower bound ≈ ${estHours} h (network will add more)`);
   if (DRY_RUN) return;
 
-  await loadCheckpoint();
+  const migrated = store.migrateFromJson(OUT, cellId);
+  if (migrated > 0) console.log(`[migrate] imported ${migrated} cells from ${OUT} into ${DB_PATH}`);
+  console.log(`[store] ${DB_PATH} holds ${store.count()} cells`);
   startServer();
 
-  const todo = points.filter((p) => !results.has(cellId(p.lat, p.lng)));
-  console.log(`[run] ${todo.length} remaining (${results.size} already done)`);
+  const todo = points.filter((p) => !store.has(cellId(p.lat, p.lng)));
+  doneCount = points.length - todo.length;
+  console.log(`[run] ${todo.length} remaining (${doneCount} already done)`);
 
   const limit = pLimit(CONCURRENCY);
-  let completed = results.size;
   await Promise.all(
     todo.map((p) =>
       limit(async () => {
         const cell = await analysePoint(p);
-        results.set(cellId(p.lat, p.lng), cell);
-        completed += 1;
-        if (completed % 10 === 0 || completed === points.length) {
-          console.log(`[run] ${completed}/${points.length}  (${Math.round((completed / points.length) * 100)}%)`);
+        store.upsert(cellId(p.lat, p.lng), cell);
+        doneCount += 1;
+        if (doneCount % 25 === 0 || doneCount === points.length) {
+          console.log(`[run] ${doneCount}/${points.length}  (${Math.round((doneCount / points.length) * 100)}%)`);
         }
-        void saveSoon();
+        saveSoon();
       }),
     ),
   );
 
-  // Final flush.
   await mkdir(dirname(OUT), { recursive: true });
   await writeFile(OUT, JSON.stringify(snapshot()));
-  console.log(`[done] wrote ${results.size} cells to ${OUT}`);
+  console.log(`[done] ${store.count()} cells in ${DB_PATH}; snapshot in ${OUT}`);
   console.log('[done] HTTP feed still serving; Ctrl-C to stop.');
 }
 
 process.on('SIGINT', async () => {
-  console.log('\n[exit] saving checkpoint…');
+  console.log('\n[exit] saving snapshot…');
   try {
     await writeFile(OUT, JSON.stringify(snapshot()));
+    store.close();
   } catch {
     // best effort
   }

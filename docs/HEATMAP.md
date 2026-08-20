@@ -47,17 +47,40 @@ A `Ctrl-C` saves a checkpoint; re-running resumes where it left off.
 
 | Var | Default | Notes |
 |-----|---------|-------|
-| `SPACING_KM` | `25` | Grid spacing. Lower = far more points + Overpass load. |
+| `SPACING_KM` | `25` | Grid spacing. `0.064` ≈ 1 acre (use with a small `BBOX`). |
+| `BBOX` | UK | `south,west,north,east` — restrict to an area of interest. |
 | `OFFSHORE_KM` | `60` | How far offshore to include sea points. Raise toward ~150 to reach Dogger Bank (many more points). |
 | `CONCURRENCY` | `2` | Parallel analyses. Keep low to stay under Overpass limits. |
 | `DELAY_MS` | `700` | Min ms between analysis starts (global rate gate). |
 | `HUB_M` | `100` | Hub height. |
 | `PORT` | `8088` | HTTP feed port. |
-| `OUT` | `./heatmap-data/uk.json` | Checkpoint + resume file. |
+| `DB` | `./heatmap-data/uk.db` | SQLite datapoint store (resume source). |
+| `OUT` | `./heatmap-data/uk.json` | Capped JSON snapshot for the live feed. |
+| `MAX_FEED` | `15000` | Cap cells in the snapshot/feed (DB keeps everything). |
 | `LIMIT` | `0` | Cap point count (great for a quick smoke test). |
+| `--landuse` | – | Skip built-up land (housing/industrial) via OSM land use. |
+| `--farmland-only` | – | Keep only farmland/open land (implies `--landuse`). |
 | `--dry-run` | – | Print the planned point count and exit. |
 | `--onshore-only` | – | UK land only (skip the offshore buffer). |
-| `--no-mask` | – | Skip all masks (grid the whole window). |
+| `--no-mask` | – | Skip the UK boundary mask (grid the whole window). |
+
+### Datapoint database, resolution & land use
+
+- **Storage is SQLite** (`heatmap-data/uk.db`, built-in `node:sqlite` — no native
+  build). One indexed row per analysed cell; runs resume by checking the DB, so it
+  scales to millions of points without rewriting a JSON blob. A legacy `uk.json` is
+  imported automatically on first run. Query it with any SQLite tool, e.g.
+  `SELECT lat,lng,score,lcoe_per_mwh FROM cells WHERE subsidy_free=1 ORDER BY score DESC;`
+- **Sub-km / 1-acre runs** are for a bounded `BBOX` (UK-wide at 1 acre is billions of
+  points). Example — a 1-acre, farmland-only sweep of a small area, run slowly:
+  ```bash
+  BBOX=55.80,-4.40,55.95,-4.10 SPACING_KM=0.064 DELAY_MS=1500 \
+    pnpm --filter @jamieblair/windforge-demo heatmap --farmland-only
+  ```
+- **`--landuse` / `--farmland-only`** fetch OSM land-use polygons (tiled, cached under
+  `heatmap-data/landuse/`) and **skip built-up land** so compute isn't wasted on
+  cities — no turbines in central Glasgow. Each kept cell is tagged
+  `landuse = farmland | open`.
 
 > **Offshore caveat:** the engine scores offshore points from wind resource with
 > neutral terrain/grid/constraints — it does **not** model water depth (bathymetry)
