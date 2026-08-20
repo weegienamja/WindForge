@@ -38,10 +38,28 @@ import { useAnalyse } from '../../hooks/useAnalyse';
 import { useWindHistory } from '../../hooks/useWindHistory';
 import { useAep } from '../../hooks/useAep';
 import { useMediaQuery } from '../../hooks/useMediaQuery';
+import {
+  useGeocodeSearch,
+  useReverseGeocode,
+  type GeocodeHit,
+  type UseGeocodeSearchReturn,
+} from '../../hooks/useGeocode';
 import { errorCopyFor } from '../../lib/errorCopy';
 
 const HUB_OPTIONS = [80, 100, 120, 140] as const;
 type Hub = (typeof HUB_OPTIONS)[number];
+
+/**
+ * Notable strong-wind locations for one-tap exploration from the empty state.
+ * Picked to span open coast, upland and offshore-adjacent sites.
+ */
+const EXAMPLE_SITES: ReadonlyArray<{ name: string; lat: number; lng: number }> = [
+  { name: 'Lewis, Outer Hebrides', lat: 58.21, lng: -6.39 },
+  { name: 'Caithness, Scotland', lat: 58.44, lng: -3.52 },
+  { name: 'Anholt, Denmark (offshore)', lat: 56.6, lng: 11.21 },
+  { name: 'Gansu Corridor, China', lat: 39.74, lng: 98.49 },
+  { name: 'Oaxaca Isthmus, Mexico', lat: 16.5, lng: -94.9 },
+];
 
 function pickDefaultTurbine(turbines: TurbineModel[]): TurbineModel | undefined {
   return (
@@ -84,6 +102,7 @@ function AnalysePageInner() {
   const history = useWindHistory();
   const aep = useAep();
   const isMobile = useMediaQuery('(max-width: 767px)');
+  const geocode = useGeocodeSearch();
 
   const selectedTurbine = useMemo(
     () => turbines.find((t) => t.id === turbineId) ?? defaultTurbine,
@@ -95,28 +114,44 @@ function AnalysePageInner() {
   const valid =
     lat.trim() !== '' && lng.trim() !== '' && clampLat(latNum) && clampLng(lngNum);
 
-  const submit = useCallback(async () => {
+  // Single entry point for kicking off an analysis at a coordinate. Used by the
+  // Run button, the location search, the example chips and map clicks alike, so
+  // every path keeps the URL, inputs and the three data hooks in lockstep.
+  const runAt = useCallback(
+    (la: number, ln: number, hh: Hub) => {
+      if (!clampLat(la) || !clampLng(ln)) return;
+      setLat(String(la));
+      setLng(String(ln));
+      setHub(hh);
+      const params = new URLSearchParams();
+      params.set('lat', String(la));
+      params.set('lng', String(ln));
+      params.set('hub', String(hh));
+      router.replace(`/analyse?${params.toString()}`);
+      // Kick off the wind-history fetch in parallel so the chart starts
+      // loading the moment the analysis is requested.
+      history.run({ lat: la, lng: ln });
+      if (selectedTurbine) {
+        aep.run({ coordinate: { lat: la, lng: ln }, turbine: selectedTurbine, hubHeightM: hh });
+      }
+      void run({ coordinate: { lat: la, lng: ln }, hubHeightM: hh });
+    },
+    [router, run, history, aep, selectedTurbine],
+  );
+
+  const submit = useCallback(() => {
     if (!valid) return;
-    const params = new URLSearchParams();
-    params.set('lat', String(latNum));
-    params.set('lng', String(lngNum));
-    params.set('hub', String(hub));
-    router.replace(`/analyse?${params.toString()}`);
-    // Kick off the wind-history fetch in parallel so the chart starts
-    // loading the moment the user clicks Run.
-    history.run({ lat: latNum, lng: lngNum });
-    if (selectedTurbine) {
-      aep.run({
-        coordinate: { lat: latNum, lng: lngNum },
-        turbine: selectedTurbine,
-        hubHeightM: hub,
-      });
-    }
-    await run({
-      coordinate: { lat: latNum, lng: lngNum },
-      hubHeightM: hub,
-    });
-  }, [valid, latNum, lngNum, hub, router, run, history, aep, selectedTurbine]);
+    runAt(latNum, lngNum, hub);
+  }, [valid, latNum, lngNum, hub, runAt]);
+
+  const selectPlace = useCallback(
+    (place: { lat: number; lng: number }) => {
+      geocode.clear();
+      geocode.setQuery('');
+      runAt(place.lat, place.lng, hub);
+    },
+    [geocode, runAt, hub],
+  );
 
   // URL-driven auto-run on mount.
   useEffect(() => {
@@ -140,6 +175,8 @@ function AnalysePageInner() {
 
   const coordinate =
     data?.coordinate ?? (valid ? { lat: latNum, lng: lngNum } : null);
+
+  const placeName = useReverseGeocode(coordinate);
 
   // Responsive control styling: on narrow viewports the form fields and action
   // buttons go full-width and stack vertically.
@@ -191,6 +228,12 @@ function AnalysePageInner() {
           >
             ← WindForge
           </Link>
+          <LocationSearch
+            geocode={geocode}
+            onSelect={selectPlace}
+            controlStyle={controlStyle}
+            isMobile={isMobile}
+          />
           <Field label="Latitude">
             <input
               type="number"
@@ -291,6 +334,7 @@ function AnalysePageInner() {
             coordinate={coordinate}
             loading={status === 'running'}
             minHeight={isMobile ? 320 : 480}
+            onPick={(c) => runAt(c.lat, c.lng, hub)}
           />
         </div>
         <div
@@ -300,7 +344,12 @@ function AnalysePageInner() {
             gap: 'var(--space-4)',
           }}
         >
-          {status === 'idle' && !data && !error ? <EmptyState /> : null}
+          {coordinate ? (
+            <LocationBadge coordinate={coordinate} placeName={placeName} />
+          ) : null}
+          {status === 'idle' && !data && !error ? (
+            <EmptyState onPickExample={(s) => runAt(s.lat, s.lng, hub)} />
+          ) : null}
           {status === 'error' && error ? (
             <ErrorPanel kind={error.code} message={error.message} onRetry={submit} />
           ) : null}
@@ -324,11 +373,13 @@ function AnalysePageInner() {
 }
 
 function ResultPanels({ analysis }: { analysis: SiteAnalysis }) {
-  const wind = analysis.factors.find((f) => f.factor === ScoringFactor.WindResource);
-  const grid = analysis.factors.find((f) => f.factor === ScoringFactor.GridProximity);
-  const access = analysis.factors.find(
-    (f) => f.factor === ScoringFactor.AccessLogistics,
-  );
+  const byFactor = (f: ScoringFactor) => analysis.factors.find((x) => x.factor === f);
+  const wind = byFactor(ScoringFactor.WindResource);
+  const grid = byFactor(ScoringFactor.GridProximity);
+  const access = byFactor(ScoringFactor.AccessLogistics);
+  const terrain = byFactor(ScoringFactor.TerrainSuitability);
+  const landUse = byFactor(ScoringFactor.LandUseCompatibility);
+  const planning = byFactor(ScoringFactor.PlanningFeasibility);
   const reconciliation = analysis.metadata.reconciliation;
 
   return (
@@ -339,13 +390,51 @@ function ResultPanels({ analysis }: { analysis: SiteAnalysis }) {
         confidence={inferOverallConfidence(analysis.factors)}
       />
       <WindCard factor={wind} reconciliation={reconciliation} />
+      <FactorCard eyebrow="TERRAIN" factor={terrain} />
       <ConstraintsCard
         hardConstraints={analysis.hardConstraints}
         warnings={analysis.warnings}
       />
       <GridCard gridFactor={grid} accessFactor={access} />
+      <FactorCard eyebrow="LAND USE" factor={landUse} />
+      <FactorCard eyebrow="PLANNING" factor={planning} />
       <DiagnosticsCard metadata={analysis.metadata} />
     </>
+  );
+}
+
+/**
+ * Generic single-factor card: a score readout plus the engine's explanatory
+ * detail string. Used for the factors that don't have a bespoke card.
+ */
+function FactorCard({ eyebrow, factor }: { eyebrow: string; factor?: FactorScore }) {
+  if (!factor) return null;
+  const hard = factor.score < 20;
+  return (
+    <DataCard eyebrow={eyebrow}>
+      <div style={{ display: 'flex', alignItems: 'baseline', gap: 'var(--space-2)' }}>
+        <span
+          className="t-mono-data"
+          style={{ fontSize: 22, color: hard ? 'var(--accent-warm)' : 'var(--text-primary)' }}
+        >
+          {Math.round(Math.max(0, Math.min(100, factor.score)))}
+        </span>
+        <span className="t-caption" style={{ color: 'var(--text-secondary)' }}>
+          / 100
+        </span>
+        <ConfidenceBadge confidence={factor.confidence} />
+      </div>
+      <p
+        className="t-body"
+        style={{
+          color: 'var(--text-secondary)',
+          margin: 'var(--space-3) 0 0',
+          fontSize: 13,
+        }}
+      >
+        {factor.detail}
+      </p>
+    </DataCard>
   );
 }
 
@@ -599,18 +688,48 @@ function DiagRow({ label, value }: { label: string; value: string }) {
   );
 }
 
-function EmptyState() {
+function EmptyState({
+  onPickExample,
+}: {
+  onPickExample: (site: { lat: number; lng: number }) => void;
+}) {
   return (
-    <DataCard eyebrow="NO ANALYSIS" title="Enter a coordinate to begin">
+    <DataCard eyebrow="NO ANALYSIS" title="Search, click the map, or enter a coordinate">
       <p
         className="t-body"
         style={{ color: 'var(--text-secondary)', margin: 0, fontSize: 13 }}
       >
-        Enter a coordinate to run a six-factor wind site suitability analysis.
+        Run a six-factor wind site suitability analysis anywhere on Earth.
         NASA POWER for wind resource. ERA5 and CERRA reanalysis for bias
         correction. Open-Elevation for terrain. OpenStreetMap for grid
         infrastructure and constraints.
       </p>
+      <div style={{ marginTop: 'var(--space-4)' }}>
+        <div className="t-eyebrow" style={{ marginBottom: 'var(--space-2)' }}>
+          Try a strong-wind site
+        </div>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+          {EXAMPLE_SITES.map((site) => (
+            <button
+              key={site.name}
+              type="button"
+              onClick={() => onPickExample(site)}
+              className="t-mono-data"
+              style={{
+                background: 'var(--surface-0)',
+                border: '1px solid var(--border-subtle)',
+                borderRadius: 4,
+                color: 'var(--accent-cool)',
+                padding: '6px 10px',
+                fontSize: 12,
+                cursor: 'pointer',
+              }}
+            >
+              {site.name}
+            </button>
+          ))}
+        </div>
+      </div>
     </DataCard>
   );
 }
@@ -784,7 +903,7 @@ function McpCrossLink() {
       }}
     >
       <a
-        href="https://github.com/jamieblair/wind-site-intelligence/tree/main/packages/mcp"
+        href="https://github.com/weegienamja/WindForge/tree/main/packages/mcp"
         target="_blank"
         rel="noreferrer noopener"
         className="t-mono-data"
@@ -829,3 +948,145 @@ const listStyle: React.CSSProperties = {
   flexDirection: 'column',
   gap: 6,
 };
+
+/**
+ * Place-name search box with a results dropdown. Typing queries `/api/geocode`
+ * (debounced); choosing a result hands its coordinate back to the page.
+ */
+function LocationSearch({
+  geocode,
+  onSelect,
+  controlStyle,
+  isMobile,
+}: {
+  geocode: UseGeocodeSearchReturn;
+  onSelect: (hit: GeocodeHit) => void;
+  controlStyle: React.CSSProperties;
+  isMobile: boolean;
+}) {
+  const [focused, setFocused] = useState(false);
+  const open = focused && (geocode.results.length > 0 || geocode.loading);
+
+  return (
+    <div style={{ position: 'relative', flex: isMobile ? undefined : '1 1 260px', minWidth: 0 }}>
+      <Field label="Search location">
+        <input
+          type="search"
+          value={geocode.query}
+          onChange={(e) => geocode.setQuery(e.target.value)}
+          onFocus={() => setFocused(true)}
+          // Delay blur so a click on a result registers before the list unmounts.
+          onBlur={() => setTimeout(() => setFocused(false), 150)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' && geocode.results[0]) {
+              e.preventDefault();
+              onSelect(geocode.results[0]);
+            }
+          }}
+          placeholder="e.g. Stornoway, or a town, region…"
+          aria-label="Search location"
+          style={{ ...controlStyle, width: '100%' }}
+        />
+      </Field>
+      {open ? (
+        <ul
+          role="listbox"
+          aria-label="Location results"
+          style={{
+            position: 'absolute',
+            top: 'calc(100% + 4px)',
+            left: 0,
+            right: 0,
+            zIndex: 20,
+            listStyle: 'none',
+            margin: 0,
+            padding: 4,
+            background: 'var(--surface-elevated)',
+            border: '1px solid var(--border-strong)',
+            borderRadius: 4,
+            maxHeight: 280,
+            overflowY: 'auto',
+            boxShadow: '0 8px 24px rgba(0,0,0,0.4)',
+          }}
+        >
+          {geocode.loading && geocode.results.length === 0 ? (
+            <li className="t-mono-data" style={{ padding: '8px 10px', fontSize: 12, color: 'var(--text-tertiary)' }}>
+              Searching…
+            </li>
+          ) : null}
+          {geocode.results.map((hit) => (
+            <li key={`${hit.lat},${hit.lng}`}>
+              <button
+                type="button"
+                role="option"
+                aria-selected={false}
+                // onMouseDown fires before input blur, so the selection lands.
+                onMouseDown={(e) => {
+                  e.preventDefault();
+                  onSelect(hit);
+                }}
+                style={{
+                  display: 'block',
+                  width: '100%',
+                  textAlign: 'left',
+                  background: 'transparent',
+                  border: 'none',
+                  color: 'var(--text-primary)',
+                  padding: '8px 10px',
+                  borderRadius: 3,
+                  cursor: 'pointer',
+                  fontFamily: 'var(--font-sans)',
+                  fontSize: 13,
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = 'var(--surface-1)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = 'transparent';
+                }}
+              >
+                {hit.label}
+              </button>
+            </li>
+          ))}
+        </ul>
+      ) : null}
+    </div>
+  );
+}
+
+/**
+ * Compact chip above the results column showing the reverse-geocoded place name
+ * (when resolved) and the precise coordinate being analysed.
+ */
+function LocationBadge({
+  coordinate,
+  placeName,
+}: {
+  coordinate: { lat: number; lng: number };
+  placeName: string | null;
+}) {
+  return (
+    <div
+      data-testid="location-badge"
+      style={{
+        display: 'flex',
+        flexWrap: 'wrap',
+        alignItems: 'baseline',
+        gap: 'var(--space-2)',
+      }}
+    >
+      <span className="t-eyebrow" style={{ color: 'var(--text-tertiary)' }}>
+        Location
+      </span>
+      {placeName ? (
+        <span className="t-body" style={{ fontSize: 14, color: 'var(--text-primary)' }}>
+          {placeName}
+        </span>
+      ) : null}
+      <span className="t-mono-data" style={{ fontSize: 12, color: 'var(--text-secondary)' }}>
+        {coordinate.lat.toFixed(4)}, {coordinate.lng.toFixed(4)}
+      </span>
+    </div>
+  );
+}

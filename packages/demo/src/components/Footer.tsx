@@ -3,7 +3,7 @@ import pkg from '../../package.json';
 
 const packageVersion = pkg.version;
 
-const REPO_URL = 'https://github.com/jamieblair/wind-site-intelligence';
+const REPO_URL = 'https://github.com/weegienamja/WindForge';
 const NPM_CORE = 'https://www.npmjs.com/package/@jamieblair/windforge-core';
 const NPM_MCP = 'https://www.npmjs.com/package/@jamieblair/windforge-mcp';
 const ISSUES_URL = `${REPO_URL}/issues`;

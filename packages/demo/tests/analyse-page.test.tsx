@@ -256,7 +256,9 @@ describe('Analyse page', () => {
   it('renders the empty state with no params', async () => {
     await renderPage();
     expect(screen.getByText('NO ANALYSIS')).toBeInTheDocument();
-    expect(screen.getByText(/Enter a coordinate to begin/)).toBeInTheDocument();
+    expect(
+      screen.getByText(/Search, click the map, or enter a coordinate/),
+    ).toBeInTheDocument();
   });
 
   it('renders the running state when analysis is in flight', async () => {

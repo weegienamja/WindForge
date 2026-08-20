@@ -47,6 +47,8 @@ export type MapPanelProps = {
   loading: boolean;
   /** Minimum panel height in px. Smaller on mobile to keep the map glanceable. */
   minHeight?: number;
+  /** Called when the user clicks the map to choose a new analysis point. */
+  onPick?: (coordinate: LatLng) => void;
 };
 
 const STATUS_LINES = [
@@ -56,7 +58,7 @@ const STATUS_LINES = [
   'Sampling Open-Elevation…',
 ];
 
-export function MapPanel({ coordinate, loading, minHeight = 480 }: MapPanelProps) {
+export function MapPanel({ coordinate, loading, minHeight = 480, onPick }: MapPanelProps) {
   const [layers, setLayers] = useState<Record<MapLayerKey, boolean>>({
     wind: true,
     terrain: false,
@@ -91,8 +93,30 @@ export function MapPanel({ coordinate, loading, minHeight = 480 }: MapPanelProps
 
       {/* Map layer */}
       <div style={{ position: 'absolute', inset: 0, zIndex: 1 }}>
-        {coordinate ? <LeafletMap coordinate={coordinate} /> : null}
+        {coordinate ? <LeafletMap coordinate={coordinate} onPick={onPick} /> : null}
       </div>
+
+      {/* Click-to-place hint */}
+      {coordinate && onPick ? (
+        <div
+          style={{
+            position: 'absolute',
+            bottom: 'var(--space-3)',
+            left: 'var(--space-3)',
+            zIndex: 3,
+            background: 'var(--surface-1)',
+            border: '1px solid var(--border-subtle)',
+            borderRadius: 4,
+            padding: '4px 8px',
+            color: 'var(--text-secondary)',
+            fontFamily: 'var(--font-mono)',
+            fontSize: 11,
+            pointerEvents: 'none',
+          }}
+        >
+          Click the map to move the analysis point
+        </div>
+      ) : null}
 
       {/* Wind-resource scale legend */}
       {layers.wind && coordinate ? (
