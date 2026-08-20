@@ -1,5 +1,7 @@
 import Link from 'next/link';
-import { version as packageVersion } from '../../package.json';
+import pkg from '../../package.json';
+
+const packageVersion = pkg.version;
 
 const REPO_URL = 'https://github.com/jamieblair/wind-site-intelligence';
 const NPM_CORE = 'https://www.npmjs.com/package/@jamieblair/windforge-core';

@@ -141,23 +141,11 @@ function AnalysePageInner() {
   const coordinate =
     data?.coordinate ?? (valid ? { lat: latNum, lng: lngNum } : null);
 
-  if (isMobile) {
-    return (
-      <MobileFallback
-        valid={valid}
-        latNum={latNum}
-        lngNum={lngNum}
-        lat={lat}
-        lng={lng}
-        setLat={setLat}
-        setLng={setLng}
-        status={status}
-        data={data}
-        error={error}
-        onRun={submit}
-      />
-    );
-  }
+  // Responsive control styling: on narrow viewports the form fields and action
+  // buttons go full-width and stack vertically.
+  const controlStyle: React.CSSProperties = isMobile
+    ? { ...inputStyle, width: '100%', minWidth: 0 }
+    : inputStyle;
 
   return (
     <main
@@ -170,12 +158,14 @@ function AnalysePageInner() {
       <header
         data-testid="analyse-topbar"
         style={{
-          position: 'sticky',
+          // The stacked mobile form is tall, so only pin it on wider screens
+          // where it stays a single compact row.
+          position: isMobile ? 'static' : 'sticky',
           top: 0,
           zIndex: 10,
           background: 'var(--surface-1)',
           borderBottom: '1px solid var(--border-subtle)',
-          padding: 'var(--space-3) var(--space-5)',
+          padding: isMobile ? 'var(--space-4)' : 'var(--space-3) var(--space-5)',
         }}
       >
         <div
@@ -184,8 +174,9 @@ function AnalysePageInner() {
             margin: '0 auto',
             display: 'flex',
             flexWrap: 'wrap',
-            alignItems: 'flex-end',
-            gap: 'var(--space-4)',
+            flexDirection: isMobile ? 'column' : 'row',
+            alignItems: isMobile ? 'stretch' : 'flex-end',
+            gap: 'var(--space-3)',
           }}
         >
           <Link
@@ -203,23 +194,25 @@ function AnalysePageInner() {
           <Field label="Latitude">
             <input
               type="number"
+              inputMode="decimal"
               step="any"
               value={lat}
               onChange={(e) => setLat(e.target.value)}
               aria-invalid={!valid && lat !== ''}
               aria-label="Latitude"
-              style={inputStyle}
+              style={controlStyle}
             />
           </Field>
           <Field label="Longitude">
             <input
               type="number"
+              inputMode="decimal"
               step="any"
               value={lng}
               onChange={(e) => setLng(e.target.value)}
               aria-invalid={!valid && lng !== ''}
               aria-label="Longitude"
-              style={inputStyle}
+              style={controlStyle}
             />
           </Field>
           <Field label="Hub height">
@@ -227,7 +220,7 @@ function AnalysePageInner() {
               value={hub}
               onChange={(e) => setHub(Number(e.target.value) as Hub)}
               aria-label="Hub height"
-              style={inputStyle}
+              style={controlStyle}
             >
               {HUB_OPTIONS.map((h) => (
                 <option key={h} value={h}>
@@ -241,7 +234,7 @@ function AnalysePageInner() {
               value={turbineId}
               onChange={(e) => setTurbineId(e.target.value)}
               aria-label="Turbine model"
-              style={inputStyle}
+              style={controlStyle}
             >
               {turbines.map((t) => (
                 <option key={t.id} value={t.id}>
@@ -250,13 +243,14 @@ function AnalysePageInner() {
               ))}
             </select>
           </Field>
-          <div style={{ display: 'flex', gap: 8 }}>
+          <div style={{ display: 'flex', gap: 8, width: isMobile ? '100%' : 'auto' }}>
             <button
               type="button"
               onClick={submit}
               disabled={!valid || status === 'running'}
               style={{
                 ...buttonStyle,
+                flex: isMobile ? 1 : undefined,
                 background: valid ? 'var(--accent-cool)' : 'var(--surface-elevated)',
                 color: valid ? '#0a0e1a' : 'var(--text-tertiary)',
                 cursor: valid && status !== 'running' ? 'pointer' : 'not-allowed',
@@ -286,14 +280,18 @@ function AnalysePageInner() {
         style={{
           maxWidth: 1400,
           margin: '0 auto',
-          padding: 'var(--space-5)',
+          padding: isMobile ? 'var(--space-4)' : 'var(--space-5)',
           display: 'grid',
-          gridTemplateColumns: 'minmax(0, 60%) minmax(0, 40%)',
-          gap: 'var(--space-5)',
+          gridTemplateColumns: isMobile ? '1fr' : 'minmax(0, 60%) minmax(0, 40%)',
+          gap: isMobile ? 'var(--space-4)' : 'var(--space-5)',
         }}
       >
-        <div style={{ minHeight: 480 }}>
-          <MapPanel coordinate={coordinate} loading={status === 'running'} />
+        <div style={{ minHeight: isMobile ? 320 : 480 }}>
+          <MapPanel
+            coordinate={coordinate}
+            loading={status === 'running'}
+            minHeight={isMobile ? 320 : 480}
+          />
         </div>
         <div
           style={{
@@ -831,152 +829,3 @@ const listStyle: React.CSSProperties = {
   flexDirection: 'column',
   gap: 6,
 };
-
-function MobileFallback({
-  valid,
-  latNum,
-  lngNum,
-  lat,
-  lng,
-  setLat,
-  setLng,
-  status,
-  data,
-  error,
-  onRun,
-}: {
-  valid: boolean;
-  latNum: number;
-  lngNum: number;
-  lat: string;
-  lng: string;
-  setLat: (v: string) => void;
-  setLng: (v: string) => void;
-  status: 'idle' | 'running' | 'success' | 'error';
-  data: SiteAnalysis | null;
-  error: { code: string; message: string } | null;
-  onRun: () => void;
-}) {
-  const wind = data?.factors.find((f) => f.factor === ScoringFactor.WindResource);
-  return (
-    <main
-      data-testid="mobile-fallback"
-      style={{
-        minHeight: '100vh',
-        background: 'var(--surface-0)',
-        color: 'var(--text-primary)',
-        padding: 'var(--space-5)',
-      }}
-    >
-      <div
-        style={{
-          maxWidth: 480,
-          margin: '0 auto',
-          display: 'flex',
-          flexDirection: 'column',
-          gap: 'var(--space-4)',
-        }}
-      >
-        <Link
-          href="/"
-          className="t-mono-data"
-          style={{ color: 'var(--text-secondary)', fontSize: 12, textDecoration: 'none' }}
-        >
-          ← WindForge
-        </Link>
-        <DataCard
-          eyebrow="MOBILE"
-          title="Text-only analysis"
-        >
-          <p
-            className="t-body"
-            style={{
-              color: 'var(--text-secondary)',
-              margin: 0,
-              fontSize: 13,
-            }}
-          >
-            For the full analysis view, open this page on a desktop. Or run a
-            text-only analysis here.
-          </p>
-          <div
-            style={{
-              display: 'flex',
-              flexDirection: 'column',
-              gap: 'var(--space-3)',
-              marginTop: 'var(--space-4)',
-            }}
-          >
-            <Field label="Latitude">
-              <input
-                type="number"
-                step="any"
-                value={lat}
-                onChange={(e) => setLat(e.target.value)}
-                aria-label="Latitude"
-                style={inputStyle}
-              />
-            </Field>
-            <Field label="Longitude">
-              <input
-                type="number"
-                step="any"
-                value={lng}
-                onChange={(e) => setLng(e.target.value)}
-                aria-label="Longitude"
-                style={inputStyle}
-              />
-            </Field>
-            <button
-              type="button"
-              onClick={onRun}
-              disabled={!valid || status === 'running'}
-              style={{
-                ...buttonStyle,
-                background: valid ? 'var(--accent-cool)' : 'var(--surface-elevated)',
-                color: valid ? '#0a0e1a' : 'var(--text-tertiary)',
-                cursor: valid && status !== 'running' ? 'pointer' : 'not-allowed',
-              }}
-            >
-              {status === 'running' ? 'Running…' : 'Run analysis'}
-            </button>
-          </div>
-        </DataCard>
-        {error ? (
-          <DataCard eyebrow="ERROR">
-            <span className="t-mono-data" style={{ color: 'var(--accent-warm)' }}>
-              {error.code}
-            </span>
-            <p
-              className="t-body"
-              style={{ color: 'var(--text-secondary)', margin: '8px 0 0', fontSize: 13 }}
-            >
-              {error.message}
-            </p>
-          </DataCard>
-        ) : null}
-        {data ? (
-          <>
-            <DataCard eyebrow="OVERALL">
-              <div style={{ display: 'flex', alignItems: 'baseline', gap: 'var(--space-3)' }}>
-                <span className="t-mono-large" data-testid="composite-score">
-                  {data.compositeScore.toFixed(0)}
-                </span>
-                <span className="t-caption" style={{ color: 'var(--text-secondary)' }}>
-                  / 100
-                </span>
-              </div>
-            </DataCard>
-            {wind ? <WindCard factor={wind} reconciliation={data.metadata.reconciliation} /> : null}
-          </>
-        ) : null}
-        <p
-          className="t-mono-data"
-          style={{ color: 'var(--text-tertiary)', fontSize: 11, margin: 0 }}
-        >
-          {valid ? `${latNum.toFixed(2)}, ${lngNum.toFixed(2)}` : 'Coordinate not set'}
-        </p>
-      </div>
-    </main>
-  );
-}

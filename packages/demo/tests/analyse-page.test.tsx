@@ -434,8 +434,8 @@ describe('Analyse page', () => {
     expect(screen.queryByTestId('monthly-history-chart')).not.toBeInTheDocument();
   });
 
-  it('renders the mobile fallback below 768px and hides the desktop layout', async () => {
-    // Override matchMedia for this test only.
+  it('renders the full responsive layout below 768px (no degraded text-only fallback)', async () => {
+    // Override matchMedia for this test only: report a narrow (mobile) viewport.
     const originalMatchMedia = window.matchMedia;
     window.matchMedia = (query: string) =>
       ({
@@ -449,11 +449,16 @@ describe('Analyse page', () => {
         dispatchEvent: vi.fn(),
       }) as unknown as MediaQueryList;
     try {
+      hookState.analysis = glasgowReconciled;
       await renderPage();
-      expect(screen.getByTestId('mobile-fallback')).toBeInTheDocument();
-      expect(screen.queryByTestId('analyse-topbar')).not.toBeInTheDocument();
-      expect(screen.queryByTestId('map-panel')).not.toBeInTheDocument();
-      expect(screen.getAllByText(/text-only analysis/i).length).toBeGreaterThan(0);
+      // Mobile now gets the real analysis UI — top bar, map and results — not a
+      // "use a desktop" fallback.
+      expect(screen.getByTestId('analyse-topbar')).toBeInTheDocument();
+      expect(screen.getByTestId('map-panel')).toBeInTheDocument();
+      expect(screen.getByTestId('composite-score')).toHaveTextContent('72');
+      expect(screen.queryByTestId('mobile-fallback')).not.toBeInTheDocument();
+      expect(screen.queryByText(/text-only analysis/i)).not.toBeInTheDocument();
+      expect(screen.queryByText(/open this page on a desktop/i)).not.toBeInTheDocument();
     } finally {
       window.matchMedia = originalMatchMedia;
     }

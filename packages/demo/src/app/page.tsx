@@ -72,7 +72,7 @@ export default function LandingPage() {
             className="t-display"
             style={{
               margin: 'var(--space-4) 0 var(--space-5)',
-              maxWidth: 14,
+              maxWidth: '14ch',
             }}
           >
             Wind site suitability, computed.

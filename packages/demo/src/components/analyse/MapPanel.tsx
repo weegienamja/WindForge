@@ -45,6 +45,8 @@ const LAYER_LABELS: Record<MapLayerKey, string> = {
 export type MapPanelProps = {
   coordinate: LatLng | null;
   loading: boolean;
+  /** Minimum panel height in px. Smaller on mobile to keep the map glanceable. */
+  minHeight?: number;
 };
 
 const STATUS_LINES = [
@@ -54,7 +56,7 @@ const STATUS_LINES = [
   'Sampling Open-Elevation…',
 ];
 
-export function MapPanel({ coordinate, loading }: MapPanelProps) {
+export function MapPanel({ coordinate, loading, minHeight = 480 }: MapPanelProps) {
   const [layers, setLayers] = useState<Record<MapLayerKey, boolean>>({
     wind: true,
     terrain: false,
@@ -72,7 +74,7 @@ export function MapPanel({ coordinate, loading }: MapPanelProps) {
         position: 'relative',
         width: '100%',
         height: '100%',
-        minHeight: 480,
+        minHeight,
         border: '1px solid var(--border-subtle)',
         borderRadius: 4,
         overflow: 'hidden',

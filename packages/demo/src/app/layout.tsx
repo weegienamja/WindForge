@@ -1,4 +1,4 @@
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 import type { ReactNode } from 'react';
 import { Geist, Fraunces, JetBrains_Mono } from 'next/font/google';
 import './globals.css';
@@ -57,18 +57,18 @@ export const metadata: Metadata = {
   metadataBase: new URL('https://wind.jamieblair.co.uk'),
 };
 
+// Mobile-first viewport. Leaflet's CSS is imported by the LeafletMap component
+// (loaded client-side via `next/dynamic`), so it no longer needs a render-blocking
+// <link> in <head>; the favicon is served automatically from `app/icon.svg`.
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  themeColor: '#0a0e1a',
+};
+
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="en" className={`${geist.variable} ${fraunces.variable} ${jetbrainsMono.variable}`}>
-      <head>
-        <link
-          rel="stylesheet"
-          href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-          integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
-          crossOrigin=""
-        />
-        <link rel="icon" href="/favicon.ico" sizes="any" />
-      </head>
       <body>{children}</body>
     </html>
   );

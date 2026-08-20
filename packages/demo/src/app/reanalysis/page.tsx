@@ -13,6 +13,8 @@
 
 import type { ReactElement } from 'react';
 import { Suspense } from 'react';
+import Link from 'next/link';
+import { Footer } from '../../components/Footer';
 import {
   analyseSite,
   reconcileWindData,
@@ -32,22 +34,41 @@ export default function ReanalysisDemoPage(): ReactElement {
   const hasKey = (process.env.CDS_API_KEY ?? '').trim().length > 0;
 
   return (
-    <main style={containerStyle}>
-      <h1 style={{ marginBottom: 4 }}>Reanalysis Bias Correction</h1>
-      <p style={{ color: '#666', marginTop: 0 }}>
-        East Kilbride ({COORD.lat}, {COORD.lng}).{' '}
-        {hasKey
-          ? 'Live ERA5 / CERRA from Copernicus CDS.'
-          : 'Synthetic NASA POWER reconciled against synthetic ERA5 (set CDS_API_KEY for live data).'}
-      </p>
+    <main style={{ minHeight: '100vh', background: 'var(--surface-0)' }}>
+      <div style={containerStyle}>
+        <Link
+          href="/"
+          className="t-mono-data"
+          style={{
+            color: 'var(--text-secondary)',
+            fontSize: 12,
+            textDecoration: 'none',
+            display: 'inline-block',
+            marginBottom: 'var(--space-5)',
+          }}
+        >
+          ← WindForge
+        </Link>
+        <div className="t-eyebrow">Reanalysis</div>
+        <h1 className="t-h1" style={{ margin: 'var(--space-2) 0 var(--space-3)' }}>
+          Bias correction
+        </h1>
+        <p className="t-body" style={{ color: 'var(--text-secondary)', marginTop: 0 }}>
+          East Kilbride ({COORD.lat}, {COORD.lng}).{' '}
+          {hasKey
+            ? 'Live ERA5 / CERRA from Copernicus CDS.'
+            : 'Synthetic NASA POWER reconciled against synthetic ERA5 (set CDS_API_KEY for live data).'}
+        </p>
 
-      {hasKey ? (
-        <Suspense fallback={<LoadingNotice />}>
-          <LiveReconciliation />
-        </Suspense>
-      ) : (
-        <SyntheticReconciliation />
-      )}
+        {hasKey ? (
+          <Suspense fallback={<LoadingNotice />}>
+            <LiveReconciliation />
+          </Suspense>
+        ) : (
+          <SyntheticReconciliation />
+        )}
+      </div>
+      <Footer />
     </main>
   );
 }
@@ -69,7 +90,7 @@ async function LiveReconciliation(): Promise<ReactElement> {
   if (!result.ok) {
     return (
       <section style={cardStyle}>
-        <h2 style={{ marginTop: 0 }}>Analysis failed</h2>
+        <h2 className="t-h3" style={{ marginTop: 0, marginBottom: 'var(--space-3)' }}>Analysis failed</h2>
         <p>{result.error.message}</p>
       </section>
     );
@@ -79,7 +100,7 @@ async function LiveReconciliation(): Promise<ReactElement> {
   if (!meta.reconciliation) {
     return (
       <section style={cardStyle}>
-        <h2 style={{ marginTop: 0 }}>No reconciliation</h2>
+        <h2 className="t-h3" style={{ marginTop: 0, marginBottom: 'var(--space-3)' }}>No reconciliation</h2>
         <p>
           Reanalysis was not applied. Attempted:{' '}
           {meta.reanalysisAttempted?.join(', ') ?? 'none'}. Succeeded:{' '}
@@ -104,7 +125,7 @@ function LiveDiagnostics({
   return (
     <>
       <section style={cardStyle}>
-        <h2 style={{ marginTop: 0 }}>Method &amp; reference</h2>
+        <h2 className="t-h3" style={{ marginTop: 0, marginBottom: 'var(--space-3)' }}>Method &amp; reference</h2>
         <table style={tableStyle}>
           <tbody>
             <tr>
@@ -133,7 +154,7 @@ function LiveDiagnostics({
 
       {reconciliation.diagnostics && (
         <section style={cardStyle}>
-          <h2 style={{ marginTop: 0 }}>Diagnostics</h2>
+          <h2 className="t-h3" style={{ marginTop: 0, marginBottom: 'var(--space-3)' }}>Diagnostics</h2>
           <table style={tableStyle}>
             <tbody>
               <tr><th style={thStyle}>Overlap months</th><td style={tdStyle}>{reconciliation.diagnostics.overlapMonths}</td></tr>
@@ -148,7 +169,9 @@ function LiveDiagnostics({
         </section>
       )}
 
-      <p style={{ color: '#666', fontSize: 13 }}>{reconciliation.detail}</p>
+      <p className="t-body" style={{ color: 'var(--text-tertiary)', fontSize: 13 }}>
+        {reconciliation.detail}
+      </p>
     </>
   );
 }
@@ -223,7 +246,7 @@ function SyntheticReconciliation(): ReactElement {
   return (
     <>
       <section style={cardStyle}>
-        <h2 style={{ marginTop: 0 }}>Mean wind speed (50 m)</h2>
+        <h2 className="t-h3" style={{ marginTop: 0, marginBottom: 'var(--space-3)' }}>Mean wind speed (50 m)</h2>
         <table style={tableStyle}>
           <tbody>
             <tr>
@@ -241,7 +264,7 @@ function SyntheticReconciliation(): ReactElement {
       </section>
 
       <section style={cardStyle}>
-        <h2 style={{ marginTop: 0 }}>Method &amp; reference</h2>
+        <h2 className="t-h3" style={{ marginTop: 0, marginBottom: 'var(--space-3)' }}>Method &amp; reference</h2>
         <table style={tableStyle}>
           <tbody>
             <tr>
@@ -262,7 +285,7 @@ function SyntheticReconciliation(): ReactElement {
 
       {reconciled.diagnostics && (
         <section style={cardStyle}>
-          <h2 style={{ marginTop: 0 }}>Diagnostics</h2>
+          <h2 className="t-h3" style={{ marginTop: 0, marginBottom: 'var(--space-3)' }}>Diagnostics</h2>
           <table style={tableStyle}>
             <tbody>
               <tr><th style={thStyle}>Overlap months</th><td style={tdStyle}>{reconciled.diagnostics.overlapMonths}</td></tr>
@@ -277,26 +300,46 @@ function SyntheticReconciliation(): ReactElement {
         </section>
       )}
 
-      <p style={{ color: '#666', fontSize: 13 }}>{reconciled.detail}</p>
+      <p className="t-body" style={{ color: 'var(--text-tertiary)', fontSize: 13 }}>
+        {reconciled.detail}
+      </p>
     </>
   );
 }
 
 const containerStyle: React.CSSProperties = {
-  maxWidth: 720,
-  margin: '32px auto',
-  padding: '0 16px',
-  fontFamily: 'system-ui, -apple-system, sans-serif',
+  maxWidth: 820,
+  margin: '0 auto',
+  padding: 'var(--space-7) var(--space-5)',
+  fontFamily: 'var(--font-sans)',
+  color: 'var(--text-primary)',
 };
 
 const cardStyle: React.CSSProperties = {
-  border: '1px solid #e2e2e2',
-  borderRadius: 8,
-  padding: 16,
-  margin: '16px 0',
-  background: '#fafafa',
+  border: '1px solid var(--border-subtle)',
+  borderRadius: 4,
+  padding: 'var(--space-5)',
+  margin: 'var(--space-4) 0',
+  background: 'var(--surface-1)',
 };
 
-const tableStyle: React.CSSProperties = { borderCollapse: 'collapse', width: '100%' };
-const thStyle: React.CSSProperties = { textAlign: 'left', padding: '6px 8px', borderBottom: '1px solid #eee', width: '50%' };
-const tdStyle: React.CSSProperties = { textAlign: 'right', padding: '6px 8px', borderBottom: '1px solid #eee' };
+const tableStyle: React.CSSProperties = {
+  borderCollapse: 'collapse',
+  width: '100%',
+  fontFamily: 'var(--font-mono)',
+  fontSize: 13,
+};
+const thStyle: React.CSSProperties = {
+  textAlign: 'left',
+  padding: '8px 8px',
+  borderBottom: '1px solid var(--border-subtle)',
+  width: '50%',
+  color: 'var(--text-tertiary)',
+  fontWeight: 500,
+};
+const tdStyle: React.CSSProperties = {
+  textAlign: 'right',
+  padding: '8px 8px',
+  borderBottom: '1px solid var(--border-subtle)',
+  fontVariantNumeric: 'tabular-nums',
+};
