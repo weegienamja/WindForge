@@ -25,6 +25,22 @@ const METRIC_VALUE: Record<HeatmapMetric, (c: HeatmapCell) => number | null | un
   suitability: (c) => c.score,
 };
 
+type Layer = 'atlas' | 'composite';
+
+interface GwaMeta {
+  bounds: [[number, number], [number, number]];
+  resolutionM: number;
+  heightM: number;
+  minMs: number;
+  maxMs: number;
+  stretchLoMs: number;
+  stretchHiMs: number;
+  source: string;
+}
+
+const GWA_PNG = '/gwa/uk-wind-100m.png';
+const GWA_META = '/gwa/uk-wind-100m.json';
+
 const HeatmapLeaflet = dynamic(
   () => import('../../components/map/HeatmapLeaflet').then((m) => m.HeatmapLeaflet),
   {
@@ -133,9 +149,32 @@ function HeatmapInner() {
     return { colorFor, lo, hi };
   }, [scored, metric]);
 
+  // Fine-resolution Global Wind Atlas overlay (500 m). Loaded once if present.
+  const [gwa, setGwa] = useState<GwaMeta | null>(null);
+  useEffect(() => {
+    let cancelled = false;
+    fetch(GWA_META, { cache: 'force-cache' })
+      .then((r) => (r.ok ? r.json() : Promise.reject(new Error('no gwa'))))
+      .then((m: GwaMeta) => {
+        if (!cancelled) setGwa(m);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const [layerRaw, setLayer] = useState<Layer | null>(null);
+  const layer: Layer = layerRaw ?? (gwa ? 'atlas' : 'composite');
+
   const onPick = (cell: HeatmapCell) => {
     router.push(`/analyse?lat=${cell.lat}&lng=${cell.lng}&hub=${meta?.hubHeightM ?? 100}`);
   };
+  const onMapPick = (lat: number, lng: number) => {
+    router.push(`/analyse?lat=${lat.toFixed(4)}&lng=${lng.toFixed(4)}&hub=${meta?.hubHeightM ?? 100}`);
+  };
+
+  const atlas = layer === 'atlas' && gwa;
 
   return (
     <main style={{ minHeight: '100vh', background: 'var(--surface-0)', color: 'var(--text-primary)' }}>
@@ -160,17 +199,22 @@ function HeatmapInner() {
         >
           ← WindForge
         </Link>
-        <div style={{ flex: 1, minWidth: 200 }}>
-          <div className="t-eyebrow">UK suitability heatmap</div>
+        <div style={{ flex: 1, minWidth: 180 }}>
+          <div className="t-eyebrow">UK wind map</div>
           <div className="t-mono-data" style={{ fontSize: 13, color: 'var(--text-secondary)' }}>
-            {meta?.source ?? 'six-factor composite'} · {meta?.spacingKm ?? '–'} km grid
+            {atlas
+              ? `Global Wind Atlas · ${gwa?.resolutionM}m · ${gwa?.heightM}m hub`
+              : `${meta?.source ?? 'six-factor composite'} · ${meta?.spacingKm ?? '–'} km grid`}
           </div>
         </div>
-        <MetricToggle metric={metric} onChange={setMetric} hasEconomics={hasEconomics} />
-        <ProgressReadout done={meta?.done ?? 0} total={meta?.total ?? 0} pct={pct} complete={!!meta?.complete} />
+        {gwa ? <LayerToggle layer={layer} onChange={setLayer} /> : null}
+        {!atlas ? <MetricToggle metric={metric} onChange={setMetric} hasEconomics={hasEconomics} /> : null}
+        {!atlas ? (
+          <ProgressReadout done={meta?.done ?? 0} total={meta?.total ?? 0} pct={pct} complete={!!meta?.complete} />
+        ) : null}
       </header>
 
-      {meta && meta.total > 0 ? (
+      {!atlas && meta && meta.total > 0 ? (
         <div style={{ height: 3, background: 'var(--surface-elevated)' }}>
           <div
             style={{
@@ -184,9 +228,23 @@ function HeatmapInner() {
       ) : null}
 
       <div style={{ position: 'relative', height: 'calc(100vh - 180px)', minHeight: 420 }}>
-        <HeatmapLeaflet cells={scored} meta={meta ?? FALLBACK_META} onPick={onPick} colorFor={colorFor} />
-        <Legend metric={metric} lo={lo} hi={hi} />
-        {!hasData ? <EmptyOverlay error={error} url={url} /> : null}
+        {atlas && gwa ? (
+          <>
+            <HeatmapLeaflet
+              cells={[]}
+              meta={meta ?? FALLBACK_META}
+              gwa={{ url: GWA_PNG, bounds: gwa.bounds, opacity: 0.82 }}
+              onMapPick={onMapPick}
+            />
+            <WindLegend meta={gwa} />
+          </>
+        ) : (
+          <>
+            <HeatmapLeaflet cells={scored} meta={meta ?? FALLBACK_META} onPick={onPick} colorFor={colorFor} />
+            <Legend metric={metric} lo={lo} hi={hi} />
+            {!hasData ? <EmptyOverlay error={error} url={url} /> : null}
+          </>
+        )}
       </div>
 
       <Footer />
@@ -268,6 +326,76 @@ function MetricToggle({
           </button>
         );
       })}
+    </div>
+  );
+}
+
+function LayerToggle({ layer, onChange }: { layer: Layer; onChange: (l: Layer) => void }) {
+  const opts: Array<{ key: Layer; label: string }> = [
+    { key: 'atlas', label: 'Wind Atlas 500m' },
+    { key: 'composite', label: 'Composite' },
+  ];
+  return (
+    <div style={{ display: 'flex', border: '1px solid var(--border-subtle)', borderRadius: 4, overflow: 'hidden' }}>
+      {opts.map((o) => {
+        const active = o.key === layer;
+        return (
+          <button
+            key={o.key}
+            type="button"
+            onClick={() => onChange(o.key)}
+            className="t-mono-data"
+            style={{
+              background: active ? 'var(--accent-cool)' : 'transparent',
+              color: active ? '#0a0e1a' : 'var(--text-secondary)',
+              border: 'none',
+              padding: '6px 12px',
+              fontSize: 12,
+              cursor: 'pointer',
+            }}
+          >
+            {o.label}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+function WindLegend({ meta }: { meta: GwaMeta }) {
+  const gradient = `linear-gradient(90deg, ${[0, 25, 50, 75, 100]
+    .map((s) => `${scoreColor(s)} ${s}%`)
+    .join(', ')})`;
+  return (
+    <div
+      style={{
+        position: 'absolute',
+        bottom: 'var(--space-4)',
+        left: 'var(--space-4)',
+        zIndex: 1000,
+        background: 'var(--surface-1)',
+        border: '1px solid var(--border-subtle)',
+        borderRadius: 4,
+        padding: 'var(--space-3)',
+        width: 250,
+      }}
+    >
+      <div className="t-eyebrow" style={{ marginBottom: 6 }}>
+        Mean wind speed (m/s) · {meta.heightM} m
+      </div>
+      <div style={{ height: 10, borderRadius: 2, background: gradient }} />
+      <div
+        className="t-mono-data"
+        style={{ display: 'flex', justifyContent: 'space-between', marginTop: 4, fontSize: 11, color: 'var(--text-secondary)' }}
+      >
+        <span>{meta.stretchLoMs.toFixed(1)}</span>
+        <span style={{ color: 'var(--confidence-high)' }}>windier →</span>
+        <span>{meta.stretchHiMs.toFixed(1)}+</span>
+      </div>
+      <p className="t-caption" style={{ margin: '8px 0 0', fontSize: 10, color: 'var(--text-tertiary)', lineHeight: 1.4 }}>
+        {meta.resolutionM} m resolution, onshore + offshore. Click anywhere to run a full
+        six-factor analysis there. Source: {meta.source}.
+      </p>
     </div>
   );
 }
