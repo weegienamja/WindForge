@@ -10,7 +10,12 @@ import type {
   SiteAnalysis,
   TurbineModel,
 } from '@jamieblair/windforge-core';
-import { getAllTurbines, ScoringFactor } from '@jamieblair/windforge-core';
+import {
+  getAllTurbines,
+  ScoringFactor,
+  calculateLcoe,
+  type EnergyYieldResult,
+} from '@jamieblair/windforge-core';
 import { DataCard } from '../../components/primitives/DataCard';
 import { NumericReadout } from '../../components/primitives/NumericReadout';
 import { ConfidenceBadge } from '../../components/primitives/ConfidenceBadge';
@@ -18,6 +23,8 @@ import { SectionHeading } from '../../components/primitives/SectionHeading';
 import { MapPanel } from '../../components/analyse/MapPanel';
 import { ScoreFactorBars } from '../../components/analyse/ScoreFactorBars';
 import { BiasCorrectionBadge } from '../../components/analyse/BiasCorrectionBadge';
+import { EconomicsPanel } from '../../components/analyse/EconomicsPanel';
+import { CompareTray } from '../../components/analyse/CompareTray';
 import {
   MonthlyHistoryChart,
   MonthlyHistoryEmpty,
@@ -44,6 +51,7 @@ import {
   type GeocodeHit,
   type UseGeocodeSearchReturn,
 } from '../../hooks/useGeocode';
+import { useCompare, snapshotId, type CompareSnapshot } from '../../hooks/useCompare';
 import { errorCopyFor } from '../../lib/errorCopy';
 
 const HUB_OPTIONS = [80, 100, 120, 140] as const;
@@ -75,6 +83,15 @@ function clampLng(v: number): boolean {
   return Number.isFinite(v) && v >= -180 && v <= 180;
 }
 
+/** Pull the highest (hub-height) wind speed out of the wind factor detail text. */
+function parseWindSpeedMs(detail: string | undefined): number | null {
+  if (!detail) return null;
+  const matches = [...detail.matchAll(/([0-9]+(?:\.[0-9]+)?)\s*m\/s/g)];
+  if (matches.length === 0) return null;
+  const speeds = matches.map((m) => Number(m[1])).filter((n) => Number.isFinite(n));
+  return speeds.length > 0 ? Math.max(...speeds) : null;
+}
+
 export function AnalyseClient() {
   return (
     <Suspense fallback={null}>
@@ -103,6 +120,7 @@ function AnalysePageInner() {
   const aep = useAep();
   const isMobile = useMediaQuery('(max-width: 767px)');
   const geocode = useGeocodeSearch();
+  const compare = useCompare();
 
   const selectedTurbine = useMemo(
     () => turbines.find((t) => t.id === turbineId) ?? defaultTurbine,
@@ -177,6 +195,30 @@ function AnalysePageInner() {
     data?.coordinate ?? (valid ? { lat: latNum, lng: lngNum } : null);
 
   const placeName = useReverseGeocode(coordinate);
+
+  const activeId = coordinate ? snapshotId(coordinate.lat, coordinate.lng) : null;
+
+  // Pin the current site into the comparison list. Captures the headline
+  // numbers (score, wind, AEP, LCOE) so sites can be ranked side by side.
+  const pinCurrent = useCallback(() => {
+    if (!data) return;
+    const wind = data.factors.find((f) => f.factor === ScoringFactor.WindResource);
+    const lcoe = aep.data ? calculateLcoe(aep.data).lcoePerMwh : null;
+    const snapshot: CompareSnapshot = {
+      id: snapshotId(data.coordinate.lat, data.coordinate.lng),
+      placeName,
+      lat: data.coordinate.lat,
+      lng: data.coordinate.lng,
+      hub,
+      composite: data.compositeScore,
+      windSpeedMs: parseWindSpeedMs(wind?.detail),
+      netAepMwh: aep.data?.netAepMwh ?? null,
+      lcoePerMwh: lcoe,
+      hardConstraints: data.hardConstraints.length,
+      savedAt: Date.now(),
+    };
+    compare.add(snapshot);
+  }, [data, aep.data, placeName, hub, compare]);
 
   // Responsive control styling: on narrow viewports the form fields and action
   // buttons go full-width and stack vertically.
@@ -347,6 +389,15 @@ function AnalysePageInner() {
           {coordinate ? (
             <LocationBadge coordinate={coordinate} placeName={placeName} />
           ) : null}
+          {data ? (
+            <ResultActions
+              analysis={data}
+              aep={aep.data}
+              placeName={placeName}
+              pinned={activeId ? compare.has(activeId) : false}
+              onPin={pinCurrent}
+            />
+          ) : null}
           {status === 'idle' && !data && !error ? (
             <EmptyState onPickExample={(s) => runAt(s.lat, s.lng, hub)} />
           ) : null}
@@ -367,6 +418,14 @@ function AnalysePageInner() {
           reconciliation={data.metadata.reconciliation ?? null}
         />
       ) : null}
+
+      <CompareTray
+        items={compare.items}
+        onLoad={(item) => runAt(item.lat, item.lng, item.hub as Hub)}
+        onRemove={compare.remove}
+        onClear={compare.clear}
+        activeId={activeId}
+      />
       <Footer />
     </main>
   );
@@ -850,7 +909,12 @@ function YieldSection({
   if (!turbine) return <PowerCurveEmpty />;
   if (aep.status === 'running') return <PowerCurveSkeleton />;
   if (aep.status === 'error' || !aep.data) return <PowerCurveEmpty />;
-  return <PowerCurveChart turbine={turbine} aep={aep.data} />;
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
+      <PowerCurveChart turbine={turbine} aep={aep.data} />
+      <EconomicsPanel aep={aep.data} />
+    </div>
+  );
 }
 
 function HistorySection({
@@ -1088,5 +1152,95 @@ function LocationBadge({
         {coordinate.lat.toFixed(4)}, {coordinate.lng.toFixed(4)}
       </span>
     </div>
+  );
+}
+
+/**
+ * Action row beneath the location badge: pin the site for comparison, copy a
+ * shareable deep link, and download the full analysis as JSON.
+ */
+function ResultActions({
+  analysis,
+  aep,
+  placeName,
+  pinned,
+  onPin,
+}: {
+  analysis: SiteAnalysis;
+  aep: EnergyYieldResult | null;
+  placeName: string | null;
+  pinned: boolean;
+  onPin: () => void;
+}) {
+  const [copied, setCopied] = useState(false);
+
+  const copyLink = async () => {
+    if (typeof window === 'undefined') return;
+    try {
+      await navigator.clipboard.writeText(window.location.href);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1600);
+    } catch {
+      setCopied(false);
+    }
+  };
+
+  const download = () => {
+    if (typeof window === 'undefined') return;
+    const payload = {
+      generatedAt: new Date().toISOString(),
+      placeName,
+      coordinate: analysis.coordinate,
+      analysis,
+      energyYield: aep,
+    };
+    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `windforge-${analysis.coordinate.lat.toFixed(3)}_${analysis.coordinate.lng.toFixed(3)}.json`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  };
+
+  return (
+    <div data-testid="result-actions" style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+      <ActionButton onClick={onPin} active={pinned}>
+        {pinned ? '✓ Pinned' : '+ Pin to compare'}
+      </ActionButton>
+      <ActionButton onClick={copyLink}>{copied ? '✓ Link copied' : 'Copy link'}</ActionButton>
+      <ActionButton onClick={download}>Download JSON</ActionButton>
+    </div>
+  );
+}
+
+function ActionButton({
+  onClick,
+  active,
+  children,
+}: {
+  onClick: () => void;
+  active?: boolean;
+  children: React.ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="t-mono-data"
+      style={{
+        background: active ? 'var(--accent-cool)' : 'transparent',
+        color: active ? '#0a0e1a' : 'var(--accent-cool)',
+        border: '1px solid var(--accent-cool)',
+        borderRadius: 4,
+        padding: '6px 12px',
+        fontSize: 12,
+        cursor: 'pointer',
+      }}
+    >
+      {children}
+    </button>
   );
 }
