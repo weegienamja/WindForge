@@ -5,6 +5,7 @@ import dynamic from 'next/dynamic';
 import type { LatLng } from '@jamieblair/windforge-core';
 import { ParticleField } from '../primitives/ParticleField';
 import { ScaleLegend } from '../primitives/ScaleLegend';
+import type { MapPreset } from './LeafletMap';
 
 const LeafletMap = dynamic(() => import('./LeafletMap').then((m) => m.LeafletMap), {
   ssr: false,
@@ -49,6 +50,8 @@ export type MapPanelProps = {
   minHeight?: number;
   /** Called when the user clicks the map to choose a new analysis point. */
   onPick?: (coordinate: LatLng) => void;
+  /** Clickable preset locations shown as pins before a point is chosen. */
+  presets?: MapPreset[];
 };
 
 const STATUS_LINES = [
@@ -58,7 +61,13 @@ const STATUS_LINES = [
   'Sampling Open-Elevation…',
 ];
 
-export function MapPanel({ coordinate, loading, minHeight = 480, onPick }: MapPanelProps) {
+export function MapPanel({
+  coordinate,
+  loading,
+  minHeight = 480,
+  onPick,
+  presets = [],
+}: MapPanelProps) {
   const [layers, setLayers] = useState<Record<MapLayerKey, boolean>>({
     wind: true,
     terrain: false,
@@ -83,17 +92,17 @@ export function MapPanel({ coordinate, loading, minHeight = 480, onPick }: MapPa
         background: 'var(--surface-1)',
       }}
     >
-      {/* Particle field as low-opacity backing visual: landing → analyse continuity */}
+      {/* Particle field as backing visual: landing → analyse continuity */}
       <div
         aria-hidden="true"
-        style={{ position: 'absolute', inset: 0, opacity: 0.4, zIndex: 0 }}
+        style={{ position: 'absolute', inset: 0, opacity: 0.6, zIndex: 0 }}
       >
         <ParticleField ariaLabel="Animated wind field background" />
       </div>
 
-      {/* Map layer */}
+      {/* Map layer — always rendered so users can pan/click before picking a point */}
       <div style={{ position: 'absolute', inset: 0, zIndex: 1 }}>
-        {coordinate ? <LeafletMap coordinate={coordinate} onPick={onPick} /> : null}
+        <LeafletMap coordinate={coordinate} onPick={onPick} presets={presets} />
       </div>
 
       {/* Click-to-place hint */}
