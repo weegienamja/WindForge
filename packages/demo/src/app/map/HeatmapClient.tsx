@@ -4,8 +4,26 @@ import { Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { scoreColor, type HeatmapCell, type HeatmapData } from '../../lib/heatmap';
+import {
+  makeRelativeColor,
+  scoreColor,
+  type HeatmapCell,
+  type HeatmapData,
+  type HeatmapMetric,
+} from '../../lib/heatmap';
 import { Footer } from '../../components/Footer';
+
+const METRICS: Array<{ key: HeatmapMetric; label: string }> = [
+  { key: 'economics', label: 'Economics' },
+  { key: 'wind', label: 'Wind' },
+  { key: 'suitability', label: 'Suitability' },
+];
+
+const METRIC_VALUE: Record<HeatmapMetric, (c: HeatmapCell) => number | null | undefined> = {
+  economics: (c) => c.lcoePerMwh,
+  wind: (c) => c.windSpeedMs,
+  suitability: (c) => c.score,
+};
 
 const HeatmapLeaflet = dynamic(
   () => import('../../components/map/HeatmapLeaflet').then((m) => m.HeatmapLeaflet),
@@ -93,6 +111,28 @@ function HeatmapInner() {
   const pct = meta && meta.total > 0 ? Math.round((meta.done / meta.total) * 100) : 0;
   const hasData = scored.length > 0;
 
+  // Default to the economics view once any cell carries an LCOE, else fall back
+  // to wind (always present, good spread, and the main driver of viability).
+  const hasEconomics = scored.some((c) => typeof c.lcoePerMwh === 'number');
+  const [metricRaw, setMetric] = useState<HeatmapMetric | null>(null);
+  const metric: HeatmapMetric = metricRaw ?? (hasEconomics ? 'economics' : 'wind');
+
+  // Build a colour function stretched to the data's actual spread for the chosen
+  // metric, so close values still read as different colours.
+  const { colorFor, lo, hi } = useMemo(() => {
+    const getter = METRIC_VALUE[metric];
+    const values = scored
+      .map((c) => getter(c))
+      .filter((v): v is number => typeof v === 'number' && Number.isFinite(v));
+    const invert = metric === 'economics'; // lower LCOE = better
+    const { color, lo, hi } = makeRelativeColor(values, { invert });
+    const colorFor = (cell: HeatmapCell) => {
+      const v = getter(cell);
+      return typeof v === 'number' && Number.isFinite(v) ? color(v) : 'var(--surface-elevated)';
+    };
+    return { colorFor, lo, hi };
+  }, [scored, metric]);
+
   const onPick = (cell: HeatmapCell) => {
     router.push(`/analyse?lat=${cell.lat}&lng=${cell.lng}&hub=${meta?.hubHeightM ?? 100}`);
   };
@@ -126,6 +166,7 @@ function HeatmapInner() {
             {meta?.source ?? 'six-factor composite'} · {meta?.spacingKm ?? '–'} km grid
           </div>
         </div>
+        <MetricToggle metric={metric} onChange={setMetric} hasEconomics={hasEconomics} />
         <ProgressReadout done={meta?.done ?? 0} total={meta?.total ?? 0} pct={pct} complete={!!meta?.complete} />
       </header>
 
@@ -143,8 +184,8 @@ function HeatmapInner() {
       ) : null}
 
       <div style={{ position: 'relative', height: 'calc(100vh - 180px)', minHeight: 420 }}>
-        <HeatmapLeaflet cells={scored} meta={meta ?? FALLBACK_META} onPick={onPick} />
-        <Legend />
+        <HeatmapLeaflet cells={scored} meta={meta ?? FALLBACK_META} onPick={onPick} colorFor={colorFor} />
+        <Legend metric={metric} lo={lo} hi={hi} />
         {!hasData ? <EmptyOverlay error={error} url={url} /> : null}
       </div>
 
@@ -192,9 +233,59 @@ function ProgressReadout({
   );
 }
 
-function Legend() {
-  const stops = [0, 25, 45, 62, 80, 100];
-  const gradient = `linear-gradient(90deg, ${stops.map((s) => `${scoreColor(s)} ${s}%`).join(', ')})`;
+function MetricToggle({
+  metric,
+  onChange,
+  hasEconomics,
+}: {
+  metric: HeatmapMetric;
+  onChange: (m: HeatmapMetric) => void;
+  hasEconomics: boolean;
+}) {
+  return (
+    <div style={{ display: 'flex', border: '1px solid var(--border-subtle)', borderRadius: 4, overflow: 'hidden' }}>
+      {METRICS.map((m) => {
+        const active = m.key === metric;
+        const disabled = m.key === 'economics' && !hasEconomics;
+        return (
+          <button
+            key={m.key}
+            type="button"
+            onClick={() => onChange(m.key)}
+            disabled={disabled}
+            title={disabled ? 'Economics appears once the worker computes LCOE' : undefined}
+            className="t-mono-data"
+            style={{
+              background: active ? 'var(--accent-cool)' : 'transparent',
+              color: active ? '#0a0e1a' : disabled ? 'var(--text-tertiary)' : 'var(--text-secondary)',
+              border: 'none',
+              padding: '6px 12px',
+              fontSize: 12,
+              cursor: disabled ? 'not-allowed' : 'pointer',
+            }}
+          >
+            {m.label}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+const LEGEND_COPY: Record<HeatmapMetric, { title: string; fmt: (v: number) => string; lowBest?: boolean }> = {
+  economics: { title: 'LCOE (£/MWh) · lower = better', fmt: (v) => `£${Math.round(v)}`, lowBest: true },
+  wind: { title: 'Mean wind speed (m/s)', fmt: (v) => `${v.toFixed(1)}` },
+  suitability: { title: 'Suitability score', fmt: (v) => `${Math.round(v)}` },
+};
+
+function Legend({ metric, lo, hi }: { metric: HeatmapMetric; lo: number; hi: number }) {
+  const copy = LEGEND_COPY[metric];
+  // Green is always "best": for LCOE (low best) the worst (high) is on the left.
+  const gradient = `linear-gradient(90deg, ${[0, 25, 50, 75, 100]
+    .map((s) => `${scoreColor(copy.lowBest ? 100 - s : s)} ${s}%`)
+    .join(', ')})`;
+  const left = copy.lowBest ? hi : lo;
+  const right = copy.lowBest ? lo : hi;
   return (
     <div
       style={{
@@ -206,27 +297,29 @@ function Legend() {
         border: '1px solid var(--border-subtle)',
         borderRadius: 4,
         padding: 'var(--space-3)',
-        width: 220,
+        width: 240,
       }}
     >
       <div className="t-eyebrow" style={{ marginBottom: 6 }}>
-        Suitability score
+        {copy.title}
       </div>
       <div style={{ height: 10, borderRadius: 2, background: gradient }} />
       <div
         className="t-mono-data"
         style={{ display: 'flex', justifyContent: 'space-between', marginTop: 4, fontSize: 11, color: 'var(--text-secondary)' }}
       >
-        <span>0</span>
-        <span>50</span>
-        <span>100</span>
+        <span>{copy.fmt(left)}</span>
+        <span style={{ color: 'var(--confidence-high)' }}>best →</span>
+        <span>{copy.fmt(right)}</span>
       </div>
       <p
         className="t-caption"
         style={{ margin: '8px 0 0', fontSize: 10, color: 'var(--text-tertiary)', lineHeight: 1.4 }}
       >
-        Onshore + offshore (≤60 km). Offshore scores are wind-resource-led; they
-        don't yet model water depth or distance to grid.
+        Colours are stretched to the data's range, so close values still differ.
+        {metric === 'economics'
+          ? ' Greenest cells are at/below the reference price — subsidy-free.'
+          : ' Onshore + offshore (≤60 km); offshore is wind-led (no depth/grid yet).'}
       </p>
     </div>
   );

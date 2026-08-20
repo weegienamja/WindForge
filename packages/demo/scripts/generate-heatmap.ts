@@ -27,11 +27,17 @@ import { dirname } from 'node:path';
 import pLimit from 'p-limit';
 import {
   analyseSite,
+  calculateAep,
+  calculateLcoe,
+  DEFAULT_FINANCIAL_PARAMS,
+  fetchWindData,
+  getAllTurbines,
   isPointInPolygon,
   pointToPolygonEdgeDistanceM,
   ScoringFactor,
   type FactorScore,
   type LatLng,
+  type TurbineModel,
 } from '@jamieblair/windforge-core';
 import {
   cellStepDeg,
@@ -73,6 +79,30 @@ const USER_AGENT = 'WindForge-Heatmap/0.1 (+https://wind.jamieblair.co.uk)';
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 const cellId = (lat: number, lng: number) => `${lat.toFixed(3)},${lng.toFixed(3)}`;
+
+// Reference turbine (~2 MW) and market price used for the per-cell economics so
+// every point is compared on the same basis.
+const REF_TURBINE: TurbineModel | undefined =
+  getAllTurbines().find((t) => Math.abs(t.ratedPowerKw - 2000) < 250) ?? getAllTurbines()[0];
+const REF_PRICE = DEFAULT_FINANCIAL_PARAMS.energyPricePerMwh;
+
+async function computeEconomics(
+  p: LatLng,
+): Promise<{ capacityFactor: number | null; lcoePerMwh: number | null; subsidyFree: boolean }> {
+  if (!REF_TURBINE) return { capacityFactor: null, lcoePerMwh: null, subsidyFree: false };
+  // Wind data was already fetched by analyseSite for this coordinate, so this
+  // is a cache hit.
+  const wind = await fetchWindData(p);
+  if (!wind.ok) return { capacityFactor: null, lcoePerMwh: null, subsidyFree: false };
+  const aep = calculateAep(wind.value, REF_TURBINE, { hubHeightM: HUB_M });
+  if (!aep.ok) return { capacityFactor: null, lcoePerMwh: null, subsidyFree: false };
+  const lcoe = Math.round(calculateLcoe(aep.value).lcoePerMwh);
+  return {
+    capacityFactor: Number(aep.value.netCapacityFactor.toFixed(3)),
+    lcoePerMwh: lcoe,
+    subsidyFree: lcoe <= REF_PRICE,
+  };
+}
 
 function overallConfidence(factors: ReadonlyArray<FactorScore>): 'high' | 'medium' | 'low' {
   if (factors.length === 0) return 'low';
@@ -212,6 +242,7 @@ async function analysePoint(p: GridPoint): Promise<HeatmapCell> {
     }
     const a = result.value;
     const wind = a.factors.find((f) => f.factor === ScoringFactor.WindResource);
+    const econ = await computeEconomics({ lat: p.lat, lng: p.lng });
     return {
       lat: p.lat,
       lng: p.lng,
@@ -221,6 +252,9 @@ async function analysePoint(p: GridPoint): Promise<HeatmapCell> {
       windScore: wind ? Math.round(wind.score) : null,
       windSpeedMs: parseWindSpeedMs(wind?.detail),
       hardConstraints: a.hardConstraints.length,
+      capacityFactor: econ.capacityFactor,
+      lcoePerMwh: econ.lcoePerMwh,
+      subsidyFree: econ.subsidyFree,
     };
   } catch (err) {
     return { lat: p.lat, lng: p.lng, offshore: p.offshore, score: null, error: err instanceof Error ? err.message : 'failed' };

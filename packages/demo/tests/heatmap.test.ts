@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { cellStepDeg, parseWindSpeedMs, scoreColor } from '../src/lib/heatmap';
+import { cellStepDeg, makeRelativeColor, parseWindSpeedMs, scoreColor } from '../src/lib/heatmap';
 
 describe('scoreColor', () => {
   it('returns a hex colour for any score in range', () => {
@@ -15,6 +15,33 @@ describe('scoreColor', () => {
 
   it('moves continuously up the ramp (low and high ends differ)', () => {
     expect(scoreColor(5)).not.toBe(scoreColor(95));
+  });
+});
+
+describe('makeRelativeColor', () => {
+  it('spreads tightly-clustered values across the palette', () => {
+    const clustered = [66, 67, 67, 68, 66, 68, 67];
+    const { color } = makeRelativeColor(clustered);
+    // The lowest and highest of a near-uniform cluster should differ in colour.
+    expect(color(66)).not.toBe(color(68));
+  });
+
+  it('inverts so that lower values are "best" when invert is set (LCOE)', () => {
+    const lcoe = [45, 55, 65, 75, 85];
+    const normal = makeRelativeColor(lcoe);
+    const inverted = makeRelativeColor(lcoe, { invert: true });
+    // Lowest LCOE under invert should match the highest value's colour without invert.
+    expect(inverted.color(45)).toBe(normal.color(85));
+  });
+
+  it('reports the percentile domain it used', () => {
+    const { lo, hi } = makeRelativeColor([10, 20, 30, 40, 50]);
+    expect(hi).toBeGreaterThan(lo);
+  });
+
+  it('handles an empty set without throwing', () => {
+    const { color } = makeRelativeColor([]);
+    expect(color(0)).toMatch(/^#[0-9a-f]{6}$/);
   });
 });
 
