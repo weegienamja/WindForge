@@ -74,7 +74,12 @@ export function PowerCurveChart({ turbine, aep, className, style }: PowerCurveCh
       }}
     >
       <div style={{ width: '100%', height: 240 }}>
-        <ResponsiveContainer width="100%" height="100%" minWidth={0}>
+        <ResponsiveContainer
+          width="100%"
+          height="100%"
+          minWidth={0}
+          initialDimension={{ width: 1, height: 1 }}
+        >
           <LineChart data={points} margin={{ top: 8, right: 16, bottom: 24, left: 8 }}>
             <CartesianGrid stroke="var(--border-subtle)" strokeDasharray="2 4" vertical={false} />
             <XAxis

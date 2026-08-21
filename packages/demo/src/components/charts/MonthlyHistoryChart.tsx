@@ -162,7 +162,12 @@ export function MonthlyHistoryChart({
             {diagnostics.rmseAfterMs.toFixed(2)} m/s
           </div>
         )}
-        <ResponsiveContainer width="100%" height="100%" minWidth={0}>
+        <ResponsiveContainer
+          width="100%"
+          height="100%"
+          minWidth={0}
+          initialDimension={{ width: 1, height: 1 }}
+        >
           <LineChart data={rows} margin={{ top: 32, right: 16, left: 8, bottom: 8 }}>
             <CartesianGrid stroke="var(--border-subtle)" strokeOpacity={0.25} />
             <XAxis

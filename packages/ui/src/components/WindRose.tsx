@@ -134,6 +134,7 @@ export function WindRose({
         width: '100%',
         height: '100%',
         minWidth: 0,
+        initialDimension: { width: 1, height: 1 },
         children: null as unknown as React.ReactElement,
       },
       React.createElement(
