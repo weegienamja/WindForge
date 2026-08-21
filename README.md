@@ -1,44 +1,47 @@
 # WindForge
 
-Open-source wind site suitability with bias-corrected reanalysis and a Model Context Protocol server.
+Open-source, screening-level evidence for early wind-energy site investigation.
 
 [![npm version](https://img.shields.io/npm/v/@jamieblair/windforge-mcp?label=npm%20%40jamieblair%2Fwindforge-mcp)](https://www.npmjs.com/package/@jamieblair/windforge-mcp)
-[![Tests](https://img.shields.io/badge/tests-925%20passing-brightgreen)](#development)
+[![CI](https://img.shields.io/github/actions/workflow/status/weegienamja/WindForge/ci.yml?branch=main&label=CI)](https://github.com/weegienamja/WindForge/actions)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
-[![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178c6)](https://www.typescriptlang.org/)
-[![CI](https://img.shields.io/github/actions/workflow/status/weegienamja/WindForge/ci.yml?branch=main&label=build)](https://github.com/weegienamja/WindForge/actions)
 
-![WindForge analyse page](docs/screenshots/analyse-page.png)
+**Live demo:** https://wind-forge-demo.vercel.app
 
-## What this is
+WindForge combines public wind, elevation, OpenStreetMap, and geocoding evidence into an explained six-factor screen. It also includes reusable TypeScript modules for energy-yield sensitivity, layouts, wakes, noise, shadow flicker, wind-condition screening, finance, and report data, plus a local Model Context Protocol (MCP) server.
 
-- Six-factor scoring engine for wind turbine site suitability. Uses public data only: NASA POWER, ERA5, CERRA, OpenStreetMap, Open-Elevation.
-- Bias-corrected wind resource. NASA POWER is statistically corrected against ERA5 and CERRA reanalysis using quantile mapping or variance scaling.
-- Model Context Protocol server. Exposes the engine to Claude, Cursor, and any MCP-compatible agent through six tools.
+WindForge is for comparing candidate locations and identifying questions for deeper investigation. It is not a planning search, statutory designation search, bankable energy assessment, IEC site-suitability determination, acoustic compliance assessment, or substitute for site measurements and qualified professional review.
 
-## Demo
+## What the point analysis does
 
-Live demo: https://windforge.example
+The default public analysis runs on the server and uses:
 
-- Set `CDS_API_KEY` in your local env to enable bias correction in development.
+| Factor | Weight | Evidence |
+| --- | ---: | --- |
+| Wind resource | 0.35 | NASA POWER long-term gridded data |
+| Terrain suitability | 0.20 | Open-Elevation samples and derived local slope/aspect |
+| Grid proximity | 0.15 | OpenStreetMap power lines and substations |
+| Land-use compatibility | 0.15 | Supplementary OpenStreetMap land-use and protected-area geometry |
+| Planning feasibility | 0.10 | Nominatim regional context and OpenStreetMap wind installations |
+| Access logistics | 0.05 | OpenStreetMap road geometry |
+
+Provider failures are recorded as missing evidence. If a required factor is unavailable, WindForge withholds the composite score instead of substituting a neutral value. Results include completeness, provenance, failed sources, confidence, the raw/resolved wind resource, and any applied correction.
+
+The public demo uses raw NASA POWER wind data by default. The core library has an ERA5 monthly-history adapter for callers that deliberately retrieve and supply a reanalysis series. Automated CERRA correction is disabled because the former request did not create a defensible monthly climatology. See [Data sources](docs/DATA-SOURCES.md) and [Bias correction](docs/BIAS-CORRECTION.md).
 
 ## Quick start
 
-### Use it from Claude Desktop
+Requirements: Node.js 22–24 and pnpm 9.
 
-```json
-{
-  "mcpServers": {
-    "windforge": {
-      "command": "npx",
-      "args": ["-y", "@jamieblair/windforge-mcp"],
-      "env": { "CDS_API_KEY": "your-key-here" }
-    }
-  }
-}
+```bash
+pnpm install
+pnpm check
+pnpm dev --filter @jamieblair/windforge-demo
 ```
 
-### Use it as an SDK
+The demo is then available at `http://localhost:3000`. Basic analysis needs no credentials.
+
+### TypeScript SDK
 
 ```ts
 import { analyseSite } from '@jamieblair/windforge-core';
@@ -47,98 +50,74 @@ const result = await analyseSite({
   coordinate: { lat: 55.86, lng: -4.25 },
   hubHeightM: 100,
 });
+
+if (result.ok) {
+  console.log(result.value.compositeScore); // number, or null if evidence is incomplete
+  console.log(result.value.metadata.completeness);
+}
 ```
 
-### Use it as a CLI
+### MCP server
 
-```bash
-npx tsx packages/core/src/cli.ts 55.86 -4.25 --hub-height 100
+```json
+{
+  "mcpServers": {
+    "windforge": {
+      "command": "npx",
+      "args": ["-y", "@jamieblair/windforge-mcp"]
+    }
+  }
+}
 ```
 
-## What it measures
+The MCP server runs locally over stdio and exposes seven tools. See the [MCP setup guide](packages/mcp/README.md).
 
-| Factor | Weight | Source |
-| --- | --- | --- |
-| Wind resource | 0.35 | NASA POWER, optionally bias-corrected against ERA5 / CERRA |
-| Terrain suitability | 0.20 | Open-Elevation (slope, surface roughness) |
-| Grid proximity | 0.15 | OpenStreetMap Overpass (transmission lines, substations) |
-| Land use compatibility | 0.15 | OpenStreetMap (protected areas, residential buffers, farmland) |
-| Planning feasibility | 0.10 | Nominatim region context, OSM existing wind farms, density proxy |
-| Access logistics | 0.05 | OpenStreetMap road network |
+### Optional CDS access
 
-See [docs/TECHNICAL-SPEC.md](docs/TECHNICAL-SPEC.md) for the full scoring rubric, thresholds, and confidence rules.
+`CDS_API_KEY` is server-side only. It is used by the current CDS health check and explicit ERA5 retrieval APIs; it does not make the default point analysis automatically bias-correct itself. Never prefix it with `NEXT_PUBLIC_` or expose it to browser code.
 
-## Architecture
-
-WindForge is a pnpm + Turborepo monorepo with strict separation between `core` (pure TypeScript, headless, zero React or DOM dependencies) and `ui` (React, Recharts, Leaflet). The MCP server wraps `core` for AI agent consumption, and the demo app composes `core` and `ui` into the live analyse page.
-
+```dotenv
+CDS_API_KEY=
 ```
+
+Current CDS requests use the Climate Data Store retrieve-v1 job API. They can queue for minutes and are kept out of deterministic CI. Callers must review the dataset request and correction diagnostics before treating a corrected series as usable evidence.
+
+## Model boundaries
+
+- AEP is a Weibull/power-curve screening estimate with explicit loss assumptions. The displayed 10% and 20% downside cases are deterministic sensitivities, not P50/P75/P90 exceedance probabilities.
+- Noise is simplified ISO 9613-2-style propagation for screening only, not an ETSU-R-97 compliance determination.
+- Hourly wind can produce a labelled variability proxy; daily means produce no turbulence result. Extreme-wind helpers expose only a coarse return level of the mean-speed series. Neither path assigns an IEC class.
+- Terrain flow and wake calculations are engineering approximations without site validation or microscale CFD.
+- OpenStreetMap is contributed, incomplete data. Its protected-area tags are supplementary screening evidence, not an authoritative SSSI/SAC/SPA search.
+- The UK map is a coarse, partial snapshot. Coverage and completion are displayed in the UI.
+
+## Repository
+
+```text
 packages/
-  core/    Scoring engine, datasource clients, analysis modules
-  ui/      React components (charts, maps, score cards)
-  mcp/     Model Context Protocol server (six tools over stdio)
-  demo/    Next.js 15 demo app (the live site)
+  core/    Domain types, data adapters, geometry, scoring, and models
+  ui/      Reusable React components
+  mcp/     Local stdio MCP server
+  demo/    Next.js public application and heatmap worker
 ```
 
-## Bias correction
+Useful documentation:
 
-NASA POWER provides global wind data at roughly 50km resolution but is known to systematically misestimate speeds in complex terrain. WindForge fetches ERA5 (about 31km) or CERRA (about 5.5km, Europe) reanalysis when a Copernicus CDS API key is configured, then statistically corrects NASA POWER against the higher-resolution reference using quantile mapping or variance scaling. The corrected series, before-and-after diagnostics, and confidence rating are surfaced in every analysis. See [docs/BIAS-CORRECTION.md](docs/BIAS-CORRECTION.md) for the full methodology.
+- [Architecture](docs/ARCHITECTURE.md)
+- [API guide](docs/API.md)
+- [Data sources](docs/DATA-SOURCES.md)
+- [Bias correction](docs/BIAS-CORRECTION.md)
+- [Heatmap pipeline](docs/HEATMAP.md)
+- [Contributing](CONTRIBUTING.md)
+- [Security policy](SECURITY.md)
+- [Roadmap](ROADMAP.md)
 
-## Documentation
+`pnpm check` is the authoritative deterministic gate. It checks formatting, lint, TypeScript, all package tests, production builds, and the MCP publish tarball. CI also rejects high-severity production dependency advisories. Live-provider checks are separate because public APIs can be slow or unavailable.
 
-- [Technical specification](docs/TECHNICAL-SPEC.md). Every file, every function, every export.
-- [Architecture](docs/ARCHITECTURE.md). Design decisions and invariants.
-- [Bias correction methodology](docs/BIAS-CORRECTION.md). Algorithms, references, validation.
-- [Roadmap](ROADMAP.md). What is next. Honest version.
-- [Contributing](CONTRIBUTING.md). How to help.
-- [Changelog](CHANGELOG.md). Version history.
-- [Pre-publish checklist](PRE-PUBLISH-CHECKLIST.md). Release process.
+## Licence and data attribution
 
-## Development
+Code is available under the [MIT License](LICENSE).
 
-### Setup
+WindForge uses data from [NASA POWER](https://power.larc.nasa.gov/), [ECMWF/Copernicus ERA5](https://www.ecmwf.int/en/forecasts/dataset/ecmwf-reanalysis-v5), [OpenStreetMap contributors](https://www.openstreetmap.org/copyright), [Open-Elevation](https://open-elevation.com/), and Nominatim. Upstream datasets retain their own terms and attribution requirements.
 
-```bash
-pnpm install
-pnpm test
-pnpm dev --filter @jamieblair/windforge-demo
-```
-
-Node 20 or later and pnpm 9 or later are expected.
-
-### Gates
-
-```bash
-pnpm check          # Typecheck, lint, tests, build verification
-pnpm test           # 925 tests across four packages
-pnpm test:watch     # Vitest UI
-```
-
-The `pnpm check` script aggregates the typecheck, lint, full test run, demo production build verification, and the MCP package validation. CI mirrors this gate.
-
-### Publishing
-
-```bash
-pnpm --filter @jamieblair/windforge-mcp validate-publish
-cd packages/mcp && npm publish
-```
-
-The validator asserts tarball size, contents, package.json metadata, and required README sections before allowing a publish.
-
-## License and credits
-
-License: MIT. See [LICENSE](LICENSE).
-
-Author: Jamie Blair, [jamieblair.co.uk](https://jamieblair.co.uk).
-
-### Acknowledgements
-
-WindForge stands on public datasets. Thanks to the teams that maintain them.
-
-- [NASA POWER](https://power.larc.nasa.gov/) for global hourly, daily, and monthly meteorology.
-- [ECMWF ERA5](https://www.ecmwf.int/en/forecasts/dataset/ecmwf-reanalysis-v5) for global reanalysis.
-- [Copernicus CERRA](https://climate.copernicus.eu/copernicus-regional-reanalysis-europe-cerra) for European high-resolution reanalysis.
-- [OpenStreetMap](https://www.openstreetmap.org/) contributors for grid, land use, and road data, available under the [Open Database License](https://opendatacommons.org/licenses/odbl/).
-- [Open-Elevation](https://open-elevation.com/) for free elevation queries.
-
-Built in Scotland.
+Built and maintained by Jamie Blair.

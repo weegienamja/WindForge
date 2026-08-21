@@ -1,12 +1,12 @@
 {
   "name": "windforge",
   "private": true,
-  "description": "Professional wind energy site assessment platform",
+  "description": "Screening-level wind energy site evidence and pre-feasibility toolkit",
   "author": "Jamie Blair <jamie@jamieblair.co.uk>",
   "license": "MIT",
   "packageManager": "pnpm@9.15.4",
   "engines": {
-    "node": ">=18"
+    "node": ">=22 <25"
   },
   "scripts": {
     "build": "turbo build",
@@ -14,13 +14,29 @@
     "test": "turbo test",
     "lint": "turbo lint",
     "format": "turbo format",
-    "check": "turbo check && pnpm --filter @jamieblair/windforge-demo verify-build && pnpm --filter @jamieblair/windforge-mcp validate-publish"
+    "format:check": "biome format .",
+    "check": "pnpm format:check && turbo run lint check test build && pnpm --filter @jamieblair/windforge-mcp validate-publish"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.4.9",
-    "next": "^15.0.0",
+    "next": "^15.5.23",
     "tsx": "^4.21.0",
     "turbo": "^2.8.21",
     "typescript": "^5.7.3"
+  },
+  "pnpm": {
+    "overrides": {
+      "@babel/core": "7.29.6",
+      "@hono/node-server": "2.1.1",
+      "body-parser": "2.3.0",
+      "dompurify": "3.4.14",
+      "fast-uri": "3.1.5",
+      "hono": "4.13.3",
+      "ip-address": "10.5.0",
+      "nanoid@3": "3.3.18",
+      "postcss": "8.5.26",
+      "qs": "6.15.3",
+      "sharp": "0.35.3"
+    }
   }
 }

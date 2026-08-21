@@ -1,186 +1,51 @@
-# Data Sources
+# Data sources and evidence quality
 
-All default data comes from free, publicly accessible APIs. No paid API keys required for basic operation. Optional higher-resolution sources (ERA5, CERRA) are available with free registration.
+WindForge's default point analysis uses public services without credentials. Availability, spatial resolution, completeness, and licensing differ by provider, so every analysis carries source and failure metadata.
 
----
+## Default providers
 
-## NASA POWER API (Default)
+| Provider | Runtime role | Typical limitations | Failure behaviour |
+| --- | --- | --- | --- |
+| NASA POWER | Long-term wind summary and monthly history | Coarse global grid; not a site measurement | Wind factor is unavailable and the composite is withheld |
+| Open-Elevation | Elevation samples used to derive slope and aspect | Resolution/underlying DEM varies; outages occur | Terrain factor is unavailable and the composite is withheld |
+| OpenStreetMap Overpass | Grid, roads, land use, protected-area tags, receptors, existing wind assets | Contributed data is incomplete and non-authoritative | Affected factors are unavailable; absence is not treated as clear evidence |
+| Nominatim | Country/region context and place labels | Geocoding context is not a planning database | Planning factor becomes unavailable when required context cannot be retrieved |
 
-**Endpoint:** `https://power.larc.nasa.gov/api/temporal/`
+All outbound requests use timeouts and structured errors. The Overpass adapters use form-encoded POST requests, JSON response negotiation, identifying user-agent headers, conservative retry behaviour, and alternate public endpoints. NASA monthly requests for the same coordinate/window are coalesced while in flight.
 
-The primary wind data source. Provides historical wind speed and direction data from 1981 to near real-time at a global scale.
+## NASA POWER
 
-### Parameters Used
+The analysis uses NASA POWER climatology/monthly point data including wind speed at 2 m, 10 m, and 50 m and wind direction where available. Its roughly 0.5° × 0.625° grid cannot resolve a candidate parcel, local obstacles, or complex-terrain flow. WindForge applies a fixed open-terrain power-law exponent of 0.14 for hub-height screening and records that assumption. It does not infer aerodynamic roughness from elevation.
 
-| Parameter | Description |
-|-----------|-------------|
-| `WS2M` | Wind speed at 2 metres (m/s) |
-| `WS10M` | Wind speed at 10 metres (m/s) |
-| `WS50M` | Wind speed at 50 metres (m/s) |
-| `WD10M` | Wind direction at 10 metres (degrees) |
-| `WD50M` | Wind direction at 50 metres (degrees) |
+NASA POWER is suitable for regional pre-screening, not bankable yield prediction.
 
-### Temporal Resolutions
+## ERA5 via the Copernicus Climate Data Store
 
-| Resolution | URL Pattern | Date Range | Cache TTL |
-|------------|------------|------------|-----------|
-| Climatology | `/api/temporal/climatology/point` | Full record | 1 hour |
-| Monthly | `/api/temporal/monthly/point` | `start=1981&end=2025` (year) | 7 days |
-| Daily | `/api/temporal/daily/point` | `start=YYYYMMDD&end=YYYYMMDD` | 24 hours |
-| Hourly | `/api/temporal/hourly/point` | `start=YYYYMMDD&end=YYYYMMDD` | 24 hours |
+The optional ERA5 adapter uses the current CDS retrieve-v1 process/job API:
 
-### Rate Limits
+1. submit a dataset request;
+2. poll the returned job;
+3. obtain a result asset;
+4. parse monthly wind history from NetCDF.
 
-- No formal rate limit published, but throttles rapid sequential requests
-- Implementation spaces sequential calls by at least 1 second
-- Cache aggressively: historical data does not change
+It requires a server-side `CDS_API_KEY`. Queue time can be minutes. ERA5 is not fetched automatically by `analyseSite` or by the public browser flow. An advanced caller must retrieve, inspect, and pass a reanalysis source explicitly. Deterministic CI mocks this boundary and does not consume CDS quota.
 
-### Data Quality
+## CERRA
 
-- Missing values indicated by negative numbers (e.g. -999)
-- Data coverage from 1981 to approximately 2 months ago
-- Spatial resolution: 0.5 x 0.625 degrees (approximately 50km)
+CERRA domain checks and NetCDF parsing utilities remain available for controlled research, but automated CERRA retrieval/correction is disabled in this release. The former request sampled one sub-daily instant per month, which is not a valid monthly climatology. The API returns an explicit configuration error instead of a plausible-looking result.
 
----
+## OpenStreetMap evidence
 
-## ERA5 Reanalysis (Optional)
+WindForge requests node, way, and relation geometry and converts it to Point, LineString, Polygon, or MultiPolygon features. Distances are measured to feature geometry, not centres. Setbacks buffer the actual feature and are clipped to the site polygon.
 
-**API:** Copernicus Climate Data Store (CDS) API
-**Resolution:** 31km global grid
-**Coverage:** 1940 to present (hourly)
+OpenStreetMap tags such as `boundary=protected_area` are supplementary screening evidence. They do not establish a statutory SSSI, SAC, SPA, flood-zone, aviation, or other designation unless the exact authoritative designation and source are independently known. Flood-zone and steep-slope concepts that lack an implemented authoritative end-to-end source are not advertised as detected constraints.
 
-ERA5 provides higher-resolution and more recent wind data than NASA POWER. It requires a free CDS API key (registration at [cds.climate.copernicus.eu](https://cds.climate.copernicus.eu)).
+OpenStreetMap data is © OpenStreetMap contributors and available under ODbL. Applications using WindForge remain responsible for attribution and upstream terms.
 
-### What It Provides
+## Provider health
 
-- Wind speed at 100m and 10m height levels
-- Hourly temporal resolution
-- Global coverage at 0.25-degree (~31km) grid spacing
+`GET /api/health` performs uncached runtime probes for the public demo's providers. It reports `ok`, `degraded`, or `error` without returning credential values. CDS is reported as not configured when no server-side key exists. A healthy probe means the endpoint responded at that moment; it is not a guarantee that a later long-running analysis will succeed.
 
-### Usage
+## What missing evidence means
 
-Pass your CDS API key to `fetchEra5WindData()`. If no key is provided, WindForge falls back to NASA POWER automatically.
-
-### Rate Limits
-
-- CDS API uses an asynchronous queue system (submit request, poll for completion, download)
-- Requests can take seconds to minutes depending on queue load
-- Cache results for 7 days minimum
-
----
-
-## CERRA Reanalysis (Optional, Europe Only)
-
-**API:** Copernicus Climate Data Store (CDS) API
-**Resolution:** 5.5km grid (European domain only)
-**Coverage:** 1984 to 2021
-
-CERRA (Copernicus European Regional ReAnalysis) provides significantly higher resolution than both NASA POWER and ERA5, but only covers Europe.
-
-### Domain
-
-Covers Europe roughly from Iceland (72N) to the Mediterranean (20N), and from the mid-Atlantic (-32W) to the Urals (45E). Use `isInCerraDomain(coord)` to check coverage.
-
-### Usage
-
-Pass your CDS API key to `fetchCerraWindData()`. Coordinates outside Europe are automatically rejected with a clear error message.
-
----
-
-## Open-Elevation API
-
-**Endpoint:** `https://api.open-elevation.com/api/v1/lookup`
-
-Provides elevation data for any coordinate worldwide.
-
-### What It Returns
-
-- Elevation in metres above sea level
-- Slope is calculated from elevation samples at neighbouring points
-- Roughness class is derived from elevation variance in the surrounding area
-
-### Limitations
-
-- Free tier, no API key required
-- Occasional downtime
-- Resolution varies by region (depends on the underlying SRTM/ASTER data)
-
-### Cache
-
-- TTL: 24 hours (terrain does not change)
-
----
-
-## OpenStreetMap Overpass API
-
-**Endpoint:** `https://overpass-api.de/api/interpreter`
-
-Queries OpenStreetMap for infrastructure, land use, and road data. This is the most heavily used external API and also the most unreliable, so WindForge has extensive resilience measures around it.
-
-### Queries Used
-
-| Query Type | OSM Tags | Purpose |
-|-----------|----------|---------|
-| Transmission lines | `power=line`, `voltage >= 132000` | Grid proximity scoring |
-| Substations | `power=substation` | Grid proximity scoring |
-| Nature reserves | `leisure=nature_reserve` | Hard constraint detection |
-| Protected areas | `boundary=protected_area` | Hard constraint detection |
-| Military zones | `landuse=military` | Hard constraint detection |
-| Airports | `aeroway=*` | Hard constraint detection |
-| Cemeteries | `landuse=cemetery` | Hard constraint detection |
-| Residential areas | `landuse=residential` | Noise buffer (soft constraint) |
-| Water bodies | `natural=water`, `waterway=*` | Foundation concern (soft) |
-| Forests | `landuse=forest` | Clearing required (soft) |
-| Farmland | `landuse=farmland` | Positive indicator |
-| Roads | `highway=*` (by category) | Access logistics scoring |
-| Wind turbines | `generator:source=wind` | Planning precedent |
-
-### Rate Limits
-
-- Heavily rate-limited public infrastructure
-- 20-second timeout per query
-- Maximum 1 retry on failure (5-second wait)
-- All results cached for 24 hours minimum
-
-### Resilience
-
-- Queries batched where possible to reduce separate requests
-- On timeout: graceful degradation to neutral score (50) with confidence 'low'
-- On total failure: analysis completes with wind and terrain scores only
-- The UI clearly shows which factors have real data vs. fallbacks
-
----
-
-## OSM Nominatim
-
-**Endpoint:** `https://nominatim.openstreetmap.org/reverse`
-
-Reverse geocoding to determine country and region for the planning feasibility scorer.
-
-### Rate Limits
-
-- Strict 1 request per second limit (enforced by Nominatim Terms of Service)
-- Must include `User-Agent` header identifying the application
-- Results cached for 24 hours
-
-### What It Returns
-
-- Country code and name
-- Region/county
-- Display name
-
----
-
-## Data Freshness Summary
-
-| Source | Freshness | Cache TTL | Key Required |
-|--------|----------|-----------|--------------|
-| NASA POWER climatology | Static (full record avg) | 1 hour | No |
-| NASA POWER monthly | ~2 months behind | 7 days | No |
-| NASA POWER daily | ~1 month behind | 24 hours | No |
-| NASA POWER hourly | ~1 month behind | 24 hours | No |
-| ERA5 | ~5 days behind | 7 days | Yes (free) |
-| CERRA | Fixed (ends 2021) | 7 days | Yes (free) |
-| Open-Elevation | Static | 24 hours | No |
-| Overpass | Contributed data | 24 hours | No |
-| Nominatim | Contributed data | 24 hours | No |
+WindForge distinguishes complete, degraded, materially incomplete, and indeterminate results. Optional reanalysis not being configured is a visible degradation but does not invalidate raw NASA screening. Failure of a required scoring source suppresses the composite score. Individual successful factors can still be displayed with their provenance.
