@@ -2,15 +2,16 @@ import type { MonthlyWindHistory, DailyWindData } from '../types/datasources.js'
 import type { ExtremeWindResult } from '../types/wind-assessment.js';
 
 /**
- * Estimate extreme wind speeds using Gumbel Type I distribution fitted to
- * annual maximum wind speeds.
+ * Estimate a coarse return level using Gumbel Type I fitted to annual maxima
+ * from the supplied mean-speed series.
  *
  * Extracts annual maxima from historical data and fits the Gumbel distribution
- * to estimate 50-year and 1-year return period wind speeds.
+ * to estimate 50-year and 1-year return levels. These are not gust/extreme
+ * wind speeds and are not suitable for assigning an IEC turbine class.
  *
  * @param history - Monthly or daily wind history data
  * @param heightKey - Which height to analyse: 'ws10m' or 'ws50m' (default: 'ws50m')
- * @returns Extreme wind estimation with return period speeds and IEC classification
+ * @returns Coarse return-level result with no IEC class inference
  */
 export function estimateExtremeWind(
   history: MonthlyWindHistory | DailyWindData,
@@ -30,15 +31,9 @@ export function estimateExtremeWind(
   // Return period wind speeds
   // V_T = mu - sigma * ln(-ln(1 - 1/T))
   const v50 = gumbelQuantile(mu, sigma, 50);
-  const v1 = gumbelQuantile(mu, sigma, 1);
 
   // Determine reference height
   const refHeight = heightKey === 'ws50m' ? 50 : 10;
-
-  // IEC wind class based on Vref (50-year return at hub height)
-  // For now, using the reference height value directly
-  // Class I: Vref = 50 m/s, II: 42.5, III: 37.5
-  const iecWindClass = classifyWindClass(v50);
 
   // Confidence assessment
   const isMonthly = 'startYear' in history;
@@ -54,14 +49,17 @@ export function estimateExtremeWind(
     gumbelMu: Math.round(mu * 100) / 100,
     gumbelSigma: Math.round(sigma * 100) / 100,
     v50YearMs: Math.round(v50 * 100) / 100,
-    v1YearMs: Math.round(v1 * 100) / 100,
-    iecWindClass,
+    v1YearMs: null,
+    referenceCategory: null,
     confidence,
     referenceHeightM: refHeight,
+    assessmentLevel: 'coarse_return_level',
+    limitation:
+      'Return levels are fitted to coarse mean-speed observations, not gust maxima; no IEC turbine class can be inferred.',
     summary:
-      `50-year return wind speed: ${v50.toFixed(1)} m/s at ${heightLabel}. ` +
-      `1-year return: ${v1.toFixed(1)} m/s. ` +
-      `IEC Wind Class ${iecWindClass}. ` +
+      `50-year return level of the input mean-speed series: ${v50.toFixed(1)} m/s at ${heightLabel}. ` +
+      'A one-year return level is undefined for this formulation and is not reported. ' +
+      'No IEC turbine class is assigned. ' +
       `${dataNote} ` +
       `Based on ${annualMaxima.length} years of data.`,
   };
@@ -81,7 +79,7 @@ function extractAnnualMaxima(
     for (const rec of data.records) {
       const speed = rec[heightKey];
       const current = yearMaxMap.get(rec.year) ?? 0;
-      if (speed > current) {
+      if (speed !== null && speed > current) {
         yearMaxMap.set(rec.year, speed);
       }
     }
@@ -91,7 +89,7 @@ function extractAnnualMaxima(
       const year = parseInt(rec.date.substring(0, 4), 10);
       const speed = rec[heightKey];
       const current = yearMaxMap.get(year) ?? 0;
-      if (speed > current) {
+      if (speed !== null && speed > current) {
         yearMaxMap.set(year, speed);
       }
     }
@@ -135,32 +133,15 @@ export function fitGumbel(values: number[]): { mu: number; sigma: number } {
  * @param sigma - Scale parameter
  * @param returnPeriod - Return period in years (e.g. 50)
  */
-export function gumbelQuantile(
-  mu: number,
-  sigma: number,
-  returnPeriod: number,
-): number {
-  // T=1 gives p=0 which is undefined; clamp to a minimum of 1.001
-  const clampedT = Math.max(returnPeriod, 1.001);
-  const p = 1 - 1 / clampedT;
+export function gumbelQuantile(mu: number, sigma: number, returnPeriod: number): number {
+  if (!Number.isFinite(returnPeriod) || returnPeriod <= 1) {
+    throw new RangeError('Gumbel return period must be greater than one year.');
+  }
+  const p = 1 - 1 / returnPeriod;
   return mu - sigma * Math.log(-Math.log(p));
 }
 
-/**
- * Classify wind class according to IEC 61400-1.
- * Based on reference wind speed (Vref = 50-year return).
- */
-function classifyWindClass(v50: number): 'I' | 'II' | 'III' | 'S' {
-  if (v50 >= 50) return 'I';
-  if (v50 >= 42.5) return 'II';
-  if (v50 >= 37.5) return 'III';
-  return 'S'; // Special class (below Class III)
-}
-
-function assessConfidence(
-  yearCount: number,
-  isMonthlyData: boolean,
-): 'high' | 'medium' | 'low' {
+function assessConfidence(yearCount: number, isMonthlyData: boolean): 'high' | 'medium' | 'low' {
   if (isMonthlyData) {
     // Monthly data always has lower confidence for extremes
     return yearCount >= 20 ? 'medium' : 'low';
@@ -180,11 +161,13 @@ function insufficientDataResult(
     annualMaxima,
     gumbelMu: 0,
     gumbelSigma: 0,
-    v50YearMs: 0,
-    v1YearMs: 0,
-    iecWindClass: 'S',
+    v50YearMs: null,
+    v1YearMs: null,
+    referenceCategory: null,
     confidence: 'low',
     referenceHeightM: refHeight,
-    summary: `Insufficient data for extreme wind analysis (${annualMaxima.length} years, minimum 5 required).`,
+    assessmentLevel: 'unsupported',
+    limitation: 'At least five annual maxima are required even for a coarse return-level fit.',
+    summary: `Insufficient data for a coarse return-level fit (${annualMaxima.length} years, minimum 5 required).`,
   };
 }

@@ -29,12 +29,12 @@ const SIMPLE_THRUST_CURVE: ThrustCurvePoint[] = [
   { windSpeedMs: 0, thrustCoefficient: 0 },
   { windSpeedMs: 3, thrustCoefficient: 0 },
   { windSpeedMs: 4, thrustCoefficient: 0.82 },
-  { windSpeedMs: 6, thrustCoefficient: 0.80 },
+  { windSpeedMs: 6, thrustCoefficient: 0.8 },
   { windSpeedMs: 8, thrustCoefficient: 0.78 },
   { windSpeedMs: 10, thrustCoefficient: 0.75 },
-  { windSpeedMs: 12, thrustCoefficient: 0.40 },
-  { windSpeedMs: 15, thrustCoefficient: 0.20 },
-  { windSpeedMs: 20, thrustCoefficient: 0.10 },
+  { windSpeedMs: 12, thrustCoefficient: 0.4 },
+  { windSpeedMs: 15, thrustCoefficient: 0.2 },
+  { windSpeedMs: 20, thrustCoefficient: 0.1 },
   { windSpeedMs: 25, thrustCoefficient: 0.05 },
 ];
 
@@ -113,7 +113,7 @@ describe('jensenSingleWake', () => {
 
   it('larger wake decay constant means faster recovery', () => {
     const lowK = jensenSingleWake(0.8, 63, 700, 0, 63, 0.04);
-    const highK = jensenSingleWake(0.8, 63, 700, 0, 63, 0.10);
+    const highK = jensenSingleWake(0.8, 63, 700, 0, 63, 0.1);
 
     // Higher k = larger wake radius = more diluted = lower deficit
     expect(highK.velocityDeficit).toBeLessThan(lowK.velocityDeficit);
@@ -196,7 +196,7 @@ describe('interpolateThrustCoefficient', () => {
   it('interpolates between points', () => {
     const ct = interpolateThrustCoefficient(SIMPLE_THRUST_CURVE, 7);
     expect(ct).toBeGreaterThan(0.78);
-    expect(ct).toBeLessThan(0.80);
+    expect(ct).toBeLessThan(0.8);
   });
 
   it('returns exact value at a point', () => {
@@ -244,7 +244,7 @@ describe('wakeDecayFromRoughness', () => {
     expect(wakeDecayFromRoughness(0)).toBe(0.04);
     expect(wakeDecayFromRoughness(1)).toBe(0.06);
     expect(wakeDecayFromRoughness(2)).toBe(0.075);
-    expect(wakeDecayFromRoughness(3)).toBe(0.10);
+    expect(wakeDecayFromRoughness(3)).toBe(0.1);
   });
 
   it('returns default for unknown roughness class', () => {
@@ -258,7 +258,11 @@ describe('computeJensenWakeField', () => {
   it('returns free-stream speed for a single turbine', () => {
     const turbines = [makeTurbinePosition(0, 55.0, -4.0)];
     const { effectiveSpeedMs } = computeJensenWakeField(
-      turbines, 8, 270, SIMPLE_THRUST_CURVE, 0.075,
+      turbines,
+      8,
+      270,
+      SIMPLE_THRUST_CURVE,
+      0.075,
     );
     expect(effectiveSpeedMs[0]).toBe(8);
   });
@@ -266,11 +270,15 @@ describe('computeJensenWakeField', () => {
   it('downstream turbine has reduced speed in 2-turbine inline layout', () => {
     // Two turbines aligned with wind direction (west wind)
     const turbines = [
-      makeTurbinePosition(0, 55.0, -4.01),   // upstream (west)
-      makeTurbinePosition(1, 55.0, -3.99),   // downstream (east)
+      makeTurbinePosition(0, 55.0, -4.01), // upstream (west)
+      makeTurbinePosition(1, 55.0, -3.99), // downstream (east)
     ];
     const { effectiveSpeedMs } = computeJensenWakeField(
-      turbines, 8, 270, SIMPLE_THRUST_CURVE, 0.075,
+      turbines,
+      8,
+      270,
+      SIMPLE_THRUST_CURVE,
+      0.075,
     );
     expect(effectiveSpeedMs[0]).toBe(8); // upstream unaffected
     expect(effectiveSpeedMs[1]).toBeLessThan(8); // downstream has wake
@@ -281,11 +289,15 @@ describe('computeJensenWakeField', () => {
     // Two turbines perpendicular to wind
     const turbines = [
       makeTurbinePosition(0, 55.0, -4.0),
-      makeTurbinePosition(1, 55.005, -4.0),  // due north
+      makeTurbinePosition(1, 55.005, -4.0), // due north
     ];
     // Wind from west (270) - both should be unaffected
     const { effectiveSpeedMs } = computeJensenWakeField(
-      turbines, 8, 270, SIMPLE_THRUST_CURVE, 0.075,
+      turbines,
+      8,
+      270,
+      SIMPLE_THRUST_CURVE,
+      0.075,
     );
     expect(effectiveSpeedMs[0]).toBe(8);
     expect(effectiveSpeedMs[1]).toBe(8);
@@ -300,7 +312,11 @@ describe('computeJensenWakeField', () => {
     ];
     // Wind from west
     const { effectiveSpeedMs } = computeJensenWakeField(
-      turbines, 8, 270, SIMPLE_THRUST_CURVE, 0.075,
+      turbines,
+      8,
+      270,
+      SIMPLE_THRUST_CURVE,
+      0.075,
     );
     // Each downstream turbine should be progressively slower
     expect(effectiveSpeedMs[0]).toBe(8);
@@ -361,12 +377,13 @@ describe('bastankhahExpansionFromRoughness', () => {
 
 describe('computeBastankhahWakeField', () => {
   it('downstream turbine has reduced speed in 2-turbine inline layout', () => {
-    const turbines = [
-      makeTurbinePosition(0, 55.0, -4.01),
-      makeTurbinePosition(1, 55.0, -3.99),
-    ];
+    const turbines = [makeTurbinePosition(0, 55.0, -4.01), makeTurbinePosition(1, 55.0, -3.99)];
     const { effectiveSpeedMs } = computeBastankhahWakeField(
-      turbines, 8, 270, SIMPLE_THRUST_CURVE, 0.04,
+      turbines,
+      8,
+      270,
+      SIMPLE_THRUST_CURVE,
+      0.04,
     );
     expect(effectiveSpeedMs[0]).toBe(8);
     expect(effectiveSpeedMs[1]).toBeLessThan(8);
@@ -544,12 +561,12 @@ describe('calculateDirectionalWakeLoss', () => {
       { id: 1, location: { lat: 55.0, lng: -3.99 }, hubHeightM: 80, rotorDiameterM: 90 },
     ];
 
-    const offshoreResult = calculateDirectionalWakeLoss(
-      layout, turbine, makeWindData(), 'jensen', { roughnessClass: 0 },
-    );
-    const onshoreResult = calculateDirectionalWakeLoss(
-      layout, turbine, makeWindData(), 'jensen', { roughnessClass: 2 },
-    );
+    const offshoreResult = calculateDirectionalWakeLoss(layout, turbine, makeWindData(), 'jensen', {
+      roughnessClass: 0,
+    });
+    const onshoreResult = calculateDirectionalWakeLoss(layout, turbine, makeWindData(), 'jensen', {
+      roughnessClass: 2,
+    });
 
     // Both should have different wake decay constants
     expect(offshoreResult.wakeDecayConstant).toBeLessThan(onshoreResult.wakeDecayConstant);

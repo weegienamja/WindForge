@@ -159,7 +159,7 @@ describe('scoreWindResource', () => {
   });
 
   it('uses higher alpha for rougher terrain', () => {
-    const smooth = scoreWindResource(makeParams({ windShearAlpha: 0.10 }));
+    const smooth = scoreWindResource(makeParams({ windShearAlpha: 0.1 }));
     const rough = scoreWindResource(makeParams({ windShearAlpha: 0.25 }));
     expect(smooth.ok && rough.ok).toBe(true);
     if (smooth.ok && rough.ok) {

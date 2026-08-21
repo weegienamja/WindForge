@@ -23,9 +23,7 @@ export function generateShadowCalendar(
   const receptorHeightM = options?.receptorHeightM ?? 2;
 
   // month (1-12) -> hour (0-23) -> count of days with flicker
-  const matrix: number[][] = Array.from({ length: 12 }, () =>
-    Array.from({ length: 24 }, () => 0),
-  );
+  const matrix: number[][] = Array.from({ length: 12 }, () => Array.from({ length: 24 }, () => 0));
 
   let totalHours = 0;
 
@@ -94,8 +92,18 @@ export function summariseShadowCalendar(calendar: ShadowCalendar): string {
   }
 
   const monthNames = [
-    'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-    'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+    'Jan',
+    'Feb',
+    'Mar',
+    'Apr',
+    'May',
+    'Jun',
+    'Jul',
+    'Aug',
+    'Sep',
+    'Oct',
+    'Nov',
+    'Dec',
   ];
 
   if (calendar.totalHours === 0) {

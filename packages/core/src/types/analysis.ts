@@ -52,16 +52,56 @@ export interface AnalysisMetadata {
   durationMs: number;
   hubHeightM: number;
   windShearAlpha: number;
+  /** Why the shear exponent was selected; currently an explicit screening assumption. */
+  windShearBasis: string;
+  /** Whether enough required evidence was available to publish a composite score. */
+  completeness: AnalysisCompleteness;
+  /** Per-source evidence state, including failures that suppress the composite. */
+  evidence: EvidenceStatus[];
   /**
    * Optional reanalysis bias-correction summary attached when the analysis
    * was reconciled against ERA5 or CERRA. Omits the corrected summary
    * itself (which is already reflected in the wind-resource factor).
    */
   reconciliation?: ReconciliationMetadata;
-  /** Reanalysis sources the engine attempted to fetch automatically. */
+  /** Reanalysis sources an orchestrating caller attempted to supply/fetch. */
   reanalysisAttempted?: readonly ('era5' | 'cerra')[];
-  /** Reanalysis sources the engine successfully fetched. */
+  /** Reanalysis sources successfully supplied to this analysis. */
   reanalysisSucceeded?: readonly ('era5' | 'cerra')[];
+}
+
+export type AnalysisCompletenessStatus =
+  | 'complete'
+  | 'degraded'
+  | 'materially_incomplete'
+  | 'indeterminate';
+
+export interface AnalysisCompleteness {
+  status: AnalysisCompletenessStatus;
+  compositeEligible: boolean;
+  missingRequiredFactors: ScoringFactor[];
+  detail: string;
+}
+
+export interface EvidenceStatus {
+  source: string;
+  factor: ScoringFactor | 'reanalysis';
+  status: 'available' | 'unavailable' | 'not_configured' | 'not_applied';
+  requiredForComposite: boolean;
+  detail: string;
+}
+
+export interface WindResourceResult {
+  /** Unmodified NASA POWER summary. */
+  raw: import('./datasources.js').WindDataSummary;
+  /** The one summary used by both scoring and downstream energy calculations. */
+  resolved: import('./datasources.js').WindDataSummary;
+  primarySource: 'NASA POWER';
+  correction: {
+    status: 'applied' | 'not_configured' | 'not_applied' | 'unavailable';
+    reference: 'era5' | 'cerra' | null;
+    detail: string;
+  };
 }
 
 /** Bias-correction summary surfaced on `AnalysisMetadata`. */
@@ -83,7 +123,9 @@ export interface ReconciliationMetadata {
 
 export interface SiteAnalysis {
   coordinate: LatLng;
-  compositeScore: number;
+  /** Null when any required scoring factor lacks evidence. */
+  compositeScore: number | null;
+  windResource: WindResourceResult | null;
   factors: FactorScore[];
   hardConstraints: Constraint[];
   warnings: Warning[];
@@ -99,14 +141,12 @@ export interface AnalysisOptions {
    * Optional pre-fetched reanalysis sources. When provided alongside a
    * successful NASA POWER fetch, the engine reconciles wind speeds via
    * `reconcileWindData` and uses the corrected summary for scoring.
-   * The caller fetches ERA5 / CERRA themselves (these require API keys).
+   * The caller fetches and validates any reanalysis source itself.
    */
   reanalysis?: ReanalysisOverride;
   /**
-   * Optional CDS API key. When provided (or when `CDS_API_KEY` is set in
-   * the environment), the engine will automatically fetch ERA5 and (where
-   * applicable) CERRA monthly history and reconcile NASA POWER against
-   * them. Ignored if `reanalysis` is also supplied.
+   * @deprecated `analyseSite` does not perform hidden credential-backed
+   * retrieval. Fetch reanalysis in trusted server code and pass `reanalysis`.
    */
   cdsApiKey?: string;
 }

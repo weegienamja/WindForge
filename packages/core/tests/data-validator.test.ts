@@ -43,6 +43,7 @@ describe('Data Validator', () => {
       const result = validateWindData(null);
       expect(result.valid).toBe(false);
       expect(result.errors.length).toBeGreaterThan(0);
+      expect(result.cleanedData).toBeNull();
     });
 
     it('rejects NaN annualAverageSpeedMs', () => {
@@ -68,27 +69,27 @@ describe('Data Validator', () => {
       expect(result.valid).toBe(false);
     });
 
-    it('warns on NaN monthly speed and uses 0', () => {
+    it('rejects a NaN monthly speed without substituting zero', () => {
       const input = validWindInput();
       input.monthlyAverages[3].averageSpeedMs = NaN;
       const result = validateWindData(input);
-      expect(result.warnings.some((w: string) => w.includes('Month 4'))).toBe(true);
-      expect(result.cleanedData.monthlyAverages[3].averageSpeedMs).toBe(0);
+      expect(result.errors.some((e: string) => e.includes('Month 4'))).toBe(true);
+      expect(result.cleanedData).toBeNull();
     });
 
     it('wraps prevailing direction outside 0-360', () => {
       const input = validWindInput();
       input.prevailingDirectionDeg = 400;
       const result = validateWindData(input);
-      expect(result.cleanedData.prevailingDirectionDeg).toBeCloseTo(40, 1);
+      expect(result.cleanedData?.prevailingDirectionDeg).toBeCloseTo(40, 1);
     });
 
-    it('clamps annual speed to 0-100 range', () => {
+    it('rejects an out-of-range annual speed instead of clamping to zero', () => {
       const input = validWindInput();
       input.annualAverageSpeedMs = -5;
       const result = validateWindData(input);
-      // -5 is not NaN and not in 0-100, but the code checks range and clamps
-      expect(result.cleanedData.annualAverageSpeedMs).toBe(0);
+      expect(result.valid).toBe(false);
+      expect(result.cleanedData).toBeNull();
     });
   });
 
@@ -104,32 +105,33 @@ describe('Data Validator', () => {
       expect(result.valid).toBe(false);
     });
 
-    it('warns on elevation below -500m', () => {
+    it('rejects elevation below -500m', () => {
       const input = validElevationInput();
       input.elevationM = -600;
       const result = validateElevationData(input);
-      expect(result.warnings.some((w: string) => w.includes('elevationM'))).toBe(true);
+      expect(result.errors.some((e: string) => e.includes('elevationM'))).toBe(true);
+      expect(result.cleanedData).toBeNull();
     });
 
-    it('warns on elevation above 9000m', () => {
+    it('rejects elevation above 9000m', () => {
       const input = validElevationInput();
       input.elevationM = 10000;
       const result = validateElevationData(input);
-      expect(result.warnings.some((w: string) => w.includes('elevationM'))).toBe(true);
+      expect(result.errors.some((e: string) => e.includes('elevationM'))).toBe(true);
     });
 
-    it('clamps elevation to valid range in cleaned data', () => {
+    it('does not invent a boundary value for invalid elevation', () => {
       const input = validElevationInput();
       input.elevationM = 15000;
       const result = validateElevationData(input);
-      expect(result.cleanedData.elevationM).toBe(9000);
+      expect(result.cleanedData).toBeNull();
     });
 
     it('wraps aspect outside 0-360', () => {
       const input = validElevationInput();
       input.aspectDeg = -30;
       const result = validateElevationData(input);
-      expect(result.cleanedData.aspectDeg).toBeCloseTo(330, 1);
+      expect(result.cleanedData?.aspectDeg).toBeCloseTo(330, 1);
     });
   });
 
@@ -144,25 +146,19 @@ describe('Data Validator', () => {
     });
 
     it('rejects coordinates with out-of-range latitude', () => {
-      const result = validateCoordinateArray([
-        { lat: 95, lng: 0 },
-      ]);
+      const result = validateCoordinateArray([{ lat: 95, lng: 0 }]);
       expect(result.valid).toBe(false);
       expect(result.errors.some((e: string) => e.toLowerCase().includes('lat'))).toBe(true);
     });
 
     it('rejects coordinates with out-of-range longitude', () => {
-      const result = validateCoordinateArray([
-        { lat: 50, lng: 200 },
-      ]);
+      const result = validateCoordinateArray([{ lat: 50, lng: 200 }]);
       expect(result.valid).toBe(false);
       expect(result.errors.some((e: string) => e.toLowerCase().includes('lng'))).toBe(true);
     });
 
     it('rejects coordinates with NaN values', () => {
-      const result = validateCoordinateArray([
-        { lat: NaN, lng: -4.25 },
-      ]);
+      const result = validateCoordinateArray([{ lat: NaN, lng: -4.25 }]);
       expect(result.valid).toBe(false);
     });
 
@@ -173,7 +169,7 @@ describe('Data Validator', () => {
       ]);
       expect(result.valid).toBe(false);
       expect(result.cleanedData).toHaveLength(1);
-      expect(result.cleanedData[0].lat).toBe(55);
+      expect(result.cleanedData?.[0]?.lat).toBe(55);
     });
   });
 });

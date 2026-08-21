@@ -17,6 +17,10 @@ export type {
   Warning,
   /** Metadata about an analysis run (timing, sources, parameters). */
   AnalysisMetadata,
+  AnalysisCompleteness,
+  AnalysisCompletenessStatus,
+  EvidenceStatus,
+  WindResourceResult,
   /** Complete site analysis result with composite score and factor breakdown. */
   SiteAnalysis,
   /** Input options for analyseSite(). */
@@ -71,12 +75,23 @@ export { ok, err } from './types/index.js';
 // ─── Scoring Engine ───
 
 /** Run a full site suitability analysis for a given coordinate. */
-export { analyseSite, normaliseWeights, computeCompositeScore, DEFAULT_WEIGHTS } from './scoring/index.js';
+export {
+  analyseSite,
+  normaliseWeights,
+  computeCompositeScore,
+  DEFAULT_WEIGHTS,
+} from './scoring/index.js';
 
 // ─── Data Source Clients ───
 
 /** Fetch wind speed data from NASA POWER API. */
-export { fetchWindData, fetchMonthlyWindHistory, fetchDailyWindData, fetchHourlyWindData, clearWindDataCache } from './datasources/index.js';
+export {
+  fetchWindData,
+  fetchMonthlyWindHistory,
+  fetchDailyWindData,
+  fetchHourlyWindData,
+  clearWindDataCache,
+} from './datasources/index.js';
 /** Fetch elevation and terrain data from Open-Elevation. */
 export { fetchElevationData, clearElevationCache } from './datasources/index.js';
 /** Fetch infrastructure, land use and access data from OpenStreetMap Overpass. */
@@ -127,12 +142,24 @@ export type {
 // ─── Utilities ───
 
 /** Geographic and math utility functions. */
-export { isValidCoordinate, distanceKm, clamp, linearScale, mean, standardDeviation } from './utils/index.js';
+export {
+  isValidCoordinate,
+  distanceKm,
+  clamp,
+  linearScale,
+  mean,
+  standardDeviation,
+} from './utils/index.js';
 /** LRU cache factory with TTL support. */
 export { createCache } from './utils/index.js';
 export type { /** Generic cache interface. */ Cache } from './utils/index.js';
 /** Wind shear power law extrapolation utilities. */
-export { roughnessClassToAlpha, extrapolateWindSpeed, REFERENCE_HEIGHT_M, REFERENCE_HEIGHT_50M } from './utils/index.js';
+export {
+  roughnessClassToAlpha,
+  extrapolateWindSpeed,
+  REFERENCE_HEIGHT_M,
+  REFERENCE_HEIGHT_50M,
+} from './utils/index.js';
 /** Geometry utilities for polygon operations. */
 export {
   isPointInPolygon,
@@ -159,7 +186,12 @@ export type {
 } from './types/index.js';
 
 /** Create and parse site boundaries. */
-export { createBoundary, generateSampleGrid, parseBoundaryFromGeoJSON, parseBoundaryFromKML } from './site/index.js';
+export {
+  createBoundary,
+  generateSampleGrid,
+  parseBoundaryFromGeoJSON,
+  parseBoundaryFromKML,
+} from './site/index.js';
 /** Assess a site boundary with multi-point analysis. */
 export { assessSite } from './site/index.js';
 export type { SiteAssessmentOptions } from './site/site-assessment.js';
@@ -203,7 +235,7 @@ export { parsePowerCurveCSV } from './turbines/index.js';
 export type {
   LossItem,
   LossStack,
-  PScenario,
+  SensitivityScenario,
   AepAssumptions,
   EnergyYieldResult,
   AepOptions,
@@ -273,6 +305,7 @@ export {
   groundEffect,
   barrierAttenuation,
   slantDistance,
+  assessNoiseScreening,
   assessNoiseCompliance,
   daytimeNoiseLimit,
   nightTimeNoiseLimit,
@@ -293,6 +326,8 @@ export type {
   ShadowFlickerResult,
   ShadowComplianceOptions,
   ShadowComplianceAssessment,
+  ShadowThresholdOptions,
+  ShadowThresholdAssessment,
   ShadowCalendarEntry,
   ShadowCalendar,
 } from './types/index.js';
@@ -303,6 +338,7 @@ export {
   dateToJulianDay,
   dayOfYear,
   calculateShadowFlicker,
+  assessShadowThresholds,
   assessShadowCompliance,
   isFlickerOccurring,
   bearing,
@@ -335,7 +371,7 @@ export {
 
 export type {
   TurbulenceBin,
-  IecTurbulenceClass,
+  TurbulenceReferenceCategory,
   TurbulenceResult,
   ExtremeWindResult,
 } from './types/index.js';
@@ -439,18 +475,31 @@ export type { ExistingTurbine, CumulativeImpactResult } from './cumulative/index
 
 export { assessCumulativeImpact } from './cumulative/index.js';
 
-// ─── IEC Reporting ───
+// ─── Screening Reporting (legacy IEC aliases retained) ───
 
-export type { IecSiteReport } from './reporting/index.js';
+export type { ScreeningSiteReport, IecSiteReport } from './reporting/index.js';
 
-export { generateIecSiteReport } from './reporting/index.js';
+export { generateScreeningSiteReport, generateIecSiteReport } from './reporting/index.js';
 
 // ─── ERA5 / CERRA Data Sources ───
 
-export { fetchEra5WindData, uvToSpeedDirection, validateEra5ApiKey, clearEra5Cache, fetchEra5MonthlyHistory, parseEra5NetCdf } from './datasources/index.js';
+export {
+  fetchEra5WindData,
+  uvToSpeedDirection,
+  validateEra5ApiKey,
+  clearEra5Cache,
+  fetchEra5MonthlyHistory,
+  parseEra5NetCdf,
+} from './datasources/index.js';
 export type { Era5Options, Era5HistoryOptions } from './datasources/index.js';
 
-export { fetchCerraWindData, isInCerraDomain, clearCerraCache, fetchCerraMonthlyHistory, parseCerraNetCdf } from './datasources/index.js';
+export {
+  fetchCerraWindData,
+  isInCerraDomain,
+  clearCerraCache,
+  fetchCerraMonthlyHistory,
+  parseCerraNetCdf,
+} from './datasources/index.js';
 export type { CerraOptions, CerraHistoryOptions } from './datasources/index.js';
 
 // ─── Spatial Cache ───
@@ -460,5 +509,9 @@ export type { SpatialCache, SpatialDataType, CacheStats } from './cache/index.js
 
 // ─── Data Validation ───
 
-export { validateWindData, validateElevationData, validateCoordinateArray } from './validation/index.js';
+export {
+  validateWindData,
+  validateElevationData,
+  validateCoordinateArray,
+} from './validation/index.js';
 export type { ValidationResult } from './validation/index.js';

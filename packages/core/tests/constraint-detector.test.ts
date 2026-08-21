@@ -31,9 +31,18 @@ describe('detectConstraints', () => {
 
   it('detects a nature reserve inside the site', () => {
     const boundary = makeBoundary();
-    const report = detectConstraints(boundary, makeOsmData([
-      { type: 'node', id: 1, lat: 55.865, lon: -4.255, tags: { leisure: 'nature_reserve', name: 'Test Reserve' } },
-    ]));
+    const report = detectConstraints(
+      boundary,
+      makeOsmData([
+        {
+          type: 'node',
+          id: 1,
+          lat: 55.865,
+          lon: -4.255,
+          tags: { leisure: 'nature_reserve', name: 'Test Reserve' },
+        },
+      ]),
+    );
     expect(report.hardConstraints.length).toBeGreaterThanOrEqual(1);
     expect(report.hardConstraints[0]!.definition.id).toBe('nature_reserve');
   });
@@ -41,9 +50,18 @@ describe('detectConstraints', () => {
   it('detects an airport within setback distance', () => {
     const boundary = makeBoundary();
     // Airport 3km away (within 5km setback)
-    const report = detectConstraints(boundary, makeOsmData([
-      { type: 'node', id: 2, lat: 55.89, lon: -4.255, tags: { aeroway: 'aerodrome', name: 'Test Airport' } },
-    ]));
+    const report = detectConstraints(
+      boundary,
+      makeOsmData([
+        {
+          type: 'node',
+          id: 2,
+          lat: 55.89,
+          lon: -4.255,
+          tags: { aeroway: 'aerodrome', name: 'Test Airport' },
+        },
+      ]),
+    );
     expect(report.hardConstraints.length).toBeGreaterThanOrEqual(1);
     const airport = report.hardConstraints.find((c) => c.definition.id === 'airport');
     expect(airport).toBeDefined();
@@ -52,19 +70,26 @@ describe('detectConstraints', () => {
   it('detects residential dwelling within setback', () => {
     const boundary = makeBoundary();
     // Dwelling 200m from boundary (within 500m setback)
-    const report = detectConstraints(boundary, makeOsmData([
-      { type: 'node', id: 3, lat: 55.858, lon: -4.255, tags: { building: 'residential' } },
-    ]));
-    const dwelling = report.softConstraints.find((c) => c.definition.id === 'dwelling') ??
-                     report.hardConstraints.find((c) => c.definition.id === 'dwelling');
+    const report = detectConstraints(
+      boundary,
+      makeOsmData([
+        { type: 'node', id: 3, lat: 55.858, lon: -4.255, tags: { building: 'residential' } },
+      ]),
+    );
+    const dwelling =
+      report.softConstraints.find((c) => c.definition.id === 'dwelling') ??
+      report.hardConstraints.find((c) => c.definition.id === 'dwelling');
     expect(dwelling).toBeDefined();
   });
 
   it('detects existing wind turbines as info', () => {
     const boundary = makeBoundary();
-    const report = detectConstraints(boundary, makeOsmData([
-      { type: 'node', id: 4, lat: 55.88, lon: -4.255, tags: { 'generator:source': 'wind' } },
-    ]));
+    const report = detectConstraints(
+      boundary,
+      makeOsmData([
+        { type: 'node', id: 4, lat: 55.88, lon: -4.255, tags: { 'generator:source': 'wind' } },
+      ]),
+    );
     expect(report.infoConstraints.length).toBeGreaterThanOrEqual(1);
     const windTurbine = report.infoConstraints.find((c) => c.definition.id === 'existing_wind');
     expect(windTurbine).toBeDefined();
@@ -72,49 +97,70 @@ describe('detectConstraints', () => {
 
   it('updates nearest receptor table for dwellings', () => {
     const boundary = makeBoundary();
-    const report = detectConstraints(boundary, makeOsmData([
-      { type: 'node', id: 5, lat: 55.858, lon: -4.255, tags: { building: 'residential' } },
-    ]));
+    const report = detectConstraints(
+      boundary,
+      makeOsmData([
+        { type: 'node', id: 5, lat: 55.858, lon: -4.255, tags: { building: 'residential' } },
+      ]),
+    );
     expect(report.nearestReceptors.nearestDwellingM).not.toBeNull();
     expect(report.nearestReceptors.nearestDwellingM).toBeGreaterThan(0);
   });
 
   it('detects military land', () => {
     const boundary = makeBoundary();
-    const report = detectConstraints(boundary, makeOsmData([
-      { type: 'node', id: 6, lat: 55.865, lon: -4.255, tags: { landuse: 'military' } },
-    ]));
+    const report = detectConstraints(
+      boundary,
+      makeOsmData([
+        { type: 'node', id: 6, lat: 55.865, lon: -4.255, tags: { landuse: 'military' } },
+      ]),
+    );
     expect(report.hardConstraints.length).toBeGreaterThanOrEqual(1);
   });
 
   it('detects heritage sites within setback', () => {
     const boundary = makeBoundary();
     // Heritage site 500m away (within 1km setback)
-    const report = detectConstraints(boundary, makeOsmData([
-      { type: 'node', id: 7, lat: 55.856, lon: -4.255, tags: { historic: 'castle', name: 'Test Castle' } },
-    ]));
-    const heritage = report.softConstraints.find((c) => c.definition.id === 'heritage') ??
-                     report.hardConstraints.find((c) => c.definition.id === 'heritage');
+    const report = detectConstraints(
+      boundary,
+      makeOsmData([
+        {
+          type: 'node',
+          id: 7,
+          lat: 55.856,
+          lon: -4.255,
+          tags: { historic: 'castle', name: 'Test Castle' },
+        },
+      ]),
+    );
+    const heritage =
+      report.softConstraints.find((c) => c.definition.id === 'heritage') ??
+      report.hardConstraints.find((c) => c.definition.id === 'heritage');
     expect(heritage).toBeDefined();
   });
 
   it('detects railways within setback', () => {
     const boundary = makeBoundary();
-    const report = detectConstraints(boundary, makeOsmData([
-      { type: 'node', id: 8, lat: 55.8605, lon: -4.255, tags: { railway: 'rail' } },
-    ]));
-    const railway = report.softConstraints.find((c) => c.definition.id === 'railway') ??
-                    report.hardConstraints.find((c) => c.definition.id === 'railway');
+    const report = detectConstraints(
+      boundary,
+      makeOsmData([{ type: 'node', id: 8, lat: 55.8605, lon: -4.255, tags: { railway: 'rail' } }]),
+    );
+    const railway =
+      report.softConstraints.find((c) => c.definition.id === 'railway') ??
+      report.hardConstraints.find((c) => c.definition.id === 'railway');
     expect(railway).toBeDefined();
   });
 
   it('builds summary with correct recommendation for many hard constraints', () => {
     const boundary = makeBoundary();
-    const report = detectConstraints(boundary, makeOsmData([
-      { type: 'node', id: 10, lat: 55.865, lon: -4.255, tags: { leisure: 'nature_reserve' } },
-      { type: 'node', id: 11, lat: 55.865, lon: -4.254, tags: { landuse: 'military' } },
-      { type: 'node', id: 12, lat: 55.865, lon: -4.253, tags: { leisure: 'nature_reserve' } },
-    ]));
+    const report = detectConstraints(
+      boundary,
+      makeOsmData([
+        { type: 'node', id: 10, lat: 55.865, lon: -4.255, tags: { leisure: 'nature_reserve' } },
+        { type: 'node', id: 11, lat: 55.865, lon: -4.254, tags: { landuse: 'military' } },
+        { type: 'node', id: 12, lat: 55.865, lon: -4.253, tags: { leisure: 'nature_reserve' } },
+      ]),
+    );
     expect(report.summary.totalHard).toBeGreaterThanOrEqual(3);
     expect(report.summary.recommendation).toBe('likely_unviable');
   });
@@ -127,12 +173,187 @@ describe('detectConstraints', () => {
 
   it('detects water bodies', () => {
     const boundary = makeBoundary();
-    const report = detectConstraints(boundary, makeOsmData([
-      { type: 'node', id: 13, lat: 55.865, lon: -4.255, tags: { natural: 'water' } },
-    ]));
+    const report = detectConstraints(
+      boundary,
+      makeOsmData([{ type: 'node', id: 13, lat: 55.865, lon: -4.255, tags: { natural: 'water' } }]),
+    );
     // Water body is soft with 50m setback, inside site should be detected
-    const water = [...report.softConstraints, ...report.hardConstraints, ...report.infoConstraints]
-      .find((c) => c.definition.id === 'waterbody');
+    const water = [
+      ...report.softConstraints,
+      ...report.hardConstraints,
+      ...report.infoConstraints,
+    ].find((c) => c.definition.id === 'waterbody');
     expect(water).toBeDefined();
+  });
+
+  it('detects a line crossing the site even when its midpoint is outside', () => {
+    const boundary = makeBoundary();
+    const report = detectConstraints(
+      boundary,
+      makeOsmData([
+        {
+          type: 'way',
+          id: 20,
+          geometry: [
+            { lat: 55.865, lon: -4.3 },
+            { lat: 55.865, lon: -4.251 },
+          ],
+          tags: { highway: 'trunk' },
+        },
+      ]),
+    );
+
+    const road = report.softConstraints.find((c) => c.definition.id === 'motorway');
+    expect(road?.distanceFromSiteM).toBe(0);
+    expect(road?.geometry.type).toBe('LineString');
+  });
+
+  it('detects a polygon that encloses the entire site', () => {
+    const boundary = makeBoundary();
+    const report = detectConstraints(
+      boundary,
+      makeOsmData([
+        {
+          type: 'way',
+          id: 21,
+          geometry: [
+            { lat: 55.84, lon: -4.28 },
+            { lat: 55.84, lon: -4.23 },
+            { lat: 55.89, lon: -4.23 },
+            { lat: 55.89, lon: -4.28 },
+            { lat: 55.84, lon: -4.28 },
+          ],
+          tags: { leisure: 'nature_reserve' },
+        },
+      ]),
+    );
+
+    expect(report.hardConstraints[0]?.distanceFromSiteM).toBe(0);
+    expect(report.hardConstraints[0]?.affectedAreaSqKm).toBeGreaterThan(boundary.areaSqKm * 0.99);
+  });
+
+  it('detects a constraint polygon wholly inside the site', () => {
+    const boundary = makeBoundary();
+    const report = detectConstraints(
+      boundary,
+      makeOsmData([
+        {
+          type: 'way',
+          id: 22,
+          geometry: [
+            { lat: 55.863, lon: -4.257 },
+            { lat: 55.863, lon: -4.253 },
+            { lat: 55.867, lon: -4.253 },
+            { lat: 55.867, lon: -4.257 },
+            { lat: 55.863, lon: -4.257 },
+          ],
+          tags: { leisure: 'nature_reserve' },
+        },
+      ]),
+    );
+
+    expect(report.hardConstraints[0]?.affectedAreaSqKm).toBeGreaterThan(0);
+    expect(report.exclusionZones[0]?.areaSqKm).toBeGreaterThan(0);
+  });
+
+  it('treats boundary contact as an intersection', () => {
+    const boundary = makeBoundary();
+    const report = detectConstraints(
+      boundary,
+      makeOsmData([
+        {
+          type: 'way',
+          id: 23,
+          geometry: [
+            { lat: 55.855, lon: -4.27 },
+            { lat: 55.86, lon: -4.26 },
+          ],
+          tags: { railway: 'rail' },
+        },
+      ]),
+    );
+
+    expect(report.softConstraints[0]?.distanceFromSiteM).toBe(0);
+  });
+
+  it('preserves separate multipolygon outers and detects either overlap', () => {
+    const boundary = makeBoundary();
+    const report = detectConstraints(
+      boundary,
+      makeOsmData([
+        {
+          type: 'relation',
+          id: 24,
+          members: [
+            {
+              type: 'way',
+              role: 'outer',
+              geometry: [
+                { lat: 56.0, lon: -4.5 },
+                { lat: 56.0, lon: -4.4 },
+                { lat: 56.1, lon: -4.4 },
+                { lat: 56.1, lon: -4.5 },
+                { lat: 56.0, lon: -4.5 },
+              ],
+            },
+            {
+              type: 'way',
+              role: 'outer',
+              geometry: [
+                { lat: 55.862, lon: -4.258 },
+                { lat: 55.862, lon: -4.252 },
+                { lat: 55.868, lon: -4.252 },
+                { lat: 55.868, lon: -4.258 },
+                { lat: 55.862, lon: -4.258 },
+              ],
+            },
+          ],
+          tags: { boundary: 'protected_area' },
+        },
+      ]),
+    );
+
+    expect(report.hardConstraints[0]?.geometry.type).toBe('MultiPolygon');
+    expect(report.hardConstraints[0]?.affectedAreaSqKm).toBeGreaterThan(0);
+  });
+
+  it('does not treat a site inside a multipolygon hole as an overlap', () => {
+    const boundary = makeBoundary();
+    const report = detectConstraints(
+      boundary,
+      makeOsmData([
+        {
+          type: 'relation',
+          id: 25,
+          members: [
+            {
+              type: 'way',
+              role: 'outer',
+              geometry: [
+                { lat: 55.84, lon: -4.28 },
+                { lat: 55.84, lon: -4.23 },
+                { lat: 55.89, lon: -4.23 },
+                { lat: 55.89, lon: -4.28 },
+                { lat: 55.84, lon: -4.28 },
+              ],
+            },
+            {
+              type: 'way',
+              role: 'inner',
+              geometry: [
+                { lat: 55.855, lon: -4.27 },
+                { lat: 55.855, lon: -4.24 },
+                { lat: 55.875, lon: -4.24 },
+                { lat: 55.875, lon: -4.27 },
+                { lat: 55.855, lon: -4.27 },
+              ],
+            },
+          ],
+          tags: { leisure: 'nature_reserve' },
+        },
+      ]),
+    );
+
+    expect(report.hardConstraints).toHaveLength(0);
   });
 });

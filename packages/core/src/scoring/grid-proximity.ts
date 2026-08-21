@@ -83,7 +83,9 @@ function buildDetail(grid: GridInfrastructure, score: number): string {
     parts.push(`No substations found within ${grid.searchRadiusKm}km.`);
   }
 
-  parts.push(`${grid.lineCount} lines, ${grid.substationCount} substations within ${grid.searchRadiusKm}km.`);
+  parts.push(
+    `${grid.lineCount} lines, ${grid.substationCount} substations within ${grid.searchRadiusKm}km.`,
+  );
 
   return parts.join(' ');
 }

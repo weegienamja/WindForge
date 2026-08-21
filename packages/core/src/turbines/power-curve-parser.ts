@@ -13,13 +13,23 @@ import { ok, err } from '../types/result.js';
 export function parsePowerCurveCSV(csv: string): Result<PowerCurvePoint[], ScoringError> {
   const lines = csv.trim().split('\n');
   if (lines.length < 2) {
-    return err(scoringError(ScoringErrorCode.Unknown, 'CSV must have a header row and at least one data row'));
+    return err(
+      scoringError(
+        ScoringErrorCode.Unknown,
+        'CSV must have a header row and at least one data row',
+      ),
+    );
   }
 
   // Validate header
   const header = lines[0]!.toLowerCase().replace(/\s/g, '');
   if (!header.includes('wind_speed') || !header.includes('power')) {
-    return err(scoringError(ScoringErrorCode.Unknown, 'CSV header must contain "wind_speed_ms" and "power_kw" columns'));
+    return err(
+      scoringError(
+        ScoringErrorCode.Unknown,
+        'CSV header must contain "wind_speed_ms" and "power_kw" columns',
+      ),
+    );
   }
 
   const points: PowerCurvePoint[] = [];
@@ -30,7 +40,12 @@ export function parsePowerCurveCSV(csv: string): Result<PowerCurvePoint[], Scori
 
     const parts = line.split(',');
     if (parts.length < 2) {
-      return err(scoringError(ScoringErrorCode.Unknown, `Invalid CSV row ${i + 1}: expected at least 2 columns`));
+      return err(
+        scoringError(
+          ScoringErrorCode.Unknown,
+          `Invalid CSV row ${i + 1}: expected at least 2 columns`,
+        ),
+      );
     }
 
     const windSpeedMs = Number.parseFloat(parts[0]!);
@@ -48,7 +63,9 @@ export function parsePowerCurveCSV(csv: string): Result<PowerCurvePoint[], Scori
   }
 
   if (points.length < 3) {
-    return err(scoringError(ScoringErrorCode.Unknown, 'Power curve must have at least 3 data points'));
+    return err(
+      scoringError(ScoringErrorCode.Unknown, 'Power curve must have at least 3 data points'),
+    );
   }
 
   // Sort by wind speed
@@ -67,10 +84,12 @@ export function parsePowerCurveCSV(csv: string): Result<PowerCurvePoint[], Scori
   // Check monotonically increasing power up to rated speed
   for (let i = 1; i <= peakIndex; i++) {
     if (points[i]!.powerKw < points[i - 1]!.powerKw - 0.1) {
-      return err(scoringError(
-        ScoringErrorCode.Unknown,
-        `Power curve is not monotonically increasing below rated speed at ${points[i]!.windSpeedMs} m/s`,
-      ));
+      return err(
+        scoringError(
+          ScoringErrorCode.Unknown,
+          `Power curve is not monotonically increasing below rated speed at ${points[i]!.windSpeedMs} m/s`,
+        ),
+      );
     }
   }
 

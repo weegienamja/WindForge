@@ -14,11 +14,11 @@ function makeLandUse(overrides: Partial<LandUseResult> = {}): LandUseResult {
 
 describe('scoreLandUse', () => {
   it('returns a valid FactorScore for landUseCompatibility factor', () => {
-    const result = scoreLandUse(makeLandUse(), 0.10);
+    const result = scoreLandUse(makeLandUse(), 0.1);
     expect(result.ok).toBe(true);
     if (result.ok) {
       expect(result.value.factorScore.factor).toBe('landUseCompatibility');
-      expect(result.value.factorScore.weight).toBe(0.10);
+      expect(result.value.factorScore.weight).toBe(0.1);
       expect(result.value.factorScore.score).toBeGreaterThanOrEqual(0);
       expect(result.value.factorScore.score).toBeLessThanOrEqual(100);
       expect(result.value.factorScore.dataSource).toContain('Overpass');
@@ -30,9 +30,11 @@ describe('scoreLandUse', () => {
   it('scores 0 when nature_reserve found', () => {
     const result = scoreLandUse(
       makeLandUse({
-        hardConstraints: [{ type: 'nature_reserve', description: 'Nature reserve detected at site' }],
+        hardConstraints: [
+          { type: 'nature_reserve', description: 'Nature reserve detected at site' },
+        ],
       }),
-      0.10,
+      0.1,
     );
     expect(result.ok).toBe(true);
     if (result.ok) {
@@ -45,9 +47,11 @@ describe('scoreLandUse', () => {
   it('scores 0 when protected_area found', () => {
     const result = scoreLandUse(
       makeLandUse({
-        hardConstraints: [{ type: 'protected_area', description: 'Protected area designation at site' }],
+        hardConstraints: [
+          { type: 'protected_area', description: 'Protected area designation at site' },
+        ],
       }),
-      0.10,
+      0.1,
     );
     expect(result.ok).toBe(true);
     if (result.ok) {
@@ -61,7 +65,7 @@ describe('scoreLandUse', () => {
       makeLandUse({
         hardConstraints: [{ type: 'military', description: 'Military land use at site' }],
       }),
-      0.10,
+      0.1,
     );
     expect(result.ok).toBe(true);
     if (result.ok) {
@@ -74,7 +78,7 @@ describe('scoreLandUse', () => {
       makeLandUse({
         hardConstraints: [{ type: 'aeroway', description: 'Aeroway infrastructure near site' }],
       }),
-      0.10,
+      0.1,
     );
     expect(result.ok).toBe(true);
     if (result.ok) {
@@ -87,7 +91,7 @@ describe('scoreLandUse', () => {
       makeLandUse({
         hardConstraints: [{ type: 'cemetery', description: 'Cemetery at site' }],
       }),
-      0.10,
+      0.1,
     );
     expect(result.ok).toBe(true);
     if (result.ok) {
@@ -103,7 +107,7 @@ describe('scoreLandUse', () => {
           { type: 'military', description: 'Military land use at site' },
         ],
       }),
-      0.10,
+      0.1,
     );
     expect(result.ok).toBe(true);
     if (result.ok) {
@@ -112,28 +116,33 @@ describe('scoreLandUse', () => {
     }
   });
 
-  it('includes BLOCKED keyword in detail when hard constraint present', () => {
+  it('labels configured exclusions as screening evidence', () => {
     const result = scoreLandUse(
       makeLandUse({
-        hardConstraints: [{ type: 'nature_reserve', description: 'Nature reserve detected at site' }],
+        hardConstraints: [
+          { type: 'nature_reserve', description: 'Nature reserve detected at site' },
+        ],
       }),
-      0.10,
+      0.1,
     );
     expect(result.ok).toBe(true);
     if (result.ok) {
-      expect(result.value.factorScore.detail).toContain('BLOCKED');
+      expect(result.value.factorScore.detail).toContain('SCREENING EXCLUSION');
+      expect(result.value.factorScore.detail).toContain('authoritative confirmation');
     }
   });
 
   // --- Soft constraints ---
 
   it('deducts 20 points for residential proximity', () => {
-    const base = scoreLandUse(makeLandUse(), 0.10);
+    const base = scoreLandUse(makeLandUse(), 0.1);
     const withResidential = scoreLandUse(
       makeLandUse({
-        softConstraints: [{ type: 'residential', distanceKm: 0.3, description: 'Residential area 300m away' }],
+        softConstraints: [
+          { type: 'residential', distanceKm: 0.3, description: 'Residential area 300m away' },
+        ],
       }),
-      0.10,
+      0.1,
     );
     expect(base.ok && withResidential.ok).toBe(true);
     if (base.ok && withResidential.ok) {
@@ -142,12 +151,12 @@ describe('scoreLandUse', () => {
   });
 
   it('deducts 10 points for water body', () => {
-    const base = scoreLandUse(makeLandUse(), 0.10);
+    const base = scoreLandUse(makeLandUse(), 0.1);
     const withWater = scoreLandUse(
       makeLandUse({
         softConstraints: [{ type: 'water', distanceKm: 1.0, description: 'Water body nearby' }],
       }),
-      0.10,
+      0.1,
     );
     expect(base.ok && withWater.ok).toBe(true);
     if (base.ok && withWater.ok) {
@@ -156,12 +165,14 @@ describe('scoreLandUse', () => {
   });
 
   it('deducts 15 points for forest', () => {
-    const base = scoreLandUse(makeLandUse(), 0.10);
+    const base = scoreLandUse(makeLandUse(), 0.1);
     const withForest = scoreLandUse(
       makeLandUse({
-        softConstraints: [{ type: 'forest', distanceKm: 0.5, description: 'Forest (tree clearing required)' }],
+        softConstraints: [
+          { type: 'forest', distanceKm: 0.5, description: 'Forest (tree clearing required)' },
+        ],
       }),
-      0.10,
+      0.1,
     );
     expect(base.ok && withForest.ok).toBe(true);
     if (base.ok && withForest.ok) {
@@ -170,12 +181,12 @@ describe('scoreLandUse', () => {
   });
 
   it('deducts 5 points for unknown soft constraint type', () => {
-    const base = scoreLandUse(makeLandUse(), 0.10);
+    const base = scoreLandUse(makeLandUse(), 0.1);
     const withOther = scoreLandUse(
       makeLandUse({
         softConstraints: [{ type: 'wetland', distanceKm: 1.0, description: 'Wetland nearby' }],
       }),
-      0.10,
+      0.1,
     );
     expect(base.ok && withOther.ok).toBe(true);
     if (base.ok && withOther.ok) {
@@ -192,7 +203,7 @@ describe('scoreLandUse', () => {
           { type: 'water', distanceKm: 1.0, description: 'Water body nearby' },
         ],
       }),
-      0.10,
+      0.1,
     );
     expect(result.ok).toBe(true);
     if (result.ok) {
@@ -208,7 +219,7 @@ describe('scoreLandUse', () => {
       makeLandUse({
         positiveIndicators: ['Farmland'],
       }),
-      0.10,
+      0.1,
     );
     expect(result.ok).toBe(true);
     if (result.ok) {
@@ -222,7 +233,7 @@ describe('scoreLandUse', () => {
       makeLandUse({
         positiveIndicators: ['Farmland', 'Heathland', 'Meadow'],
       }),
-      0.10,
+      0.1,
     );
     expect(result.ok).toBe(true);
     if (result.ok) {
@@ -236,7 +247,7 @@ describe('scoreLandUse', () => {
       makeLandUse({
         positiveIndicators: ['Farmland', 'Heathland', 'Meadow', 'Grassland'],
       }),
-      0.10,
+      0.1,
     );
     expect(result.ok).toBe(true);
     if (result.ok) {
@@ -251,7 +262,7 @@ describe('scoreLandUse', () => {
         softConstraints: [{ type: 'water', distanceKm: 1.0, description: 'Water body nearby' }],
         positiveIndicators: ['Farmland', 'Meadow'],
       }),
-      0.10,
+      0.1,
     );
     expect(result.ok).toBe(true);
     if (result.ok) {
@@ -263,7 +274,7 @@ describe('scoreLandUse', () => {
   // --- Empty/no data ---
 
   it('returns base score of 70 when no data found', () => {
-    const result = scoreLandUse(makeLandUse(), 0.10);
+    const result = scoreLandUse(makeLandUse(), 0.1);
     expect(result.ok).toBe(true);
     if (result.ok) {
       expect(result.value.factorScore.score).toBe(70);
@@ -272,7 +283,7 @@ describe('scoreLandUse', () => {
   });
 
   it('has medium confidence when no data found', () => {
-    const result = scoreLandUse(makeLandUse(), 0.10);
+    const result = scoreLandUse(makeLandUse(), 0.1);
     expect(result.ok).toBe(true);
     if (result.ok) {
       expect(result.value.factorScore.confidence).toBe('medium');
@@ -280,10 +291,7 @@ describe('scoreLandUse', () => {
   });
 
   it('has high confidence when any constraint or indicator present', () => {
-    const result = scoreLandUse(
-      makeLandUse({ positiveIndicators: ['Farmland'] }),
-      0.10,
-    );
+    const result = scoreLandUse(makeLandUse({ positiveIndicators: ['Farmland'] }), 0.1);
     expect(result.ok).toBe(true);
     if (result.ok) {
       expect(result.value.factorScore.confidence).toBe('high');
@@ -291,10 +299,7 @@ describe('scoreLandUse', () => {
   });
 
   it('includes positive indicators in detail', () => {
-    const result = scoreLandUse(
-      makeLandUse({ positiveIndicators: ['Farmland', 'Meadow'] }),
-      0.10,
-    );
+    const result = scoreLandUse(makeLandUse({ positiveIndicators: ['Farmland', 'Meadow'] }), 0.1);
     expect(result.ok).toBe(true);
     if (result.ok) {
       expect(result.value.factorScore.detail).toContain('Farmland');
@@ -315,7 +320,7 @@ describe('scoreLandUse', () => {
           { type: 'peat_bog', distanceKm: 0.1, description: 'Peat bog' },
         ],
       }),
-      0.10,
+      0.1,
     );
     expect(result.ok).toBe(true);
     if (result.ok) {
@@ -326,7 +331,7 @@ describe('scoreLandUse', () => {
   });
 
   it('returns empty hardConstraints array when no hard constraints', () => {
-    const result = scoreLandUse(makeLandUse(), 0.10);
+    const result = scoreLandUse(makeLandUse(), 0.1);
     expect(result.ok).toBe(true);
     if (result.ok) {
       expect(result.value.hardConstraints).toEqual([]);

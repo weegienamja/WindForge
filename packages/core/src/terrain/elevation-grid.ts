@@ -143,10 +143,7 @@ export async function fetchElevationGrid(
  * Generate a regular grid of coordinates within a bounding box.
  * Returns a 2D array [rows][cols] of LatLng coordinates.
  */
-export function generateGridCoordinates(
-  bb: BoundingBox,
-  spacingM: number,
-): LatLng[][] {
+export function generateGridCoordinates(bb: BoundingBox, spacingM: number): LatLng[][] {
   // Approximate degree per metre at the midpoint latitude
   const midLat = (bb.north + bb.south) / 2;
   const latDegPerM = 1 / 111320;

@@ -81,7 +81,12 @@ function makeGridWithHill(
   };
 }
 
-function makeTurbine(lat: number, lng: number, hubHeightM: number = 80, rotorDiameterM: number = 100): TurbinePosition {
+function makeTurbine(
+  lat: number,
+  lng: number,
+  hubHeightM: number = 80,
+  rotorDiameterM: number = 100,
+): TurbinePosition {
   return { id: 1, location: { lat, lng }, hubHeightM, rotorDiameterM };
 }
 
@@ -99,7 +104,14 @@ describe('Viewshed', () => {
   });
 
   it('returns empty result for empty grid', () => {
-    const grid: ElevationGrid = { points: [], spacingM: 100, rows: 0, cols: 0, minElevationM: 0, maxElevationM: 0 };
+    const grid: ElevationGrid = {
+      points: [],
+      spacingM: 100,
+      rows: 0,
+      cols: 0,
+      minElevationM: 0,
+      maxElevationM: 0,
+    };
     const turbine = makeTurbine(55.0, -4.0);
     const result = computeViewshed([turbine], grid, 10);
     expect(result.totalCells).toBe(0);
@@ -141,9 +153,13 @@ describe('Viewshed', () => {
     const baseLng = -4.0;
 
     const grid = makeGridWithHill(
-      rows, cols, baseLat, baseLng, spacingDeg,
+      rows,
+      cols,
+      baseLat,
+      baseLng,
+      spacingDeg,
       100, // base elevation
-      3,   // hill at row 3
+      3, // hill at row 3
       500, // hill height 500m
     );
 
@@ -159,15 +175,11 @@ describe('Viewshed', () => {
     // Cells behind the hill (rows 4-6) should NOT be visible
     // The turbine tip is at 100 + 80 + 50 = 230m, but hill is at 500m
     // So the hill clearly blocks the view
-    const behindHill = result.visibleCells.filter(
-      (cell) => cell.lat > baseLat + 3.5 * spacingDeg,
-    );
+    const behindHill = result.visibleCells.filter((cell) => cell.lat > baseLat + 3.5 * spacingDeg);
     expect(behindHill.length).toBe(0);
 
     // Cells in front of hill (rows 0-2) should be visible
-    const inFrontOfHill = result.visibleCells.filter(
-      (cell) => cell.lat < baseLat + 3 * spacingDeg,
-    );
+    const inFrontOfHill = result.visibleCells.filter((cell) => cell.lat < baseLat + 3 * spacingDeg);
     expect(inFrontOfHill.length).toBeGreaterThan(0);
   });
 
@@ -286,26 +298,23 @@ describe('Viewshed', () => {
     const baseLng = -4.0;
 
     const grid = makeGridWithHill(
-      rows, cols, baseLat, baseLng, spacingDeg,
+      rows,
+      cols,
+      baseLat,
+      baseLng,
+      spacingDeg,
       100, // base elevation
-      2,   // hill at row 2
+      2, // hill at row 2
       150, // hill height 150m (moderate - tip at 230m rises above it)
     );
 
     // Turbine at row 4 (behind the hill from row 0)
-    const turbine = makeTurbine(
-      baseLat + 4 * spacingDeg,
-      baseLng + 1 * spacingDeg,
-      80,
-      100,
-    );
+    const turbine = makeTurbine(baseLat + 4 * spacingDeg, baseLng + 1 * spacingDeg, 80, 100);
 
     const result = computeViewshed([turbine], grid, 10, 30);
 
     // Observer at row 0 should see the turbine because tip (230m) > hill (200m)
-    const row0Cells = result.visibleCells.filter(
-      (cell) => cell.lat < baseLat + 0.5 * spacingDeg,
-    );
+    const row0Cells = result.visibleCells.filter((cell) => cell.lat < baseLat + 0.5 * spacingDeg);
     expect(row0Cells.length).toBeGreaterThan(0);
   });
 });

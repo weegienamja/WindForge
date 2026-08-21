@@ -26,7 +26,11 @@ function fakeMultiHeightMonthlyResponse(startYear: number, endYear: number) {
     }
   }
 
-  return { properties: { parameter: { WS2M: ws2m, WS10M: ws10m, WS50M: ws50m, WD10M: wd10m, WD50M: wd50m } } };
+  return {
+    properties: {
+      parameter: { WS2M: ws2m, WS10M: ws10m, WS50M: ws50m, WD10M: wd10m, WD50M: wd50m },
+    },
+  };
 }
 
 function fakeDailyResponse(startDate: string, endDate: string) {
@@ -47,7 +51,11 @@ function fakeDailyResponse(startDate: string, endDate: string) {
     wd50m[key] = 230;
   }
 
-  return { properties: { parameter: { WS2M: ws2m, WS10M: ws10m, WS50M: ws50m, WD10M: wd10m, WD50M: wd50m } } };
+  return {
+    properties: {
+      parameter: { WS2M: ws2m, WS10M: ws10m, WS50M: ws50m, WD10M: wd10m, WD50M: wd50m },
+    },
+  };
 }
 
 function fakeHourlyResponse() {
@@ -59,7 +67,7 @@ function fakeHourlyResponse() {
 
   // One day of hourly data
   for (let h = 0; h < 24; h++) {
-    const key = `2023010${String(1)}${String(h).padStart(2, '0')}`;  // 20230101HH
+    const key = `2023010${String(1)}${String(h).padStart(2, '0')}`; // 20230101HH
     ws2m[key] = 2 + h * 0.1;
     ws10m[key] = 4 + h * 0.2;
     ws50m[key] = 7 + h * 0.3;
@@ -67,7 +75,11 @@ function fakeHourlyResponse() {
     wd50m[key] = 210;
   }
 
-  return { properties: { parameter: { WS2M: ws2m, WS10M: ws10m, WS50M: ws50m, WD10M: wd10m, WD50M: wd50m } } };
+  return {
+    properties: {
+      parameter: { WS2M: ws2m, WS10M: ws10m, WS50M: ws50m, WD10M: wd10m, WD50M: wd50m },
+    },
+  };
 }
 
 beforeEach(() => {
@@ -124,6 +136,23 @@ describe('fetchWindData (multi-height)', () => {
     await fetchWindData({ lat: 55, lng: -4 });
     expect(fetchSpy).toHaveBeenCalledTimes(1);
   });
+
+  it('rejects an incomplete climatology instead of inserting zero months', async () => {
+    const response = fakeMultiHeightMonthlyResponse(2015, 2024);
+    for (const values of Object.values(response.properties.parameter)) {
+      for (const key of Object.keys(values)) {
+        if (key.endsWith('02')) delete values[key];
+      }
+    }
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue({
+      ok: true,
+      json: async () => response,
+    } as Response);
+
+    const result = await fetchWindData({ lat: 55, lng: -4 });
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.error.message).toContain('12 complete monthly');
+  });
 });
 
 describe('fetchMonthlyWindHistory', () => {
@@ -164,6 +193,19 @@ describe('fetchMonthlyWindHistory', () => {
         expect(currKey).toBeGreaterThanOrEqual(prevKey);
       }
     }
+  });
+
+  it('represents unavailable heights as null rather than a numeric sentinel', async () => {
+    const response = fakeMultiHeightMonthlyResponse(2020, 2020);
+    response.properties.parameter.WS50M = {};
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue({
+      ok: true,
+      json: async () => response,
+    } as Response);
+
+    const result = await fetchMonthlyWindHistory({ lat: 55, lng: -4 }, 1);
+    expect(result.ok).toBe(true);
+    if (result.ok) expect(result.value.records[0]?.ws50m).toBeNull();
   });
 
   it('handles API failure', async () => {
@@ -244,7 +286,9 @@ describe('fetchHourlyWindData', () => {
   it('handles parse errors gracefully', async () => {
     vi.spyOn(globalThis, 'fetch').mockResolvedValue({
       ok: true,
-      json: async () => { throw new Error('Bad JSON'); },
+      json: async () => {
+        throw new Error('Bad JSON');
+      },
     } as Response);
 
     const result = await fetchHourlyWindData({ lat: 55, lng: -4 }, '2023-01-01', '2023-01-01');

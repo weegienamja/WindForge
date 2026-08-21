@@ -94,10 +94,7 @@ export function calculateLcoe(
  *
  * IRR is the discount rate at which NPV = 0.
  */
-export function calculateIrr(
-  aep: EnergyYieldResult,
-  params?: Partial<FinancialParams>,
-): IrrResult {
+export function calculateIrr(aep: EnergyYieldResult, params?: Partial<FinancialParams>): IrrResult {
   const p = resolveParams(params);
   const cashflows = buildCashflowArray(aep, p);
 
@@ -291,7 +288,11 @@ function buildCashflowArray(aep: EnergyYieldResult, p: FinancialParams): number[
  * Solve IRR using Newton-Raphson method.
  * IRR is the rate r where NPV(r) = sum(CF_t / (1+r)^t) = 0.
  */
-function solveIrr(cashflows: number[], maxIterations: number = 100, tolerance: number = 1e-7): number {
+function solveIrr(
+  cashflows: number[],
+  maxIterations: number = 100,
+  tolerance: number = 1e-7,
+): number {
   let r = 0.1; // initial guess
 
   for (let i = 0; i < maxIterations; i++) {
@@ -302,7 +303,7 @@ function solveIrr(cashflows: number[], maxIterations: number = 100, tolerance: n
       const cf = cashflows[t]!;
       const factor = (1 + r) ** t;
       npv += cf / factor;
-      dnpv -= (t * cf) / ((1 + r) ** (t + 1));
+      dnpv -= (t * cf) / (1 + r) ** (t + 1);
     }
 
     if (Math.abs(npv) < tolerance) {

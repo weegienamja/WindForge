@@ -30,7 +30,9 @@ function normal(rand: () => number, mean: number, sd: number): number {
   return mean + sd * z;
 }
 
-function makeHistory(records: Array<{ year: number; month: number; ws: number }>): MonthlyWindHistory {
+function makeHistory(
+  records: Array<{ year: number; month: number; ws: number }>,
+): MonthlyWindHistory {
   return {
     coordinate: { lat: 0, lng: 0 },
     startYear: records[0]?.year ?? 0,
@@ -130,9 +132,7 @@ describe('alignByYearMonth', () => {
       coordinate: { lat: 0, lng: 0 },
       startYear: 2020,
       endYear: 2020,
-      records: [
-        { year: 2020, month: 1, ws2m: 3, ws10m: 0, ws50m: 0, wd10m: 0, wd50m: 0 },
-      ],
+      records: [{ year: 2020, month: 1, ws2m: 3, ws10m: 0, ws50m: 0, wd10m: 0, wd50m: 0 }],
     };
     const ref = makeHistory([{ year: 2020, month: 1, ws: 7 }]);
     const aligned = alignByYearMonth(nasa, ref);
@@ -181,7 +181,7 @@ describe('applyQuantileMapping', () => {
     const corrected = applyQuantileMapping(nasa, nasa, truth);
     const sortedTruth = [...truth].sort((a, b) => a - b);
     const sortedCorr = [...corrected].sort((a, b) => a - b);
-    for (const q of [0.10, 0.25, 0.50, 0.75, 0.90]) {
+    for (const q of [0.1, 0.25, 0.5, 0.75, 0.9]) {
       const dq = Math.abs(quantile(sortedCorr, q) - quantile(sortedTruth, q));
       expect(dq).toBeLessThan(0.15);
     }

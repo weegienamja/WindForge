@@ -4,9 +4,17 @@ import { ScoringErrorCode, scoringError } from '../types/errors.js';
 import type { Result } from '../types/result.js';
 import { ok, err } from '../types/result.js';
 import { createCache } from '../utils/cache.js';
-import { distanceKm } from '../utils/geo.js';
+import {
+  geometryDistanceToPointM,
+  osmElementToGeometry,
+  type OsmGeometryMember,
+  type OsmGeometryPoint,
+} from '../utils/feature-geometry.js';
 
-const OVERPASS_ENDPOINT = 'https://overpass-api.de/api/interpreter';
+const OVERPASS_ENDPOINTS = [
+  'https://overpass-api.de/api/interpreter',
+  'https://overpass.kumi.systems/api/interpreter',
+] as const;
 const OVERPASS_TIMEOUT_S = 20;
 const CACHE_TTL_MS = 24 * 60 * 60 * 1000; // 24 hours
 
@@ -71,7 +79,10 @@ function cacheKey(coord: LatLng, prefix: string): string {
 
 // --- Bounding box helper ---
 
-function bboxFromRadius(center: LatLng, radiusKm: number): { south: number; west: number; north: number; east: number } {
+function bboxFromRadius(
+  center: LatLng,
+  radiusKm: number,
+): { south: number; west: number; north: number; east: number } {
   const latDelta = radiusKm / 111.32;
   const lngDelta = radiusKm / (111.32 * Math.cos((center.lat * Math.PI) / 180));
   return {
@@ -94,6 +105,8 @@ interface OverpassElement {
   lat?: number;
   lon?: number;
   center?: { lat: number; lon: number };
+  geometry?: OsmGeometryPoint[];
+  members?: OsmGeometryMember[];
   tags?: Record<string, string>;
 }
 
@@ -101,7 +114,11 @@ interface OverpassResponse {
   elements: OverpassElement[];
 }
 
-async function runOverpassQuery(query: string, signal?: AbortSignal): Promise<Result<OverpassResponse, ScoringError>> {
+async function runOverpassQuery(
+  endpoint: string,
+  query: string,
+  signal?: AbortSignal,
+): Promise<Result<OverpassResponse, ScoringError>> {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), (OVERPASS_TIMEOUT_S + 5) * 1000);
   // If an external signal aborts, propagate to our controller
@@ -109,19 +126,33 @@ async function runOverpassQuery(query: string, signal?: AbortSignal): Promise<Re
   signal?.addEventListener('abort', onAbort);
 
   try {
-    const response = await fetch(OVERPASS_ENDPOINT, {
+    const response = await fetch(endpoint, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: `data=${encodeURIComponent(query)}`,
+      headers: {
+        Accept: 'application/json',
+        'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+        'User-Agent': 'WindForge/0.3 (+https://github.com/weegienamja/WindForge)',
+      },
+      body: new URLSearchParams({ data: query }),
       signal: controller.signal,
     });
 
     if (!response.ok) {
-      return err(scoringError(ScoringErrorCode.DataFetchFailed, `Overpass API HTTP ${response.status}`));
+      const transient = response.status === 429 || response.status >= 500;
+      return err(
+        scoringError(
+          ScoringErrorCode.DataFetchFailed,
+          `Overpass API HTTP ${response.status}`,
+          transient ? new Error('transient upstream response') : undefined,
+        ),
+      );
     }
 
-    const data = (await response.json()) as OverpassResponse;
-    return ok(data);
+    const data: unknown = await response.json();
+    if (!data || typeof data !== 'object' || !Array.isArray((data as OverpassResponse).elements)) {
+      return err(scoringError(ScoringErrorCode.ParseError, 'Overpass returned an invalid payload'));
+    }
+    return ok(data as OverpassResponse);
   } catch (cause) {
     const isAbort = cause instanceof DOMException && cause.name === 'AbortError';
     return err(
@@ -137,18 +168,15 @@ async function runOverpassQuery(query: string, signal?: AbortSignal): Promise<Re
   }
 }
 
-async function runOverpassWithRetry(query: string, signal?: AbortSignal): Promise<Result<OverpassResponse, ScoringError>> {
-  const first = await runOverpassQuery(query, signal);
-  if (first.ok) return first;
-  // Single retry after 5s (Overpass rate-limits aggressively)
-  await new Promise((r) => setTimeout(r, 5000));
-  return runOverpassQuery(query, signal);
-}
-
-function getElementCoord(el: OverpassElement): LatLng | null {
-  if (el.lat !== undefined && el.lon !== undefined) return { lat: el.lat, lng: el.lon };
-  if (el.center) return { lat: el.center.lat, lng: el.center.lon };
-  return null;
+async function runOverpassWithRetry(
+  query: string,
+  signal?: AbortSignal,
+): Promise<Result<OverpassResponse, ScoringError>> {
+  const first = await runOverpassQuery(OVERPASS_ENDPOINTS[0], query, signal);
+  if (first.ok || !first.error.cause || first.error.code === ScoringErrorCode.ParseError)
+    return first;
+  await new Promise((r) => setTimeout(r, 1500));
+  return runOverpassQuery(OVERPASS_ENDPOINTS[1], query, signal);
 }
 
 // --- Grid infrastructure ---
@@ -189,7 +217,7 @@ async function queryGridInfrastructure(
   node["power"="substation"](${bbox});
   way["power"="substation"](${bbox});
 );
-out center;`;
+out body geom;`;
 
   const result = await runOverpassWithRetry(query, signal);
   if (!result.ok) return result;
@@ -201,9 +229,9 @@ out center;`;
   let substationCount = 0;
 
   for (const el of elements) {
-    const coord = getElementCoord(el);
-    if (!coord) continue;
-    const dist = distanceKm(center, coord);
+    const geometry = osmElementToGeometry(el);
+    if (!geometry) continue;
+    const dist = geometryDistanceToPointM(geometry, center) / 1000;
 
     if (el.tags?.power === 'line') {
       lineCount++;
@@ -217,7 +245,13 @@ out center;`;
   if (nearestLineDistanceKm === Number.POSITIVE_INFINITY) nearestLineDistanceKm = -1;
   if (nearestSubstationDistanceKm === Number.POSITIVE_INFINITY) nearestSubstationDistanceKm = -1;
 
-  return ok({ nearestLineDistanceKm, nearestSubstationDistanceKm, lineCount, substationCount, searchRadiusKm: radiusKm });
+  return ok({
+    nearestLineDistanceKm,
+    nearestSubstationDistanceKm,
+    lineCount,
+    substationCount,
+    searchRadiusKm: radiusKm,
+  });
 }
 
 // --- Land use ---
@@ -258,7 +292,7 @@ export async function fetchLandUse(
   node["natural"="scrub"](${bbox});
   way["natural"="scrub"](${bbox});
 );
-out center;`;
+out body geom;`;
 
   const result = await runOverpassWithRetry(query, signal);
   if (!result.ok) return result;
@@ -271,41 +305,81 @@ out center;`;
   const positiveNatural = new Set(['heath', 'scrub']);
 
   for (const el of result.value.elements) {
-    const coord = getElementCoord(el);
-    const dist = coord ? distanceKm(coordinate, coord) : 0;
+    const geometry = osmElementToGeometry(el);
+    if (!geometry) continue;
+    const dist = geometryDistanceToPointM(geometry, coordinate) / 1000;
     const tags = el.tags ?? {};
 
     // Hard constraints
-    if (tags.leisure === 'nature_reserve') {
-      hardConstraints.push({ type: 'nature_reserve', description: 'Nature reserve detected at site' });
-    } else if (tags.boundary === 'protected_area') {
-      hardConstraints.push({ type: 'protected_area', description: 'Protected area designation at site' });
-    } else if (tags.landuse === 'military') {
-      hardConstraints.push({ type: 'military', description: 'Military land use at site' });
-    } else if (tags.aeroway) {
-      hardConstraints.push({ type: 'aeroway', description: `Aeroway infrastructure (${tags.aeroway}) near site` });
-    } else if (tags.landuse === 'cemetery') {
-      hardConstraints.push({ type: 'cemetery', description: 'Cemetery at site' });
+    if (tags.leisure === 'nature_reserve' && dist === 0) {
+      hardConstraints.push({
+        type: 'nature_reserve',
+        description:
+          'OpenStreetMap nature-reserve geometry intersects the site point (screening evidence)',
+      });
+    } else if (tags.boundary === 'protected_area' && dist === 0) {
+      hardConstraints.push({
+        type: 'protected_area',
+        description:
+          'OpenStreetMap protected-area geometry intersects the site point; statutory status is unverified',
+      });
+    } else if (tags.landuse === 'military' && dist === 0) {
+      hardConstraints.push({
+        type: 'military',
+        description: 'OpenStreetMap military-land geometry intersects the site point',
+      });
+    } else if (tags.aeroway && dist === 0) {
+      hardConstraints.push({
+        type: 'aeroway',
+        description: `OpenStreetMap aeroway geometry (${tags.aeroway}) intersects the site point`,
+      });
+    } else if (tags.landuse === 'cemetery' && dist === 0) {
+      hardConstraints.push({
+        type: 'cemetery',
+        description: 'OpenStreetMap cemetery geometry intersects the site point',
+      });
     }
     // Soft constraints
     else if (tags.landuse === 'residential' && dist < 0.5) {
-      softConstraints.push({ type: 'residential', distanceKm: dist, description: `Residential area ${(dist * 1000).toFixed(0)}m away (noise buffer concern)` });
+      softConstraints.push({
+        type: 'residential',
+        distanceKm: dist,
+        description: `Residential area ${(dist * 1000).toFixed(0)}m away (noise buffer concern)`,
+      });
     } else if (tags.natural === 'water' || tags.waterway) {
-      softConstraints.push({ type: 'water', distanceKm: dist, description: 'Water body nearby (complicates foundation work)' });
+      softConstraints.push({
+        type: 'water',
+        distanceKm: dist,
+        description: 'Water body nearby (complicates foundation work)',
+      });
     } else if (tags.landuse === 'forest') {
-      softConstraints.push({ type: 'forest', distanceKm: dist, description: 'Forest (tree clearing required)' });
+      softConstraints.push({
+        type: 'forest',
+        distanceKm: dist,
+        description: 'Forest (tree clearing required)',
+      });
     }
     // Positive indicators
-    else if (positiveLandUse.has(tags.landuse ?? '')) {
-      const label = tags.landuse === 'farmland' ? 'Farmland' : tags.landuse === 'meadow' ? 'Meadow' : 'Grassland';
+    else if (positiveLandUse.has(tags.landuse ?? '') && dist === 0) {
+      const label =
+        tags.landuse === 'farmland'
+          ? 'Farmland'
+          : tags.landuse === 'meadow'
+            ? 'Meadow'
+            : 'Grassland';
       if (!positiveIndicators.includes(label)) positiveIndicators.push(label);
-    } else if (positiveNatural.has(tags.natural ?? '')) {
+    } else if (positiveNatural.has(tags.natural ?? '') && dist === 0) {
       const label = tags.natural === 'heath' ? 'Heathland' : 'Scrubland';
       if (!positiveIndicators.includes(label)) positiveIndicators.push(label);
     }
   }
 
-  const data: LandUseResult = { hardConstraints, softConstraints, positiveIndicators, searchRadiusKm };
+  const data: LandUseResult = {
+    hardConstraints,
+    softConstraints,
+    positiveIndicators,
+    searchRadiusKm,
+  };
   landUseCache.set(key, data);
   return ok(data);
 }
@@ -329,7 +403,7 @@ export async function fetchRoadAccess(
   way["highway"~"^(secondary|tertiary)$"](${bbox});
   way["highway"~"^(unclassified|track)$"](${bbox});
 );
-out center;`;
+out body geom;`;
 
   const result = await runOverpassWithRetry(query, signal);
   if (!result.ok) return result;
@@ -344,9 +418,9 @@ out center;`;
   const secondaryHighways = new Set(['secondary', 'tertiary']);
 
   for (const el of result.value.elements) {
-    const coord = getElementCoord(el);
-    if (!coord) continue;
-    const dist = distanceKm(coordinate, coord);
+    const geometry = osmElementToGeometry(el);
+    if (!geometry) continue;
+    const dist = geometryDistanceToPointM(geometry, coordinate) / 1000;
     const highway = el.tags?.highway ?? '';
 
     if (majorHighways.has(highway)) {
@@ -360,14 +434,16 @@ out center;`;
       if (dist < nearestSecondaryRoadDistanceKm) {
         nearestSecondaryRoadDistanceKm = dist;
       }
-      if (bestRoadCategory === 'none' || bestRoadCategory === 'minor') bestRoadCategory = 'secondary';
+      if (bestRoadCategory === 'none' || bestRoadCategory === 'minor')
+        bestRoadCategory = 'secondary';
     } else {
       if (bestRoadCategory === 'none') bestRoadCategory = 'minor';
     }
   }
 
   if (nearestMajorRoadDistanceKm === Number.POSITIVE_INFINITY) nearestMajorRoadDistanceKm = -1;
-  if (nearestSecondaryRoadDistanceKm === Number.POSITIVE_INFINITY) nearestSecondaryRoadDistanceKm = -1;
+  if (nearestSecondaryRoadDistanceKm === Number.POSITIVE_INFINITY)
+    nearestSecondaryRoadDistanceKm = -1;
 
   const data: RoadAccess = {
     nearestMajorRoadDistanceKm,
@@ -400,16 +476,16 @@ export async function fetchNearbyWindFarms(
   way["generator:source"="wind"](${bbox});
   node["power"="generator"]["generator:source"="wind"](${bbox});
 );
-out center;`;
+out body geom;`;
 
   const result = await runOverpassWithRetry(query, signal);
   if (!result.ok) return result;
 
   const farms: NearbyWindFarm[] = [];
   for (const el of result.value.elements) {
-    const coord = getElementCoord(el);
-    if (!coord) continue;
-    farms.push({ distanceKm: distanceKm(coordinate, coord) });
+    const geometry = osmElementToGeometry(el);
+    if (!geometry) continue;
+    farms.push({ distanceKm: geometryDistanceToPointM(geometry, coordinate) / 1000 });
   }
   farms.sort((a, b) => a.distanceKm - b.distanceKm);
 

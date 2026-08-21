@@ -14,13 +14,8 @@ import {
   daytimeNoiseLimit,
   nightTimeNoiseLimit,
 } from '../src/noise/etsu-assessment';
-import {
-  computeNoiseContours,
-} from '../src/noise/noise-contours';
-import {
-  createElevationProfile,
-  interpolateCoordinates,
-} from '../src/utils/elevation-profile';
+import { computeNoiseContours } from '../src/noise/noise-contours';
+import { createElevationProfile, interpolateCoordinates } from '../src/utils/elevation-profile';
 import type { LatLng } from '../src/types/analysis';
 import type { NoiseResult, BackgroundNoise } from '../src/types/noise';
 
@@ -171,9 +166,7 @@ describe('calculateNoiseSingleTurbine', () => {
   const receptor500m: LatLng = { lat: 55.0045, lng: -4.0 }; // ~500m north
 
   it('predicts noise level at receptor', () => {
-    const result = calculateNoiseSingleTurbine(
-      turbineLoc, 0, 104, 80, receptor500m,
-    );
+    const result = calculateNoiseSingleTurbine(turbineLoc, 0, 104, 80, receptor500m);
 
     // At ~500m, geometric divergence ~65 dB, plus atm + ground
     // Expected: ~104 - 65 - 1.8 - 1.5 = ~35.7 dBA
@@ -184,12 +177,12 @@ describe('calculateNoiseSingleTurbine', () => {
   });
 
   it('produces lower level with soft ground', () => {
-    const hard = calculateNoiseSingleTurbine(
-      turbineLoc, 0, 104, 80, receptor500m, { groundType: 'hard' },
-    );
-    const soft = calculateNoiseSingleTurbine(
-      turbineLoc, 0, 104, 80, receptor500m, { groundType: 'soft' },
-    );
+    const hard = calculateNoiseSingleTurbine(turbineLoc, 0, 104, 80, receptor500m, {
+      groundType: 'hard',
+    });
+    const soft = calculateNoiseSingleTurbine(turbineLoc, 0, 104, 80, receptor500m, {
+      groundType: 'soft',
+    });
 
     expect(soft.predictedLevelDba).toBeLessThan(hard.predictedLevelDba);
   });
@@ -210,18 +203,14 @@ describe('calculateNoiseAtReceptor', () => {
     expect(result.turbineCount).toBe(2);
     expect(result.contributions.length).toBe(2);
     // Combined level should be higher than any single contribution
-    const maxSingle = Math.max(
-      ...result.contributions.map((c) => c.predictedLevelDba),
-    );
+    const maxSingle = Math.max(...result.contributions.map((c) => c.predictedLevelDba));
     expect(result.predictedLevelDba).toBeGreaterThan(maxSingle);
     // But not by much (logarithmic, at most ~3 dB for two equal sources)
     expect(result.predictedLevelDba).toBeLessThanOrEqual(maxSingle + 3.1);
   });
 
   it('handles single turbine', () => {
-    const turbines = [
-      { id: 0, location: { lat: 55.0, lng: -4.0 } },
-    ];
+    const turbines = [{ id: 0, location: { lat: 55.0, lng: -4.0 } }];
     const receptor: LatLng = { lat: 55.005, lng: -4.0 };
 
     const result = calculateNoiseAtReceptor(turbines, receptor, 104, 80);
@@ -237,13 +226,12 @@ describe('calculateNoiseAtReceptor', () => {
     ];
     const receptor: LatLng = { lat: 55.005, lng: -4.0 };
 
-    const result = calculateNoiseAtReceptor(
-      turbines, receptor, [104, 98], 80,
-    );
+    const result = calculateNoiseAtReceptor(turbines, receptor, [104, 98], 80);
 
     // The 104 dBA turbine should dominate
-    expect(result.contributions[0]!.predictedLevelDba)
-      .toBeGreaterThan(result.contributions[1]!.predictedLevelDba);
+    expect(result.contributions[0]!.predictedLevelDba).toBeGreaterThan(
+      result.contributions[1]!.predictedLevelDba,
+    );
   });
 
   it('noise decreases with distance', () => {
@@ -302,7 +290,13 @@ describe('assessNoiseCompliance', () => {
     turbineCount: 1,
   });
 
-  const makeBackground = (lat: number, lng: number, label: string, day: number, night: number): BackgroundNoise => ({
+  const makeBackground = (
+    lat: number,
+    lng: number,
+    label: string,
+    day: number,
+    night: number,
+  ): BackgroundNoise => ({
     location: { lat, lng },
     label,
     daytimeLevelDba: day,
@@ -315,9 +309,9 @@ describe('assessNoiseCompliance', () => {
 
     const assessment = assessNoiseCompliance(noiseResults, backgrounds);
 
-    expect(assessment.overallCompliant).toBe(true);
-    expect(assessment.receptors[0]!.daytimeCompliant).toBe(true);
-    expect(assessment.receptors[0]!.nightTimeCompliant).toBe(true);
+    expect(assessment.withinAllScreeningLimits).toBe(true);
+    expect(assessment.receptors[0]!.withinDaytimeScreeningLimit).toBe(true);
+    expect(assessment.receptors[0]!.withinNightScreeningLimit).toBe(true);
     expect(assessment.receptors[0]!.daytimeMarginDba).toBeGreaterThan(0);
     expect(assessment.receptors[0]!.nightTimeMarginDba).toBeGreaterThan(0);
   });
@@ -328,10 +322,10 @@ describe('assessNoiseCompliance', () => {
 
     const assessment = assessNoiseCompliance(noiseResults, backgrounds);
 
-    expect(assessment.overallCompliant).toBe(false);
-    expect(assessment.receptors[0]!.nightTimeCompliant).toBe(false);
+    expect(assessment.withinAllScreeningLimits).toBe(false);
+    expect(assessment.receptors[0]!.withinNightScreeningLimit).toBe(false);
     expect(assessment.receptors[0]!.nightTimeMarginDba).toBeLessThan(0);
-    expect(assessment.summary).toContain('EXCEEDANCE');
+    expect(assessment.summary).toContain('Above the illustrative');
   });
 
   it('non-compliant when predicted level exceeds daytime limit', () => {
@@ -342,14 +336,14 @@ describe('assessNoiseCompliance', () => {
 
     const assessment = assessNoiseCompliance(noiseResults, backgrounds);
 
-    expect(assessment.receptors[0]!.daytimeCompliant).toBe(false);
+    expect(assessment.receptors[0]!.withinDaytimeScreeningLimit).toBe(false);
     expect(assessment.receptors[0]!.daytimeMarginDba).toBeLessThan(0);
   });
 
   it('handles multiple receptors - mixed compliance', () => {
     const noiseResults = [
-      makeNoiseResult(55.0, -4.0, 30),   // Compliant
-      makeNoiseResult(55.001, -4.0, 45),  // Non-compliant (night)
+      makeNoiseResult(55.0, -4.0, 30), // Compliant
+      makeNoiseResult(55.001, -4.0, 45), // Non-compliant (night)
     ];
     const backgrounds = [
       makeBackground(55.0, -4.0, 'Property A', 35, 30),
@@ -358,9 +352,9 @@ describe('assessNoiseCompliance', () => {
 
     const assessment = assessNoiseCompliance(noiseResults, backgrounds);
 
-    expect(assessment.overallCompliant).toBe(false);
-    expect(assessment.receptors[0]!.nightTimeCompliant).toBe(true);
-    expect(assessment.receptors[1]!.nightTimeCompliant).toBe(false);
+    expect(assessment.withinAllScreeningLimits).toBe(false);
+    expect(assessment.receptors[0]!.withinNightScreeningLimit).toBe(true);
+    expect(assessment.receptors[1]!.withinNightScreeningLimit).toBe(false);
     expect(assessment.worstCaseReceptorLabel).toBe('Property B');
   });
 
@@ -371,21 +365,21 @@ describe('assessNoiseCompliance', () => {
 
     // Default background 30 + 5 = 35, floor 35 -> limit 35
     // Predicted 34 < 35 -> compliant
-    expect(assessment.overallCompliant).toBe(true);
+    expect(assessment.withinAllScreeningLimits).toBe(true);
     expect(assessment.receptors[0]!.daytimeMarginDba).toBeCloseTo(1, 0);
   });
 
   it('returns empty assessment for no receptors', () => {
     const assessment = assessNoiseCompliance([], []);
-    expect(assessment.overallCompliant).toBe(true);
+    expect(assessment.withinAllScreeningLimits).toBe(true);
     expect(assessment.receptors.length).toBe(0);
     expect(assessment.summary).toContain('No receptors assessed');
   });
 
   it('worst case margin is the most negative value', () => {
     const noiseResults = [
-      makeNoiseResult(55.0, -4.0, 44),    // 43 - 44 = -1 (night)
-      makeNoiseResult(55.001, -4.0, 47),   // 43 - 47 = -4 (night, worse)
+      makeNoiseResult(55.0, -4.0, 44), // 43 - 44 = -1 (night)
+      makeNoiseResult(55.001, -4.0, 47), // 43 - 47 = -4 (night, worse)
     ];
     const backgrounds = [
       makeBackground(55.0, -4.0, 'A', 40, 35),
@@ -408,9 +402,7 @@ describe('computeNoiseContours', () => {
   });
 
   it('generates cells for a single turbine', () => {
-    const turbines = [
-      { id: 0, location: { lat: 55.0, lng: -4.0 }, soundPowerLevelDba: 104 },
-    ];
+    const turbines = [{ id: 0, location: { lat: 55.0, lng: -4.0 }, soundPowerLevelDba: 104 }];
     const grid = computeNoiseContours(turbines, 80, 200, 1000);
 
     expect(grid.cells.length).toBeGreaterThan(0);
@@ -419,18 +411,14 @@ describe('computeNoiseContours', () => {
   });
 
   it('highest noise is near the turbine', () => {
-    const turbines = [
-      { id: 0, location: { lat: 55.0, lng: -4.0 }, soundPowerLevelDba: 104 },
-    ];
+    const turbines = [{ id: 0, location: { lat: 55.0, lng: -4.0 }, soundPowerLevelDba: 104 }];
     const grid = computeNoiseContours(turbines, 80, 200, 1000);
 
     // Find the cell closest to the turbine
     let closest = grid.cells[0]!;
     let minDist = Infinity;
     for (const cell of grid.cells) {
-      const d = Math.sqrt(
-        (cell.lat - 55.0) ** 2 + (cell.lng + 4.0) ** 2,
-      );
+      const d = Math.sqrt((cell.lat - 55.0) ** 2 + (cell.lng + 4.0) ** 2);
       if (d < minDist) {
         minDist = d;
         closest = cell;
@@ -441,9 +429,7 @@ describe('computeNoiseContours', () => {
   });
 
   it('identifies standard contour levels', () => {
-    const turbines = [
-      { id: 0, location: { lat: 55.0, lng: -4.0 }, soundPowerLevelDba: 104 },
-    ];
+    const turbines = [{ id: 0, location: { lat: 55.0, lng: -4.0 }, soundPowerLevelDba: 104 }];
     const grid = computeNoiseContours(turbines, 80, 100, 2000);
 
     // Grid should cross at least the 40 dBA and 35 dBA contours

@@ -27,7 +27,7 @@ export interface SamplePoint {
 }
 
 export interface AggregatedSiteScore {
-  compositeScore: number;
+  compositeScore: number | null;
   factorAverages: FactorScore[];
   viableAreaSqKm: number;
   viableAreaPercent: number;

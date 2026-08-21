@@ -7,6 +7,7 @@ export {
 
 export {
   calculateShadowFlicker,
+  assessShadowThresholds,
   assessShadowCompliance,
   isFlickerOccurring,
   bearing,

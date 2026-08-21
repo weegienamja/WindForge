@@ -261,13 +261,15 @@ function destinationPoint(start: LatLng, distanceKmVal: number, bearingDeg: numb
 
   const lat2 = Math.asin(
     Math.sin(lat1) * Math.cos(angularDist) +
-    Math.cos(lat1) * Math.sin(angularDist) * Math.cos(bearingRad),
+      Math.cos(lat1) * Math.sin(angularDist) * Math.cos(bearingRad),
   );
 
-  const lng2 = lng1 + Math.atan2(
-    Math.sin(bearingRad) * Math.sin(angularDist) * Math.cos(lat1),
-    Math.cos(angularDist) - Math.sin(lat1) * Math.sin(lat2),
-  );
+  const lng2 =
+    lng1 +
+    Math.atan2(
+      Math.sin(bearingRad) * Math.sin(angularDist) * Math.cos(lat1),
+      Math.cos(angularDist) - Math.sin(lat1) * Math.sin(lat2),
+    );
 
   return {
     lat: (lat2 * 180) / Math.PI,
@@ -295,7 +297,7 @@ function pointToSegmentDistanceKm(point: LatLng, segA: LatLng, segB: LatLng): nu
 
   const closest: LatLng = {
     lat: segA.lat + t * dy,
-    lng: segA.lng + t * dx / cosLatA,
+    lng: segA.lng + (t * dx) / cosLatA,
   };
 
   return distanceKm(point, closest);

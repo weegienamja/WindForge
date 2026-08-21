@@ -107,9 +107,7 @@ describe('computeTerrainSpeedUp', () => {
 
   it('returns ~1.0 for flat terrain', () => {
     // 10x10 grid of flat terrain at 100m
-    const flat = Array.from({ length: 10 }, () =>
-      Array.from({ length: 10 }, () => 100),
-    );
+    const flat = Array.from({ length: 10 }, () => Array.from({ length: 10 }, () => 100));
     const grid = makeGrid(flat, 100);
     const result = computeTerrainSpeedUp(grid, 0.03);
 
@@ -232,9 +230,7 @@ describe('calculateRix', () => {
   }
 
   it('returns ~0% RIX for flat terrain', () => {
-    const flat = Array.from({ length: 20 }, () =>
-      Array.from({ length: 20 }, () => 100),
-    );
+    const flat = Array.from({ length: 20 }, () => Array.from({ length: 20 }, () => 100));
     const grid = makeGrid(flat, 100);
     const result = calculateRix(grid, { lat: 55.01, lng: -3.01 }, 1.0, 30);
 
@@ -273,8 +269,9 @@ describe('calculateRix', () => {
   });
 
   it('uses different critical slope thresholds', () => {
-    const moderate = Array.from({ length: 20 }, (_, r) =>
-      Array.from({ length: 20 }, (_, c) => r * 25), // 25m per 100m = 25% slope
+    const moderate = Array.from(
+      { length: 20 },
+      (_, r) => Array.from({ length: 20 }, (_, c) => r * 25), // 25m per 100m = 25% slope
     );
     const grid = makeGrid(moderate, 100);
 
@@ -286,21 +283,17 @@ describe('calculateRix', () => {
   });
 
   it('returns meaningful summary string', () => {
-    const flat = Array.from({ length: 20 }, () =>
-      Array.from({ length: 20 }, () => 100),
-    );
+    const flat = Array.from({ length: 20 }, () => Array.from({ length: 20 }, () => 100));
     const grid = makeGrid(flat, 100);
     const result = calculateRix(grid, { lat: 55.01, lng: -3.01 }, 1.0, 30);
 
     expect(result.summary).toContain('RIX');
     expect(result.summary).toContain('%');
-    expect(result.summary).toContain('Linear flow models');
+    expect(result.summary).toContain('linear flow modelling');
   });
 
   it('reports correct profile count', () => {
-    const flat = Array.from({ length: 20 }, () =>
-      Array.from({ length: 20 }, () => 100),
-    );
+    const flat = Array.from({ length: 20 }, () => Array.from({ length: 20 }, () => 100));
     const grid = makeGrid(flat, 100);
     const result = calculateRix(grid, { lat: 55.01, lng: -3.01 }, 1.0, 30);
 

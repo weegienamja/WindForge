@@ -52,22 +52,33 @@ export function performMcpAnalysis(
   );
 
   // Calculate on-site measured mean
-  const measuredMean =
-    onSiteMonthly.reduce((s, m) => s + m.speedMs, 0) / onSiteMonthly.length;
+  const measuredMean = onSiteMonthly.reduce((s, m) => s + m.speedMs, 0) / onSiteMonthly.length;
 
   // Apply regression to full reference record to predict long-term on-site climate
-  const longTermMonthlyMeans = reference.records.map((rec) => {
+  const longTermMonthlyMeans = reference.records.flatMap((rec) => {
     const refSpeed = rec[referenceHeightKey];
-    return {
-      year: rec.year,
-      month: rec.month,
-      predictedSpeedMs: Math.max(0, slope * refSpeed + intercept),
-    };
+    return refSpeed === null || refSpeed <= 0
+      ? []
+      : [
+          {
+            year: rec.year,
+            month: rec.month,
+            predictedSpeedMs: Math.max(0, slope * refSpeed + intercept),
+          },
+        ];
   });
 
+  if (longTermMonthlyMeans.length === 0) {
+    return err(
+      scoringError(
+        ScoringErrorCode.InsufficientData,
+        'Reference history has no usable long-term wind-speed records.',
+      ),
+    );
+  }
+
   const predictedLongTermMean =
-    longTermMonthlyMeans.reduce((s, m) => s + m.predictedSpeedMs, 0) /
-    longTermMonthlyMeans.length;
+    longTermMonthlyMeans.reduce((s, m) => s + m.predictedSpeedMs, 0) / longTermMonthlyMeans.length;
 
   const adjustmentFactor = measuredMean > 0 ? predictedLongTermMean / measuredMean : 1;
 
@@ -152,7 +163,8 @@ function findConcurrentPeriod(
 ): ConcurrentPair[] {
   const refMap = new Map<string, number>();
   for (const rec of reference.records) {
-    refMap.set(`${rec.year}-${rec.month}`, rec[heightKey]);
+    const speed = rec[heightKey];
+    if (speed !== null) refMap.set(`${rec.year}-${rec.month}`, speed);
   }
 
   const pairs: ConcurrentPair[] = [];

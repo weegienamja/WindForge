@@ -26,9 +26,7 @@ export interface WindScoringParams {
   reconciliation?: ReconciledWindData | null;
 }
 
-export function scoreWindResource(
-  params: WindScoringParams,
-): Result<FactorScore, ScoringError> {
+export function scoreWindResource(params: WindScoringParams): Result<FactorScore, ScoringError> {
   const { windData, weight, hubHeightM, windShearAlpha, reconciliation } = params;
 
   // Use the actual reference height from data (50m when available, 2m otherwise)
@@ -42,7 +40,10 @@ export function scoreWindResource(
   );
 
   const speedScore = computeSpeedScore(hubSpeedMs);
-  const consistencyScore = computeConsistencyScore(windData.speedStdDevMs, windData.annualAverageSpeedMs);
+  const consistencyScore = computeConsistencyScore(
+    windData.speedStdDevMs,
+    windData.annualAverageSpeedMs,
+  );
   const directionalScore = computeDirectionalScore(windData.directionalConsistency);
 
   // Speed is most important (60%), consistency (25%), directional stability (15%)
@@ -118,12 +119,10 @@ function buildDetail(
   else quality = 'Very poor';
 
   // Show all 3 heights: 2m, 50m, hub
-  const speed2m = refHeight === 2
-    ? rawSpeed
-    : extrapolateWindSpeed(rawSpeed, refHeight, 2, windShearAlpha);
-  const speed50m = refHeight === 50
-    ? rawSpeed
-    : extrapolateWindSpeed(rawSpeed, refHeight, 50, windShearAlpha);
+  const speed2m =
+    refHeight === 2 ? rawSpeed : extrapolateWindSpeed(rawSpeed, refHeight, 2, windShearAlpha);
+  const speed50m =
+    refHeight === 50 ? rawSpeed : extrapolateWindSpeed(rawSpeed, refHeight, 50, windShearAlpha);
 
   return (
     `${quality} wind resource. ` +

@@ -111,9 +111,21 @@ export function reconcileWindData(
   }
 
   // Apply correction to the full NASA monthly series (not just the overlap window).
-  const fullSeries = nasa.history.records.map((r) =>
+  const fullSeriesWithMissing = nasa.history.records.map((r) =>
     bestSpeedMs(r.ws50m, r.ws10m, r.ws2m),
   );
+  if (fullSeriesWithMissing.some((speed) => speed === null)) {
+    return ok({
+      corrected: nasa.summary,
+      method: 'none',
+      reference: refSource,
+      diagnostics: null,
+      confidence: 'low',
+      detail: 'NASA history contained missing wind-speed records; correction was not applied.',
+      correctedSpeedsMs: null,
+    });
+  }
+  const fullSeries = fullSeriesWithMissing as number[];
   const correctedSeries = applyMethod(method, fullSeries, aligned.nasa, aligned.reference);
 
   // Diagnostics on the overlap window.
@@ -159,7 +171,15 @@ export function reconcileWindData(
     ksStatistic,
   };
 
-  return ok({ corrected, method, reference: refSource, diagnostics, confidence, detail, correctedSpeedsMs: correctedSeries });
+  return ok({
+    corrected,
+    method,
+    reference: refSource,
+    diagnostics,
+    confidence,
+    detail,
+    correctedSpeedsMs: correctedSeries,
+  });
 }
 
 // ─── Internals ───
@@ -209,10 +229,10 @@ function signed(n: number): string {
   return (n >= 0 ? '+' : '') + n.toFixed(2);
 }
 
-function bestSpeedMs(ws50: number, ws10: number, ws2: number): number {
-  if (ws50 > 0) return ws50;
-  if (ws10 > 0) return ws10;
-  return ws2;
+function bestSpeedMs(ws50: number | null, ws10: number | null, ws2: number | null): number | null {
+  if (ws50 !== null && ws50 > 0) return ws50;
+  if (ws10 !== null && ws10 > 0) return ws10;
+  return ws2 !== null && ws2 > 0 ? ws2 : null;
 }
 
 function deriveBaseConfidence(s: WindDataSummary): Confidence {
@@ -239,10 +259,7 @@ function assignConfidence(
  * averages and Weibull k/c from the corrected full series. `dataYears`
  * and metadata coordinates are preserved from the NASA original.
  */
-function buildCorrectedSummary(
-  nasa: ReconciliationSource,
-  corrected: number[],
-): WindDataSummary {
+function buildCorrectedSummary(nasa: ReconciliationSource, corrected: number[]): WindDataSummary {
   const orig = nasa.summary;
   const records = nasa.history.records;
   const n = Math.min(records.length, corrected.length);
@@ -253,12 +270,13 @@ function buildCorrectedSummary(
   const byMonth = new Map<number, number[]>();
   const byMonthDir = new Map<number, number[]>();
   for (let i = 0; i < n; i++) {
-    const r = records[i] as { month: number; wd50m: number; wd10m: number };
+    const r = records[i]!;
     const v = corrected[i] as number;
     if (!byMonth.has(r.month)) byMonth.set(r.month, []);
     if (!byMonthDir.has(r.month)) byMonthDir.set(r.month, []);
     byMonth.get(r.month)?.push(v);
-    byMonthDir.get(r.month)?.push(r.wd50m > 0 ? r.wd50m : r.wd10m);
+    const direction = r.wd50m !== null && r.wd50m >= 0 ? r.wd50m : r.wd10m;
+    if (direction !== null && direction >= 0) byMonthDir.get(r.month)?.push(direction);
   }
   const monthlyAverages: MonthlyWindAverage[] = [];
   for (let m = 1; m <= 12; m++) {

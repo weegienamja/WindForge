@@ -23,7 +23,7 @@ describe('Spatial Cache', () => {
 
     it('nearby coordinates within same tile return same key', () => {
       // At zoom 10, tiles are roughly 0.35 degrees wide
-      const key1 = tileKey(55.860, -4.250, 10);
+      const key1 = tileKey(55.86, -4.25, 10);
       const key2 = tileKey(55.861, -4.251, 10);
       expect(key1).toBe(key2);
     });

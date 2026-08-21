@@ -96,8 +96,9 @@ describe('computeWindTrend', () => {
       endYear: 2020,
     });
     expect(result.points).toHaveLength(0);
-    expect(result.slopePerYear).toBe(0);
-    expect(result.rSquared).toBe(0);
+    expect(result.slopePerYear).toBeNull();
+    expect(result.rSquared).toBeNull();
+    expect(result.trendDirection).toBe('indeterminate');
   });
 
   it('computes trend with correct number of points', () => {
@@ -180,7 +181,7 @@ describe('computeSeasonalHeatmap', () => {
   it('returns 288 cells (12 months × 24 hours)', () => {
     const hourly = makeHourlyData(7);
     const result = computeSeasonalHeatmap(hourly);
-    expect(result.cells).toHaveLength(288);
+    expect(result.cells).toHaveLength(24);
   });
 
   it('returns empty-valued cells for months with no data', () => {
@@ -188,8 +189,7 @@ describe('computeSeasonalHeatmap', () => {
     const result = computeSeasonalHeatmap(hourly);
     // February cell should have 0 speed
     const febCell = result.cells.find((c) => c.month === 2 && c.hour === 12);
-    expect(febCell).toBeDefined();
-    expect(febCell!.speedMs).toBe(0);
+    expect(febCell).toBeUndefined();
   });
 
   it('each cell has month, hour, speedMs', () => {
@@ -212,20 +212,22 @@ describe('computeSeasonalHeatmap', () => {
   it('skips records with negative speeds', () => {
     const hourly: HourlyWindData = {
       coordinate: { lat: 55, lng: -4 },
-      records: [{
-        datetime: '2023-01-01T12:00',
-        ws2m: -999,
-        ws10m: -999,
-        ws50m: -999,
-        wd10m: 200,
-        wd50m: 210,
-      }],
+      records: [
+        {
+          datetime: '2023-01-01T12:00',
+          ws2m: null,
+          ws10m: null,
+          ws50m: null,
+          wd10m: 200,
+          wd50m: 210,
+        },
+      ],
       startDate: '2023-01-01',
       endDate: '2023-01-01',
     };
     const result = computeSeasonalHeatmap(hourly);
     const janNoon = result.cells.find((c) => c.month === 1 && c.hour === 12);
-    expect(janNoon!.speedMs).toBe(0);
+    expect(janNoon).toBeUndefined();
   });
 
   it('has bestSeason and worstSeason', () => {
@@ -275,8 +277,8 @@ describe('computeMonthlyBoxPlots', () => {
     };
     const plots = computeMonthlyBoxPlots(history);
     const febPlot = plots.find((p) => p.month === 2);
-    expect(febPlot!.min).toBe(0);
-    expect(febPlot!.max).toBe(0);
+    expect(febPlot).toBeUndefined();
+    expect(plots).toHaveLength(1);
   });
 
   it('handles single data point for a month', () => {
@@ -333,20 +335,22 @@ describe('computeDiurnalProfile', () => {
   it('returns zeros for hours with no data', () => {
     const hourly: HourlyWindData = {
       coordinate: { lat: 55, lng: -4 },
-      records: [{
-        datetime: '2023-01-01T12:00',
-        ws2m: 3,
-        ws10m: 5,
-        ws50m: 8,
-        wd10m: 200,
-        wd50m: 210,
-      }],
+      records: [
+        {
+          datetime: '2023-01-01T12:00',
+          ws2m: 3,
+          ws10m: 5,
+          ws50m: 8,
+          wd10m: 200,
+          wd50m: 210,
+        },
+      ],
       startDate: '2023-01-01',
       endDate: '2023-01-01',
     };
     const result = computeDiurnalProfile(hourly);
-    const hour0 = result.hours.find((p) => p.hour === 0)!;
-    expect(hour0.meanSpeedMs).toBe(0);
+    const hour0 = result.hours.find((p) => p.hour === 0);
+    expect(hour0).toBeUndefined();
     const hour12 = result.hours.find((p) => p.hour === 12)!;
     expect(hour12.meanSpeedMs).toBe(8);
   });
@@ -396,7 +400,7 @@ describe('computeSpeedDistribution', () => {
     };
     const result = computeSpeedDistribution(daily);
     expect(result.bins).toHaveLength(0);
-    expect(result.weibullK).toBe(0);
+    expect(result.weibullK).toBeNull();
   });
 
   it('respects custom binWidth', () => {

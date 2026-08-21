@@ -19,12 +19,19 @@ import type {
 // ─── Wind Trend (linear regression over monthly data) ───
 
 export function computeWindTrend(history: MonthlyWindHistory): WindTrendResult {
-  const records = history.records;
+  const records = history.records.filter((record) => bestSpeed(record) !== null);
   if (records.length === 0) {
-    return { points: [], slopePerYear: 0, rSquared: 0, trendDirection: 'stable', trendMagnitude: 0, summary: 'No data available' };
+    return {
+      points: [],
+      slopePerYear: null,
+      rSquared: null,
+      trendDirection: 'indeterminate',
+      trendMagnitude: null,
+      summary: 'No usable wind-speed data available.',
+    };
   }
 
-  const speeds = records.map((r) => bestSpeed(r));
+  const speeds = records.map((r) => bestSpeed(r)!);
   const xs = records.map((r) => r.year + (r.month - 1) / 12);
 
   const { slope, intercept, rSquared } = linearRegression(xs, speeds);
@@ -32,8 +39,8 @@ export function computeWindTrend(history: MonthlyWindHistory): WindTrendResult {
   const points: TrendPoint[] = [];
   for (let i = 0; i < records.length; i++) {
     const rec = records[i]!;
-    const s = speeds[i] ?? 0;
-    const x = xs[i] ?? 0;
+    const s = speeds[i]!;
+    const x = xs[i]!;
     points.push({
       year: rec.year,
       month: rec.month,
@@ -46,7 +53,10 @@ export function computeWindTrend(history: MonthlyWindHistory): WindTrendResult {
   const trendDirection: 'increasing' | 'decreasing' | 'stable' =
     Math.abs(slopePerDecade) < 0.1 ? 'stable' : slopePerDecade > 0 ? 'increasing' : 'decreasing';
   const trendMagnitude = Math.abs(slopePerDecade);
-  const dirWord = trendDirection === 'stable' ? 'remained stable' : `${trendDirection} by ${trendMagnitude.toFixed(1)} m/s per decade`;
+  const dirWord =
+    trendDirection === 'stable'
+      ? 'remained stable'
+      : `${trendDirection} by ${trendMagnitude.toFixed(1)} m/s per decade`;
   const summary = `Wind speed at this site has ${dirWord} since ${records[0]!.year}.`;
 
   return { points, slopePerYear: slope, rSquared, trendDirection, trendMagnitude, summary };
@@ -62,7 +72,7 @@ export function computeSeasonalHeatmap(hourly: HourlyWindData): SeasonalHeatmapR
     const hour = Number.parseInt(rec.datetime.slice(11, 13), 10);
     const key = `${month}:${hour}`;
     const speed = bestHourlySpeed(rec);
-    if (speed < 0) continue;
+    if (speed === null) continue;
     if (!buckets.has(key)) buckets.set(key, []);
     buckets.get(key)!.push(speed);
   }
@@ -71,8 +81,9 @@ export function computeSeasonalHeatmap(hourly: HourlyWindData): SeasonalHeatmapR
   for (let month = 1; month <= 12; month++) {
     for (let hour = 0; hour < 24; hour++) {
       const arr = buckets.get(`${month}:${hour}`);
-      const speedMs = arr && arr.length > 0 ? arr.reduce((a, b) => a + b, 0) / arr.length : 0;
-      cells.push({ month, hour, speedMs });
+      if (arr && arr.length > 0) {
+        cells.push({ month, hour, speedMs: arr.reduce((a, b) => a + b, 0) / arr.length });
+      }
     }
   }
 
@@ -86,30 +97,56 @@ export function computeSeasonalHeatmap(hourly: HourlyWindData): SeasonalHeatmapR
     'Summer (Jun-Aug)': [6, 7, 8],
     'Autumn (Sep-Nov)': [9, 10, 11],
   };
-  let bestSeason = '';
-  let worstSeason = '';
+  let bestSeason: string | null = null;
+  let worstSeason: string | null = null;
   let bestAvg = -1;
   let worstAvg = Number.POSITIVE_INFINITY;
   for (const [name, months] of Object.entries(seasonMonths)) {
     const seasonCells = cells.filter((c) => months.includes(c.month));
-    const avg = seasonCells.length > 0 ? seasonCells.reduce((s, c) => s + c.speedMs, 0) / seasonCells.length : 0;
-    if (avg > bestAvg) { bestAvg = avg; bestSeason = name; }
-    if (avg < worstAvg) { worstAvg = avg; worstSeason = name; }
+    if (seasonCells.length === 0) continue;
+    const avg = seasonCells.reduce((s, c) => s + c.speedMs, 0) / seasonCells.length;
+    if (avg > bestAvg) {
+      bestAvg = avg;
+      bestSeason = name;
+    }
+    if (avg < worstAvg) {
+      worstAvg = avg;
+      worstSeason = name;
+    }
   }
 
-  return { cells, minSpeed: minSpeed === Number.POSITIVE_INFINITY ? 0 : minSpeed, maxSpeed, bestSeason, worstSeason };
+  return {
+    cells,
+    minSpeed: minSpeed === Number.POSITIVE_INFINITY ? null : minSpeed,
+    maxSpeed: cells.length === 0 ? null : maxSpeed,
+    bestSeason,
+    worstSeason,
+  };
 }
 
 // ─── Monthly Box Plots ───
 
-const MONTH_LABELS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+const MONTH_LABELS = [
+  'Jan',
+  'Feb',
+  'Mar',
+  'Apr',
+  'May',
+  'Jun',
+  'Jul',
+  'Aug',
+  'Sep',
+  'Oct',
+  'Nov',
+  'Dec',
+];
 
 export function computeMonthlyBoxPlots(history: MonthlyWindHistory): BoxPlotData[] {
   const byMonth = new Map<number, number[]>();
 
   for (const rec of history.records) {
     const speed = bestSpeed(rec);
-    if (speed < 0) continue;
+    if (speed === null) continue;
     if (!byMonth.has(rec.month)) byMonth.set(rec.month, []);
     byMonth.get(rec.month)!.push(speed);
   }
@@ -118,10 +155,7 @@ export function computeMonthlyBoxPlots(history: MonthlyWindHistory): BoxPlotData
   for (let month = 1; month <= 12; month++) {
     const vals = (byMonth.get(month) ?? []).sort((a, b) => a - b);
     const label = MONTH_LABELS[month - 1] ?? '';
-    if (vals.length === 0) {
-      result.push({ month, label, min: 0, q1: 0, median: 0, q3: 0, max: 0, mean: 0, outliers: [] });
-      continue;
-    }
+    if (vals.length === 0) continue;
     const q1 = percentile(vals, 25);
     const q3 = percentile(vals, 75);
     const iqr = q3 - q1;
@@ -152,7 +186,7 @@ export function computeDiurnalProfile(hourly: HourlyWindData): DiurnalProfileRes
   for (const rec of hourly.records) {
     const hour = Number.parseInt(rec.datetime.slice(11, 13), 10);
     const speed = bestHourlySpeed(rec);
-    if (speed < 0) continue;
+    if (speed === null) continue;
     if (!byHour.has(hour)) byHour.set(hour, []);
     byHour.get(hour)!.push(speed);
   }
@@ -160,10 +194,7 @@ export function computeDiurnalProfile(hourly: HourlyWindData): DiurnalProfileRes
   const hours: DiurnalPoint[] = [];
   for (let hour = 0; hour < 24; hour++) {
     const vals = byHour.get(hour) ?? [];
-    if (vals.length === 0) {
-      hours.push({ hour, meanSpeedMs: 0, minSpeedMs: 0, maxSpeedMs: 0 });
-      continue;
-    }
+    if (vals.length === 0) continue;
     hours.push({
       hour,
       meanSpeedMs: vals.reduce((a, b) => a + b, 0) / vals.length,
@@ -172,13 +203,27 @@ export function computeDiurnalProfile(hourly: HourlyWindData): DiurnalProfileRes
     });
   }
 
-  let peakHour = 0;
-  let troughHour = 0;
+  if (hours.length === 0) {
+    return {
+      hours: [],
+      peakHour: null,
+      troughHour: null,
+      summary: 'No usable hourly wind-speed data available.',
+    };
+  }
+  let peakHour: number | null = null;
+  let troughHour: number | null = null;
   let peakSpeed = -1;
   let troughSpeed = Number.POSITIVE_INFINITY;
   for (const h of hours) {
-    if (h.meanSpeedMs > peakSpeed) { peakSpeed = h.meanSpeedMs; peakHour = h.hour; }
-    if (h.meanSpeedMs < troughSpeed) { troughSpeed = h.meanSpeedMs; troughHour = h.hour; }
+    if (h.meanSpeedMs > peakSpeed) {
+      peakSpeed = h.meanSpeedMs;
+      peakHour = h.hour;
+    }
+    if (h.meanSpeedMs < troughSpeed) {
+      troughSpeed = h.meanSpeedMs;
+      troughHour = h.hour;
+    }
   }
 
   const summary = `Wind peaks at ${String(peakHour).padStart(2, '0')}:00 (${peakSpeed.toFixed(1)} m/s) and is weakest at ${String(troughHour).padStart(2, '0')}:00 (${troughSpeed.toFixed(1)} m/s)`;
@@ -192,10 +237,19 @@ export function computeSpeedDistribution(
   daily: DailyWindData,
   binWidth = 1,
 ): SpeedDistributionResult {
-  const speeds = daily.records.map((r) => bestDailySpeed(r)).filter((s) => s >= 0);
+  const speeds = daily.records
+    .map((r) => bestDailySpeed(r))
+    .filter((speed): speed is number => speed !== null);
 
   if (speeds.length === 0) {
-    return { bins: [], weibullK: 0, weibullC: 0, meanSpeed: 0, medianSpeed: 0, summary: 'No data available' };
+    return {
+      bins: [],
+      weibullK: null,
+      weibullC: null,
+      meanSpeed: null,
+      medianSpeed: null,
+      summary: 'No usable wind-speed data available.',
+    };
   }
 
   const maxSpeed = Math.ceil(Math.max(...speeds));
@@ -231,7 +285,7 @@ export function computeSpeedDistribution(
 export interface YearOverYearEntry {
   year: number;
   annualMeanMs: number;
-  monthlyMeans: number[];
+  monthlyMeans: Array<number | null>;
 }
 
 export function computeYearOverYear(history: MonthlyWindHistory): YearOverYearEntry[] {
@@ -239,7 +293,7 @@ export function computeYearOverYear(history: MonthlyWindHistory): YearOverYearEn
 
   for (const rec of history.records) {
     const speed = bestSpeed(rec);
-    if (speed < 0) continue;
+    if (speed === null) continue;
     if (!byYear.has(rec.year)) byYear.set(rec.year, new Map());
     const monthMap = byYear.get(rec.year)!;
     if (!monthMap.has(rec.month)) monthMap.set(rec.month, []);
@@ -251,13 +305,14 @@ export function computeYearOverYear(history: MonthlyWindHistory): YearOverYearEn
 
   for (const year of years) {
     const monthMap = byYear.get(year)!;
-    const monthlyMeans: number[] = [];
+    const monthlyMeans: Array<number | null> = [];
     for (let m = 1; m <= 12; m++) {
       const vals = monthMap.get(m) ?? [];
-      monthlyMeans.push(vals.length > 0 ? vals.reduce((a, b) => a + b, 0) / vals.length : 0);
+      monthlyMeans.push(vals.length > 0 ? vals.reduce((a, b) => a + b, 0) / vals.length : null);
     }
     const allVals = [...monthMap.values()].flatMap((v) => v);
-    const annualMeanMs = allVals.length > 0 ? allVals.reduce((a, b) => a + b, 0) / allVals.length : 0;
+    const annualMeanMs =
+      allVals.length > 0 ? allVals.reduce((a, b) => a + b, 0) / allVals.length : 0;
     result.push({ year, annualMeanMs, monthlyMeans });
   }
 
@@ -266,22 +321,22 @@ export function computeYearOverYear(history: MonthlyWindHistory): YearOverYearEn
 
 // ─── Internal helpers ───
 
-function bestSpeed(r: MonthlyWindRecord): number {
-  if (r.ws50m >= 0) return r.ws50m;
-  if (r.ws10m >= 0) return r.ws10m;
-  return r.ws2m;
+function bestSpeed(r: MonthlyWindRecord): number | null {
+  if (r.ws50m !== null && r.ws50m >= 0) return r.ws50m;
+  if (r.ws10m !== null && r.ws10m >= 0) return r.ws10m;
+  return r.ws2m !== null && r.ws2m >= 0 ? r.ws2m : null;
 }
 
-function bestHourlySpeed(r: HourlyWindRecord): number {
-  if (r.ws50m >= 0) return r.ws50m;
-  if (r.ws10m >= 0) return r.ws10m;
-  return r.ws2m;
+function bestHourlySpeed(r: HourlyWindRecord): number | null {
+  if (r.ws50m !== null && r.ws50m >= 0) return r.ws50m;
+  if (r.ws10m !== null && r.ws10m >= 0) return r.ws10m;
+  return r.ws2m !== null && r.ws2m >= 0 ? r.ws2m : null;
 }
 
-function bestDailySpeed(r: DailyWindRecord): number {
-  if (r.ws50m >= 0) return r.ws50m;
-  if (r.ws10m >= 0) return r.ws10m;
-  return r.ws2m;
+function bestDailySpeed(r: DailyWindRecord): number | null {
+  if (r.ws50m !== null && r.ws50m >= 0) return r.ws50m;
+  if (r.ws10m !== null && r.ws10m >= 0) return r.ws10m;
+  return r.ws2m !== null && r.ws2m >= 0 ? r.ws2m : null;
 }
 
 function percentile(sorted: number[], p: number): number {
@@ -292,7 +347,10 @@ function percentile(sorted: number[], p: number): number {
   return (sorted[lower] ?? 0) * (1 - frac) + (sorted[lower + 1] ?? 0) * frac;
 }
 
-function linearRegression(xs: number[], ys: number[]): { slope: number; intercept: number; rSquared: number } {
+function linearRegression(
+  xs: number[],
+  ys: number[],
+): { slope: number; intercept: number; rSquared: number } {
   const n = xs.length;
   if (n === 0) return { slope: 0, intercept: 0, rSquared: 0 };
 
@@ -357,9 +415,9 @@ function gammaApprox(z: number): number {
   }
   const zm1 = z - 1;
   const coeffs = [
-    0.99999999999980993, 676.5203681218851, -1259.1392167224028,
-    771.32342877765313, -176.61502916214059, 12.507343278686905,
-    -0.13857109526572012, 9.9843695780195716e-6, 1.5056327351493116e-7,
+    0.99999999999980993, 676.5203681218851, -1259.1392167224028, 771.32342877765313,
+    -176.61502916214059, 12.507343278686905, -0.13857109526572012, 9.9843695780195716e-6,
+    1.5056327351493116e-7,
   ];
   let acc = coeffs[0] ?? 0;
   for (let i = 1; i < coeffs.length; i++) {

@@ -8,9 +8,9 @@
 //   Class 3 (suburban/forest): 0.25
 
 const ALPHA_BY_ROUGHNESS_CLASS: Record<number, number> = {
-  0: 0.10,
+  0: 0.1,
   1: 0.14,
-  2: 0.20,
+  2: 0.2,
   3: 0.25,
 };
 

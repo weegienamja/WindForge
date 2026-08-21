@@ -55,8 +55,7 @@ export function calculateRix(
       const segmentDist = dist - prevDist;
 
       if (segmentDist > 0) {
-        const slopePercent =
-          (Math.abs(elev - prevElev) / segmentDist) * 100;
+        const slopePercent = (Math.abs(elev - prevElev) / segmentDist) * 100;
 
         totalSegments++;
         if (slopePercent > criticalSlopePercent) {
@@ -69,17 +68,16 @@ export function calculateRix(
     }
   }
 
-  const rixPercent =
-    totalSegments > 0 ? (exceedingSegments / totalSegments) * 100 : 0;
-  const exceedingFraction =
-    totalSegments > 0 ? exceedingSegments / totalSegments : 0;
+  const rixPercent = totalSegments > 0 ? (exceedingSegments / totalSegments) * 100 : 0;
+  const exceedingFraction = totalSegments > 0 ? exceedingSegments / totalSegments : 0;
 
   let flowModelReliability: 'high' | 'moderate' | 'low';
   let reliabilityText: string;
 
   if (rixPercent < 5) {
     flowModelReliability = 'high';
-    reliabilityText = 'Linear flow models are reliable at this site.';
+    reliabilityText =
+      'The RIX screen indicates fewer terrain-complexity concerns for linear flow modelling.';
   } else if (rixPercent < 15) {
     flowModelReliability = 'moderate';
     reliabilityText =
@@ -87,7 +85,7 @@ export function calculateRix(
   } else {
     flowModelReliability = 'low';
     reliabilityText =
-      'Significant flow separation expected. CFD modelling recommended for accurate wind resource assessment.';
+      'The RIX screen indicates substantial flow-separation risk; site-specific flow modelling is recommended.';
   }
 
   return {
@@ -140,8 +138,7 @@ function findNearestCell(
     const row = points[r]!;
     for (let c = 0; c < row.length; c++) {
       const pt = row[c]!;
-      const dist =
-        (pt.lat - target.lat) ** 2 + (pt.lng - target.lng) ** 2;
+      const dist = (pt.lat - target.lat) ** 2 + (pt.lng - target.lng) ** 2;
       if (dist < bestDist) {
         bestDist = dist;
         bestRow = r;

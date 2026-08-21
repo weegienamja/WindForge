@@ -1,5 +1,10 @@
 import { describe, it, expect } from 'vitest';
-import { createBoundary, generateSampleGrid, parseBoundaryFromGeoJSON, parseBoundaryFromKML } from '../src/site/site-boundary.js';
+import {
+  createBoundary,
+  generateSampleGrid,
+  parseBoundaryFromGeoJSON,
+  parseBoundaryFromKML,
+} from '../src/site/site-boundary.js';
 import type { LatLng } from '../src/types/analysis.js';
 
 const SQUARE: LatLng[] = [
@@ -61,7 +66,15 @@ describe('parseBoundaryFromGeoJSON', () => {
       properties: { name: 'Test' },
       geometry: {
         type: 'Polygon',
-        coordinates: [[[-4.26, 55.86], [-4.25, 55.86], [-4.25, 55.87], [-4.26, 55.87], [-4.26, 55.86]]],
+        coordinates: [
+          [
+            [-4.26, 55.86],
+            [-4.25, 55.86],
+            [-4.25, 55.87],
+            [-4.26, 55.87],
+            [-4.26, 55.86],
+          ],
+        ],
       },
     });
     const result = parseBoundaryFromGeoJSON(geojson);
@@ -75,7 +88,15 @@ describe('parseBoundaryFromGeoJSON', () => {
   it('parses a bare Polygon geometry', () => {
     const geojson = JSON.stringify({
       type: 'Polygon',
-      coordinates: [[[-4.26, 55.86], [-4.25, 55.86], [-4.25, 55.87], [-4.26, 55.87], [-4.26, 55.86]]],
+      coordinates: [
+        [
+          [-4.26, 55.86],
+          [-4.25, 55.86],
+          [-4.25, 55.87],
+          [-4.26, 55.87],
+          [-4.26, 55.86],
+        ],
+      ],
     });
     const result = parseBoundaryFromGeoJSON(geojson);
     expect(result.ok).toBe(true);
@@ -90,7 +111,15 @@ describe('parseBoundaryFromGeoJSON', () => {
           properties: {},
           geometry: {
             type: 'Polygon',
-            coordinates: [[[-4.26, 55.86], [-4.25, 55.86], [-4.25, 55.87], [-4.26, 55.87], [-4.26, 55.86]]],
+            coordinates: [
+              [
+                [-4.26, 55.86],
+                [-4.25, 55.86],
+                [-4.25, 55.87],
+                [-4.26, 55.87],
+                [-4.26, 55.86],
+              ],
+            ],
           },
         },
       ],

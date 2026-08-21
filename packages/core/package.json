@@ -1,9 +1,26 @@
 {
   "name": "@jamieblair/windforge-core",
   "version": "0.3.0",
-  "description": "Core scoring and analysis engine for wind energy site assessment",
+  "description": "Screening-level wind energy site evidence, geometry, and modelling engine",
   "author": "Jamie Blair <jamie@jamieblair.co.uk>",
   "license": "MIT",
+  "homepage": "https://github.com/weegienamja/WindForge#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/weegienamja/WindForge.git",
+    "directory": "packages/core"
+  },
+  "bugs": {
+    "url": "https://github.com/weegienamja/WindForge/issues"
+  },
+  "keywords": [
+    "wind-energy",
+    "renewable-energy",
+    "gis",
+    "geospatial",
+    "typescript",
+    "site-screening"
+  ],
   "type": "module",
   "main": "./dist/index.cjs",
   "module": "./dist/index.js",
@@ -29,11 +46,13 @@
     "prepublishOnly": "pnpm test && pnpm build"
   },
   "devDependencies": {
+    "@types/geojson": "^7946.0.16",
     "@types/node": "^20",
     "tsup": "^8.0.0",
     "vitest": "^3.0.0"
   },
   "dependencies": {
+    "@turf/turf": "^7.4.0",
     "netcdfjs": "^4.0.0"
   }
 }

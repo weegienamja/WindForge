@@ -45,7 +45,7 @@ import { reverseGeocode } from '../src/datasources/nominatim.js';
 import { fetchEra5MonthlyHistory } from '../src/datasources/era5.js';
 import { fetchCerraMonthlyHistory, isInCerraDomain } from '../src/datasources/cerra.js';
 
-const COORD = { lat: 55.7644, lng: -4.1770 };
+const COORD = { lat: 55.7644, lng: -4.177 };
 
 function makeSummary(meanMs: number, dataYears = 1): WindDataSummary {
   return {
@@ -129,9 +129,7 @@ function setupHappyPathMocks(): void {
       detail: 'Primary road 1.2km',
     }),
   );
-  vi.mocked(fetchNearbyWindFarms).mockResolvedValue(
-    ok({ count: 1, nearestDistanceKm: 12 }),
-  );
+  vi.mocked(fetchNearbyWindFarms).mockResolvedValue(ok({ count: 1, nearestDistanceKm: 12 }));
   vi.mocked(reverseGeocode).mockResolvedValue(
     ok({ countryCode: 'GB', displayName: 'East Kilbride' }),
   );
@@ -140,6 +138,13 @@ function setupHappyPathMocks(): void {
 describe('analyseSite reanalysis reconciliation', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+  });
+
+  it('rejects invalid hub heights before calling providers', async () => {
+    const result = await analyseSite({ coordinate: COORD, hubHeightM: Number.NaN });
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.error.code).toBe(ScoringErrorCode.OutOfRange);
+    expect(fetchWindData).not.toHaveBeenCalled();
   });
 
   it('does not include reconciliation metadata when no reanalysis sources are provided', async () => {
@@ -218,9 +223,51 @@ describe('analyseSite reanalysis reconciliation', () => {
     expect(result.value.metadata.reconciliation).toBeUndefined();
     expect(result.value.factors.length).toBeGreaterThan(0);
   });
+
+  it('does not turn a low heuristic factor score into a categorical exclusion', async () => {
+    setupHappyPathMocks();
+    vi.mocked(fetchWindData).mockResolvedValue(ok(makeSummary(1, 10)));
+
+    const result = await analyseSite({ coordinate: COORD });
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.value.hardConstraints).toEqual([]);
+    expect(result.value.warnings.some((warning) => warning.factor === 'windResource')).toBe(true);
+  });
+
+  it('suppresses the composite instead of substituting a neutral score', async () => {
+    setupHappyPathMocks();
+    vi.mocked(fetchGridInfrastructure).mockResolvedValue(
+      err(scoringError(ScoringErrorCode.DataFetchFailed, 'Overpass unavailable')),
+    );
+
+    const result = await analyseSite({ coordinate: COORD });
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.value.compositeScore).toBeNull();
+    expect(result.value.metadata.completeness.status).toBe('materially_incomplete');
+    expect(result.value.metadata.completeness.missingRequiredFactors).toContain('gridProximity');
+    expect(result.value.factors.some((factor) => factor.dataSource.includes('neutral'))).toBe(
+      false,
+    );
+  });
+
+  it('marks the result indeterminate when primary wind evidence is unavailable', async () => {
+    setupHappyPathMocks();
+    vi.mocked(fetchWindData).mockResolvedValue(
+      err(scoringError(ScoringErrorCode.DataFetchFailed, 'NASA unavailable')),
+    );
+
+    const result = await analyseSite({ coordinate: COORD });
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.value.compositeScore).toBeNull();
+    expect(result.value.windResource).toBeNull();
+    expect(result.value.metadata.completeness.status).toBe('indeterminate');
+  });
 });
 
-describe('analyseSite auto-fetch reanalysis', () => {
+describe('analyseSite reanalysis request-path policy', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     delete process.env.CDS_API_KEY;
@@ -238,82 +285,15 @@ describe('analyseSite auto-fetch reanalysis', () => {
     }
   });
 
-  it('auto-fetches ERA5 when CDS key set and skips CERRA when out of area', async () => {
+  it('does not start asynchronous CDS jobs in the analysis request path', async () => {
     setupHappyPathMocks();
-    vi.mocked(isInCerraDomain).mockReturnValue(false);
-    vi.mocked(fetchEra5MonthlyHistory).mockResolvedValue(
-      ok({ summary: makeSummary(7.5, 5), history: makeHistory(7.5, 36) }),
-    );
-
     const result = await analyseSite({ coordinate: COORD, cdsApiKey: 'k' });
     expect(result.ok).toBe(true);
-    expect(fetchEra5MonthlyHistory).toHaveBeenCalledOnce();
+    expect(fetchEra5MonthlyHistory).not.toHaveBeenCalled();
     expect(fetchCerraMonthlyHistory).not.toHaveBeenCalled();
     if (result.ok) {
-      expect(result.value.metadata.reanalysisAttempted).toEqual(['era5']);
-      expect(result.value.metadata.reanalysisSucceeded).toEqual(['era5']);
-      expect(result.value.metadata.reconciliation?.reference).toBe('era5');
-    }
-  });
-
-  it('auto-fetches both ERA5 and CERRA in-area, prefers CERRA', async () => {
-    setupHappyPathMocks();
-    vi.mocked(isInCerraDomain).mockReturnValue(true);
-    vi.mocked(fetchEra5MonthlyHistory).mockResolvedValue(
-      ok({ summary: makeSummary(7.5, 5), history: makeHistory(7.5, 36) }),
-    );
-    vi.mocked(fetchCerraMonthlyHistory).mockResolvedValue(
-      ok({ summary: makeSummary(7.2, 5), history: makeHistory(7.2, 36) }),
-    );
-
-    const result = await analyseSite({ coordinate: COORD, cdsApiKey: 'k' });
-    expect(result.ok).toBe(true);
-    expect(fetchEra5MonthlyHistory).toHaveBeenCalledOnce();
-    expect(fetchCerraMonthlyHistory).toHaveBeenCalledOnce();
-    if (result.ok) {
-      expect(result.value.metadata.reanalysisAttempted?.sort()).toEqual(['cerra', 'era5']);
-      expect(result.value.metadata.reanalysisSucceeded?.sort()).toEqual(['cerra', 'era5']);
-      expect(result.value.metadata.reconciliation?.reference).toBe('cerra');
-    }
-  });
-
-  it('continues with ERA5 when CERRA fetch fails', async () => {
-    setupHappyPathMocks();
-    vi.mocked(isInCerraDomain).mockReturnValue(true);
-    vi.mocked(fetchEra5MonthlyHistory).mockResolvedValue(
-      ok({ summary: makeSummary(7.5, 5), history: makeHistory(7.5, 36) }),
-    );
-    vi.mocked(fetchCerraMonthlyHistory).mockResolvedValue(
-      err(scoringError(ScoringErrorCode.Timeout, 'CDS timeout')),
-    );
-
-    const result = await analyseSite({ coordinate: COORD, cdsApiKey: 'k' });
-    expect(result.ok).toBe(true);
-    if (result.ok) {
-      expect(result.value.metadata.reanalysisSucceeded).toEqual(['era5']);
-      expect(result.value.metadata.reconciliation?.reference).toBe('era5');
-      expect(result.value.metadata.sourcesFailed).toContain('CERRA');
-    }
-  });
-
-  it('completes analysis even when both reanalysis fetches fail', async () => {
-    setupHappyPathMocks();
-    vi.mocked(isInCerraDomain).mockReturnValue(true);
-    vi.mocked(fetchEra5MonthlyHistory).mockResolvedValue(
-      err(scoringError(ScoringErrorCode.DataFetchFailed, 'CDS rejected')),
-    );
-    vi.mocked(fetchCerraMonthlyHistory).mockResolvedValue(
-      err(scoringError(ScoringErrorCode.DataFetchFailed, 'CDS rejected')),
-    );
-
-    const result = await analyseSite({ coordinate: COORD, cdsApiKey: 'k' });
-    expect(result.ok).toBe(true);
-    if (result.ok) {
       expect(result.value.metadata.reconciliation).toBeUndefined();
-      expect(result.value.metadata.reanalysisSucceeded).toBeUndefined();
-      expect(result.value.metadata.sourcesFailed).toContain('ERA5');
-      expect(result.value.metadata.sourcesFailed).toContain('CERRA');
-      expect(result.value.factors.length).toBeGreaterThan(0);
+      expect(result.value.windResource?.correction.status).toBe('not_configured');
     }
   });
 

@@ -12,13 +12,9 @@ export function assessDataQuality(dataset: MetMastDataset): DataQualityReport {
 
   const totalGapHours = dataset.gaps.reduce((s, g) => s + g.durationHours, 0);
   const longestGapHours =
-    dataset.gaps.length > 0
-      ? Math.max(...dataset.gaps.map((g) => g.durationHours))
-      : 0;
+    dataset.gaps.length > 0 ? Math.max(...dataset.gaps.map((g) => g.durationHours)) : 0;
 
-  const icingRecordCount = dataset.flaggedRecords.filter(
-    (f) => f.flagType === 'icing',
-  ).length;
+  const icingRecordCount = dataset.flaggedRecords.filter((f) => f.flagType === 'icing').length;
   const stuckSensorCount = dataset.flaggedRecords.filter(
     (f) => f.flagType === 'stuck_sensor',
   ).length;
@@ -29,9 +25,7 @@ export function assessDataQuality(dataset: MetMastDataset): DataQualityReport {
     monthsPresent.add(rec.timestamp.getUTCMonth());
   }
 
-  const seasonalCompleteness = Array.from({ length: 12 }, (_, i) =>
-    monthsPresent.has(i),
-  );
+  const seasonalCompleteness = Array.from({ length: 12 }, (_, i) => monthsPresent.has(i));
   const monthsWithData = [...monthsPresent].sort((a, b) => a - b);
 
   // Adequacy assessment
@@ -43,8 +37,7 @@ export function assessDataQuality(dataset: MetMastDataset): DataQualityReport {
 
   const issues: string[] = [];
   if (recoveryPercent < 70) issues.push(`low recovery (${recoveryPercent}%)`);
-  if (monthsWithData.length < 12)
-    issues.push(`missing months: ${12 - monthsWithData.length}`);
+  if (monthsWithData.length < 12) issues.push(`missing months: ${12 - monthsWithData.length}`);
   if (longestGapHours > 168) issues.push(`long gap: ${longestGapHours.toFixed(0)}h`);
   if (icingRecordCount > 0) issues.push(`${icingRecordCount} icing records`);
   if (stuckSensorCount > 0) issues.push(`${stuckSensorCount} stuck sensor records`);
@@ -53,8 +46,7 @@ export function assessDataQuality(dataset: MetMastDataset): DataQualityReport {
     ? `Data quality: adequate. Recovery: ${recoveryPercent}%. ` +
       `${dataset.gaps.length} gaps totalling ${totalGapHours.toFixed(0)} hours. ` +
       `${monthsWithData.length}/12 months represented.`
-    : `Data quality: inadequate. Issues: ${issues.join('; ')}. ` +
-      `Recovery: ${recoveryPercent}%.`;
+    : `Data quality: inadequate. Issues: ${issues.join('; ')}. ` + `Recovery: ${recoveryPercent}%.`;
 
   return {
     recoveryPercent,

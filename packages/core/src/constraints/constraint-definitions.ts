@@ -4,19 +4,21 @@ export const CONSTRAINT_DEFINITIONS: ConstraintDefinition[] = [
   // Environmental
   {
     id: 'nature_reserve',
-    name: 'Nature Reserve',
+    name: 'Nature Reserve (OSM screening)',
     severity: 'hard',
     category: 'environmental',
     defaultSetbackM: 0,
-    description: 'Site overlaps with a nature reserve. No turbines permitted inside protected boundary.',
+    description:
+      'OpenStreetMap indicates a nature reserve overlap. Verify against the relevant statutory register before making a planning decision.',
   },
   {
     id: 'protected_area',
-    name: 'Protected Area (SSSI/SAC/SPA)',
+    name: 'Protected Area (OSM screening)',
     severity: 'hard',
     category: 'environmental',
     defaultSetbackM: 200,
-    description: 'Protected area designation. 200m buffer zone applies.',
+    description:
+      'OpenStreetMap indicates a protected-area feature. This does not establish SSSI, SAC, SPA, or other statutory status; the 200m buffer is a screening assumption.',
   },
   // Aviation
   {
@@ -51,7 +53,8 @@ export const CONSTRAINT_DEFINITIONS: ConstraintDefinition[] = [
     severity: 'soft',
     category: 'heritage',
     defaultSetbackM: 1000,
-    description: 'Historic monument or heritage site within 1km. May affect planning approval due to setting impact.',
+    description:
+      'Historic monument or heritage site within 1km. May affect planning approval due to setting impact.',
   },
   // Residential
   {
@@ -110,7 +113,8 @@ export const CONSTRAINT_DEFINITIONS: ConstraintDefinition[] = [
     severity: 'hard',
     category: 'water',
     defaultSetbackM: 0,
-    description: 'Site in a flood zone. Hard exclusion for turbine foundations.',
+    description:
+      'Reserved for a verified flood-zone dataset. OpenStreetMap screening does not determine statutory flood risk.',
   },
   // Terrain
   {
@@ -119,7 +123,8 @@ export const CONSTRAINT_DEFINITIONS: ConstraintDefinition[] = [
     severity: 'hard',
     category: 'terrain',
     defaultSetbackM: 0,
-    description: 'Slope gradient exceeds 15%. Unsuitable for turbine construction.',
+    description:
+      'Reserved for a validated terrain analysis. Point elevation samples do not establish construction suitability.',
   },
   // Info-level
   {
@@ -128,7 +133,8 @@ export const CONSTRAINT_DEFINITIONS: ConstraintDefinition[] = [
     severity: 'info',
     category: 'infrastructure',
     defaultSetbackM: 0,
-    description: 'Existing wind installation nearby. Provides planning precedent but may create wake interference.',
+    description:
+      'Existing wind installation nearby. Provides planning precedent but may create wake interference.',
   },
 ];
 

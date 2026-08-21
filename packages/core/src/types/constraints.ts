@@ -1,4 +1,5 @@
 import type { LatLng } from './analysis.js';
+import type { SupportedGeometry } from '../utils/feature-geometry.js';
 
 export type ConstraintSeverity = 'hard' | 'soft' | 'info';
 
@@ -23,17 +24,22 @@ export interface ConstraintDefinition {
 
 export interface DetectedConstraint {
   definition: ConstraintDefinition;
+  /** Source geometry preserved from Overpass; never reduced to its centroid for analysis. */
+  geometry: SupportedGeometry;
   location: LatLng;
   distanceFromSiteM: number;
   distanceFromCentroidM: number;
   affectedAreaSqKm?: number;
   osmFeatureId?: string;
+  evidenceSource: 'OpenStreetMap';
+  evidenceQuality: 'screening';
   detail: string;
 }
 
 export interface ExclusionZone {
   reason: string;
   polygon: LatLng[];
+  holes?: LatLng[][];
   areaSqKm: number;
 }
 

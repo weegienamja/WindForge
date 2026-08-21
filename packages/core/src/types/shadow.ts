@@ -17,8 +17,6 @@ export interface ReceptorFlicker {
   hoursPerYear: number;
   /** Maximum flicker minutes per day for each month */
   minutesPerDay: Array<{ month: number; maxMinutes: number }>;
-  /** Whether the receptor is compliant with the configured limits */
-  compliant: boolean;
 }
 
 /** Overall shadow flicker analysis result */
@@ -30,8 +28,8 @@ export interface ShadowFlickerResult {
   summary: string;
 }
 
-/** Options for shadow flicker compliance assessment */
-export interface ShadowComplianceOptions {
+/** Options for a screening comparison with configurable shadow thresholds. */
+export interface ShadowThresholdOptions {
   /** Maximum hours per year at any receptor (default: 30) */
   maxHoursPerYear?: number;
   /** Maximum minutes per day at any receptor (default: 30) */
@@ -40,22 +38,29 @@ export interface ShadowComplianceOptions {
   sunshineFraction?: number;
 }
 
-/** Shadow compliance assessment result */
-export interface ShadowComplianceAssessment {
+/** Screening comparison with configured shadow-flicker thresholds. */
+export interface ShadowThresholdAssessment {
   receptors: Array<{
     location: LatLng;
     astronomicalHoursPerYear: number;
     expectedHoursPerYear: number;
     maxMinutesPerDay: number;
-    compliantHoursPerYear: boolean;
-    compliantMinutesPerDay: boolean;
-    overallCompliant: boolean;
+    withinAnnualThreshold: boolean;
+    withinDailyThreshold: boolean;
+    withinAllThresholds: boolean;
   }>;
-  overallCompliant: boolean;
+  overallWithinThresholds: boolean;
   worstCaseExpectedHoursPerYear: number;
   worstCaseMinutesPerDay: number;
+  assessmentLevel: 'screening';
+  disclaimer: string;
   summary: string;
 }
+
+/** @deprecated Use {@link ShadowThresholdOptions}. */
+export type ShadowComplianceOptions = ShadowThresholdOptions;
+/** @deprecated Use {@link ShadowThresholdAssessment}. */
+export type ShadowComplianceAssessment = ShadowThresholdAssessment;
 
 /** Shadow calendar entry for a single receptor - month x hour matrix */
 export interface ShadowCalendarEntry {

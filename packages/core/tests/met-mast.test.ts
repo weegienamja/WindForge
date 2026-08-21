@@ -71,10 +71,7 @@ describe('parseMetMastCSV', () => {
       heightM: 60,
       hasHeader: false,
     };
-    const csv = [
-      '2024-01-01T00:00:00Z,8.5,270',
-      '2024-01-01T01:00:00Z,9.2,265',
-    ].join('\n');
+    const csv = ['2024-01-01T00:00:00Z,8.5,270', '2024-01-01T01:00:00Z,9.2,265'].join('\n');
 
     const result = parseMetMastCSV(csv, config);
     expect(result.ok).toBe(true);

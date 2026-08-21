@@ -40,7 +40,12 @@ describe('fetchGridInfrastructure', () => {
   it('returns grid data with lines and substations', async () => {
     mockFetch.mockResolvedValueOnce(
       overpassResponse([
-        { type: 'way', id: 1, center: { lat: 55.87, lon: -4.24 }, tags: { power: 'line', voltage: '132000' } },
+        {
+          type: 'way',
+          id: 1,
+          center: { lat: 55.87, lon: -4.24 },
+          tags: { power: 'line', voltage: '132000' },
+        },
         { type: 'node', id: 2, lat: 55.88, lon: -4.23, tags: { power: 'substation' } },
       ]),
     );
@@ -75,7 +80,12 @@ describe('fetchGridInfrastructure', () => {
       .mockResolvedValueOnce(overpassResponse([])) // 50km search
       .mockResolvedValueOnce(
         overpassResponse([
-          { type: 'way', id: 1, center: { lat: 56.5, lon: -4.24 }, tags: { power: 'line', voltage: '400000' } },
+          {
+            type: 'way',
+            id: 1,
+            center: { lat: 56.5, lon: -4.24 },
+            tags: { power: 'line', voltage: '400000' },
+          },
         ]),
       ); // 100km search
 
@@ -88,9 +98,7 @@ describe('fetchGridInfrastructure', () => {
   });
 
   it('returns error on HTTP failure', async () => {
-    mockFetch
-      .mockResolvedValueOnce(failedResponse(503))
-      .mockResolvedValueOnce(failedResponse(503)); // retry also fails
+    mockFetch.mockResolvedValueOnce(failedResponse(503)).mockResolvedValueOnce(failedResponse(503)); // retry also fails
 
     const resultPromise = fetchGridInfrastructure({ lat: 55.86, lng: -4.25 });
     await vi.advanceTimersByTimeAsync(6000); // advance past 5s retry delay
@@ -122,7 +130,12 @@ describe('fetchGridInfrastructure', () => {
   it('uses cache on repeated calls', async () => {
     mockFetch.mockResolvedValueOnce(
       overpassResponse([
-        { type: 'way', id: 1, center: { lat: 55.87, lon: -4.24 }, tags: { power: 'line', voltage: '132000' } },
+        {
+          type: 'way',
+          id: 1,
+          center: { lat: 55.87, lon: -4.24 },
+          tags: { power: 'line', voltage: '132000' },
+        },
       ]),
     );
 
@@ -154,7 +167,12 @@ describe('fetchLandUse', () => {
   it('detects hard constraints', async () => {
     mockFetch.mockResolvedValueOnce(
       overpassResponse([
-        { type: 'way', id: 1, center: { lat: 55.86, lon: -4.25 }, tags: { leisure: 'nature_reserve' } },
+        {
+          type: 'way',
+          id: 1,
+          center: { lat: 55.86, lon: -4.25 },
+          tags: { leisure: 'nature_reserve' },
+        },
       ]),
     );
 
@@ -169,7 +187,12 @@ describe('fetchLandUse', () => {
   it('detects protected_area hard constraint', async () => {
     mockFetch.mockResolvedValueOnce(
       overpassResponse([
-        { type: 'relation', id: 1, center: { lat: 55.86, lon: -4.25 }, tags: { boundary: 'protected_area' } },
+        {
+          type: 'relation',
+          id: 1,
+          center: { lat: 55.86, lon: -4.25 },
+          tags: { boundary: 'protected_area' },
+        },
       ]),
     );
 
@@ -211,7 +234,12 @@ describe('fetchLandUse', () => {
   it('detects residential as soft constraint when close', async () => {
     mockFetch.mockResolvedValueOnce(
       overpassResponse([
-        { type: 'way', id: 1, center: { lat: 55.861, lon: -4.25 }, tags: { landuse: 'residential' } },
+        {
+          type: 'way',
+          id: 1,
+          center: { lat: 55.861, lon: -4.25 },
+          tags: { landuse: 'residential' },
+        },
       ]),
     );
 
@@ -342,7 +370,12 @@ describe('fetchRoadAccess', () => {
       overpassResponse([
         { type: 'way', id: 1, center: { lat: 55.87, lon: -4.24 }, tags: { highway: 'track' } },
         { type: 'way', id: 2, center: { lat: 55.88, lon: -4.23 }, tags: { highway: 'primary' } },
-        { type: 'way', id: 3, center: { lat: 55.865, lon: -4.245 }, tags: { highway: 'secondary' } },
+        {
+          type: 'way',
+          id: 3,
+          center: { lat: 55.865, lon: -4.245 },
+          tags: { highway: 'secondary' },
+        },
       ]),
     );
 
@@ -358,7 +391,7 @@ describe('fetchNearbyWindFarms', () => {
   it('returns wind farms sorted by distance', async () => {
     mockFetch.mockResolvedValueOnce(
       overpassResponse([
-        { type: 'node', id: 1, lat: 55.90, lon: -4.20, tags: { 'generator:source': 'wind' } },
+        { type: 'node', id: 1, lat: 55.9, lon: -4.2, tags: { 'generator:source': 'wind' } },
         { type: 'node', id: 2, lat: 55.87, lon: -4.24, tags: { 'generator:source': 'wind' } },
       ]),
     );
@@ -382,9 +415,7 @@ describe('fetchNearbyWindFarms', () => {
   });
 
   it('handles fetch failure gracefully', async () => {
-    mockFetch
-      .mockResolvedValueOnce(failedResponse(500))
-      .mockResolvedValueOnce(failedResponse(500));
+    mockFetch.mockResolvedValueOnce(failedResponse(500)).mockResolvedValueOnce(failedResponse(500));
 
     const resultPromise = fetchNearbyWindFarms({ lat: 55.86, lng: -4.25 });
     await vi.advanceTimersByTimeAsync(6000); // advance past 5s retry delay

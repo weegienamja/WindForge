@@ -14,14 +14,14 @@ function makeSiteAssessment(): SiteAssessment {
       id: 'test-site',
       name: 'Example Wind Farm',
       polygon: [
-        { lat: 55.80, lng: -4.30 },
-        { lat: 55.85, lng: -4.30 },
+        { lat: 55.8, lng: -4.3 },
+        { lat: 55.85, lng: -4.3 },
         { lat: 55.85, lng: -4.22 },
-        { lat: 55.80, lng: -4.22 },
+        { lat: 55.8, lng: -4.22 },
       ],
       areaSqKm: 25,
       centroid: { lat: 55.825, lng: -4.26 },
-      boundingBox: { north: 55.85, south: 55.80, east: -4.22, west: -4.30 },
+      boundingBox: { north: 55.85, south: 55.8, east: -4.22, west: -4.3 },
     },
     samplePoints: [],
     aggregatedScore: {
@@ -148,10 +148,12 @@ function makeTurbulenceResult(): TurbulenceResult {
       { speedBinMs: 10, ti: 0.14, count: 200 },
       { speedBinMs: 15, ti: 0.11, count: 150 },
     ],
-    iecClass: 'B' as const,
+    referenceCategory: null,
     representativeTi: 0.13,
     dataSource: 'hourly' as const,
-    summary: 'IEC class B turbulence',
+    assessmentLevel: 'variability_proxy',
+    limitation: 'Hourly means are not IEC turbulence measurements.',
+    summary: 'Hourly variability proxy',
   };
 }
 
@@ -164,11 +166,13 @@ function makeExtremeWindResult(): ExtremeWindResult {
     gumbelMu: 25,
     gumbelSigma: 3.5,
     v50YearMs: 38.5,
-    v1YearMs: 25.2,
-    iecWindClass: 'III' as const,
+    v1YearMs: null,
+    referenceCategory: null,
     confidence: 'medium' as const,
     referenceHeightM: 80,
-    summary: 'IEC wind class III',
+    assessmentLevel: 'coarse_return_level',
+    limitation: 'Daily means are not gust maxima.',
+    summary: 'Coarse return-level fit',
   };
 }
 
@@ -199,10 +203,28 @@ function makeAepResult(): EnergyYieldResult {
     },
     netAepMwh: 5220,
     netTotalAepMwh: 26100,
-    netCapacityFactor: 0.30,
-    p50: { label: 'P50', aepMwh: 5220, totalAepMwh: 26100, capacityFactor: 0.30, description: '' },
-    p75: { label: 'P75', aepMwh: 4800, totalAepMwh: 24000, capacityFactor: 0.27, description: '' },
-    p90: { label: 'P90', aepMwh: 4400, totalAepMwh: 22000, capacityFactor: 0.25, description: '' },
+    netCapacityFactor: 0.3,
+    centralEstimate: {
+      label: 'Central',
+      aepMwh: 5220,
+      totalAepMwh: 26100,
+      capacityFactor: 0.3,
+      description: '',
+    },
+    downside10: {
+      label: '10% downside',
+      aepMwh: 4698,
+      totalAepMwh: 23490,
+      capacityFactor: 0.27,
+      description: '',
+    },
+    downside20: {
+      label: '20% downside',
+      aepMwh: 4176,
+      totalAepMwh: 20880,
+      capacityFactor: 0.24,
+      description: '',
+    },
     monthlyProductionMwh: [500, 480, 450, 400, 380, 350, 340, 360, 400, 450, 470, 490],
     assumptions: {
       windDataYears: 20,
@@ -223,7 +245,7 @@ function makeAepResult(): EnergyYieldResult {
 // Tests
 // ---------------------------------------------------------------------------
 
-describe('IEC Site Report', () => {
+describe('screening site report', () => {
   it('generates valid report structure', () => {
     const report = generateIecSiteReport(
       makeSiteAssessment(),
@@ -232,7 +254,9 @@ describe('IEC Site Report', () => {
       makeAepResult(),
     );
 
-    expect(report.metadata.standard).toContain('IEC 61400');
+    expect(report.metadata.standard).toContain('Screening-level');
+    expect(report.metadata.assessmentLevel).toBe('screening');
+    expect(report.metadata.disclaimer).toContain('Not an IEC compliance assessment');
     expect(report.metadata.siteId).toBe('test-site');
     expect(report.metadata.siteName).toBe('Example Wind Farm');
     expect(report.metadata.generatedAt).toBeTruthy();
@@ -260,7 +284,7 @@ describe('IEC Site Report', () => {
       makeAepResult(),
     );
 
-    expect(report.turbulence.iecClass).toBe('B');
+    expect(report.turbulence.referenceCategory).toBeNull();
     expect(report.turbulence.representativeTi).toBe(0.13);
     expect(report.turbulence.meanTi).toBe(0.12);
     expect(report.turbulence.tiBins).toHaveLength(3);
@@ -275,8 +299,8 @@ describe('IEC Site Report', () => {
     );
 
     expect(report.extremeWind.v50YearMs).toBe(38.5);
-    expect(report.extremeWind.v1YearMs).toBe(25.2);
-    expect(report.extremeWind.iecWindClass).toBe('III');
+    expect(report.extremeWind.v1YearMs).toBeNull();
+    expect(report.extremeWind.referenceCategory).toBeNull();
     expect(report.extremeWind.gumbelMu).toBe(25);
     expect(report.extremeWind.gumbelSigma).toBe(3.5);
   });
@@ -291,12 +315,12 @@ describe('IEC Site Report', () => {
 
     expect(report.energyYield.grossAepMwh).toBe(30000);
     expect(report.energyYield.netAepMwh).toBe(26100);
-    expect(report.energyYield.capacityFactor).toBe(0.30);
+    expect(report.energyYield.capacityFactor).toBe(0.3);
     expect(report.energyYield.turbineCount).toBe(5);
     expect(report.energyYield.turbineModel).toBe('Vestas V110-2.0');
-    expect(report.energyYield.p50AepMwh).toBe(26100);
-    expect(report.energyYield.p75AepMwh).toBe(24000);
-    expect(report.energyYield.p90AepMwh).toBe(22000);
+    expect(report.energyYield.centralEstimateMwh).toBe(26100);
+    expect(report.energyYield.downside10Mwh).toBe(23490);
+    expect(report.energyYield.downside20Mwh).toBe(20880);
   });
 
   it('populates suitability from assessment', () => {
@@ -337,7 +361,7 @@ describe('IEC Site Report', () => {
       makeAepResult(),
     );
 
-    expect(report.windConditions.annualMeanSpeedMs).toBe(0);
+    expect(report.windConditions.annualMeanSpeedMs).toBeNull();
   });
 
   it('omits dataReconciliation when no reconciliation is provided', () => {

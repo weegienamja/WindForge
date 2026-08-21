@@ -48,9 +48,9 @@ function makeTurbine(overrides?: Partial<TurbineModel>): TurbineModel {
 
 // ~5km square boundary
 function makeBoundary(): SiteBoundary {
-  const south = 55.80;
+  const south = 55.8;
   const north = 55.85;
-  const west = -4.30;
+  const west = -4.3;
   const east = -4.22;
   return {
     id: 'test-site',
@@ -159,9 +159,7 @@ describe('Layout Optimiser', () => {
     });
 
     // At least one turbine should have moved (lat should differ now)
-    const latDiff = Math.abs(
-      result.optimisedPositions[0]!.lat - result.optimisedPositions[1]!.lat,
-    );
+    const latDiff = Math.abs(result.optimisedPositions[0]!.lat - result.optimisedPositions[1]!.lat);
     // The optimiser should have offset them crosswind
     expect(latDiff).toBeGreaterThan(0);
   });
@@ -210,10 +208,7 @@ describe('Layout Optimiser', () => {
     // No position should be inside the exclusion zone
     for (const pos of result.optimisedPositions) {
       const inExclusion =
-        pos.lat >= 55.824 &&
-        pos.lat <= 55.826 &&
-        pos.lng >= -4.272 &&
-        pos.lng <= -4.268;
+        pos.lat >= 55.824 && pos.lat <= 55.826 && pos.lng >= -4.272 && pos.lng <= -4.268;
       expect(inExclusion).toBe(false);
     }
   });
