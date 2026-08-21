@@ -4,7 +4,13 @@ import type { EnergyYieldResult } from '@jamieblair/windforge-core';
 import { EconomicsPanel } from '../../src/components/analyse/EconomicsPanel';
 
 const AEP: EnergyYieldResult = {
-  turbineModel: { id: 'gw-2mw', manufacturer: 'Generic', model: '2MW', ratedPowerKw: 2000, rotorDiameterM: 90 },
+  turbineModel: {
+    id: 'gw-2mw',
+    manufacturer: 'Generic',
+    model: '2MW',
+    ratedPowerKw: 2000,
+    rotorDiameterM: 90,
+  },
   hubHeightM: 100,
   turbineCount: 1,
   grossAepMwh: 7800,
@@ -24,9 +30,27 @@ const AEP: EnergyYieldResult = {
   netAepMwh: 6552,
   netTotalAepMwh: 6552,
   netCapacityFactor: 0.37,
-  p50: { label: 'P50', aepMwh: 6552, totalAepMwh: 6552, capacityFactor: 0.37, description: '' },
-  p75: { label: 'P75', aepMwh: 6010, totalAepMwh: 6010, capacityFactor: 0.34, description: '' },
-  p90: { label: 'P90', aepMwh: 5500, totalAepMwh: 5500, capacityFactor: 0.31, description: '' },
+  centralEstimate: {
+    label: 'Central estimate',
+    aepMwh: 6552,
+    totalAepMwh: 6552,
+    capacityFactor: 0.37,
+    description: '',
+  },
+  downside10: {
+    label: '10% downside',
+    aepMwh: 5897,
+    totalAepMwh: 5897,
+    capacityFactor: 0.333,
+    description: '',
+  },
+  downside20: {
+    label: '20% downside',
+    aepMwh: 5242,
+    totalAepMwh: 5242,
+    capacityFactor: 0.296,
+    description: '',
+  },
   monthlyProductionMwh: [],
   assumptions: {
     windDataYears: 10,

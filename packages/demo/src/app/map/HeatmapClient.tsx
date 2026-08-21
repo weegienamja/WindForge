@@ -73,7 +73,10 @@ export function HeatmapClient() {
   );
 }
 
-function useHeatmapFeed(url: string): { data: HeatmapData | null; error: string | null } {
+function useHeatmapFeed(
+  url: string,
+  pollIncomplete: boolean,
+): { data: HeatmapData | null; error: string | null } {
   const [data, setData] = useState<HeatmapData | null>(null);
   const [error, setError] = useState<string | null>(null);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -90,11 +93,11 @@ function useHeatmapFeed(url: string): { data: HeatmapData | null; error: string 
         setData(json);
         setError(null);
         // Keep polling until the run is complete (or forever for a live feed).
-        if (!json.meta?.complete) timerRef.current = setTimeout(poll, POLL_MS);
+        if (pollIncomplete && !json.meta?.complete) timerRef.current = setTimeout(poll, POLL_MS);
       } catch (err) {
         if (cancelled) return;
         setError(err instanceof Error ? err.message : 'Failed to load heatmap data');
-        timerRef.current = setTimeout(poll, POLL_MS * 2);
+        if (pollIncomplete) timerRef.current = setTimeout(poll, POLL_MS * 2);
       }
     };
 
@@ -103,7 +106,7 @@ function useHeatmapFeed(url: string): { data: HeatmapData | null; error: string 
       cancelled = true;
       if (timerRef.current) clearTimeout(timerRef.current);
     };
-  }, [url]);
+  }, [url, pollIncomplete]);
 
   return { data, error };
 }
@@ -120,7 +123,8 @@ function HeatmapInner() {
     return process.env.NEXT_PUBLIC_HEATMAP_URL || '/heatmap.json';
   }, [searchParams]);
 
-  const { data, error } = useHeatmapFeed(url);
+  const isLiveFeed = url !== '/heatmap.json';
+  const { data, error } = useHeatmapFeed(url, isLiveFeed);
   const meta = data?.meta;
   const cells = data?.cells ?? [];
   const scored = cells.filter((c) => c.score !== null && c.score !== undefined);
@@ -171,13 +175,17 @@ function HeatmapInner() {
     router.push(`/analyse?lat=${cell.lat}&lng=${cell.lng}&hub=${meta?.hubHeightM ?? 100}`);
   };
   const onMapPick = (lat: number, lng: number) => {
-    router.push(`/analyse?lat=${lat.toFixed(4)}&lng=${lng.toFixed(4)}&hub=${meta?.hubHeightM ?? 100}`);
+    router.push(
+      `/analyse?lat=${lat.toFixed(4)}&lng=${lng.toFixed(4)}&hub=${meta?.hubHeightM ?? 100}`,
+    );
   };
 
   const atlas = layer === 'atlas' && gwa;
 
   return (
-    <main style={{ minHeight: '100vh', background: 'var(--surface-0)', color: 'var(--text-primary)' }}>
+    <main
+      style={{ minHeight: '100vh', background: 'var(--surface-0)', color: 'var(--text-primary)' }}
+    >
       <header
         style={{
           position: 'sticky',
@@ -208,11 +216,54 @@ function HeatmapInner() {
           </div>
         </div>
         {gwa ? <LayerToggle layer={layer} onChange={setLayer} /> : null}
-        {!atlas ? <MetricToggle metric={metric} onChange={setMetric} hasEconomics={hasEconomics} /> : null}
         {!atlas ? (
-          <ProgressReadout done={meta?.done ?? 0} total={meta?.total ?? 0} pct={pct} complete={!!meta?.complete} />
+          <MetricToggle metric={metric} onChange={setMetric} hasEconomics={hasEconomics} />
+        ) : null}
+        {!atlas ? (
+          <ProgressReadout
+            done={meta?.done ?? 0}
+            total={meta?.total ?? 0}
+            pct={pct}
+            complete={!!meta?.complete}
+            live={isLiveFeed}
+          />
         ) : null}
       </header>
+
+      {!atlas && meta ? (
+        <div
+          className="t-caption"
+          style={{
+            padding: '8px var(--space-5)',
+            background: 'var(--surface-1)',
+            color: 'var(--text-secondary)',
+            borderBottom: '1px solid var(--border-subtle)',
+          }}
+        >
+          {meta.complete
+            ? 'Completed dataset'
+            : isLiveFeed
+              ? 'Live partial dataset'
+              : 'Committed partial snapshot'}{' '}
+          · updated {new Date(meta.updatedAt).toLocaleString()} · {meta.spacingKm} km cells ·{' '}
+          {meta.source ?? 'WindForge screening analysis'}. Coverage is sampled, non-statutory, and
+          unsuitable for parcel or financing decisions.
+        </div>
+      ) : atlas && gwa ? (
+        <div
+          className="t-caption"
+          style={{
+            padding: '8px var(--space-5)',
+            background: 'var(--surface-1)',
+            color: 'var(--text-secondary)',
+            borderBottom: '1px solid var(--border-subtle)',
+          }}
+        >
+          Wind Atlas is the intentional default for continuous context. Resolution {gwa.resolutionM}{' '}
+          m at {gwa.heightM} m; it is wind-resource context only, not a site-suitability
+          determination.
+        </div>
+      ) : null}
 
       {!atlas && meta && meta.total > 0 ? (
         <div style={{ height: 3, background: 'var(--surface-elevated)' }}>
@@ -240,7 +291,12 @@ function HeatmapInner() {
           </>
         ) : (
           <>
-            <HeatmapLeaflet cells={scored} meta={meta ?? FALLBACK_META} onPick={onPick} colorFor={colorFor} />
+            <HeatmapLeaflet
+              cells={scored}
+              meta={meta ?? FALLBACK_META}
+              onPick={onPick}
+              colorFor={colorFor}
+            />
             <Legend metric={metric} lo={lo} hi={hi} />
             {!hasData ? <EmptyOverlay error={error} url={url} /> : null}
           </>
@@ -257,11 +313,13 @@ function ProgressReadout({
   total,
   pct,
   complete,
+  live,
 }: {
   done: number;
   total: number;
   pct: number;
   complete: boolean;
+  live: boolean;
 }) {
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
@@ -282,7 +340,7 @@ function ProgressReadout({
             background: complete ? 'var(--confidence-high)' : 'var(--accent-cool)',
           }}
         />
-        {complete ? 'Complete' : 'Live'}
+        {complete ? 'Complete' : live ? 'Live partial' : 'Partial snapshot'}
       </span>
       <span className="t-mono-data" style={{ fontSize: 13 }}>
         {done.toLocaleString()} / {total.toLocaleString()} ({pct}%)
@@ -301,7 +359,14 @@ function MetricToggle({
   hasEconomics: boolean;
 }) {
   return (
-    <div style={{ display: 'flex', border: '1px solid var(--border-subtle)', borderRadius: 4, overflow: 'hidden' }}>
+    <div
+      style={{
+        display: 'flex',
+        border: '1px solid var(--border-subtle)',
+        borderRadius: 4,
+        overflow: 'hidden',
+      }}
+    >
       {METRICS.map((m) => {
         const active = m.key === metric;
         const disabled = m.key === 'economics' && !hasEconomics;
@@ -315,7 +380,11 @@ function MetricToggle({
             className="t-mono-data"
             style={{
               background: active ? 'var(--accent-cool)' : 'transparent',
-              color: active ? '#0a0e1a' : disabled ? 'var(--text-tertiary)' : 'var(--text-secondary)',
+              color: active
+                ? '#0a0e1a'
+                : disabled
+                  ? 'var(--text-tertiary)'
+                  : 'var(--text-secondary)',
               border: 'none',
               padding: '6px 12px',
               fontSize: 12,
@@ -336,7 +405,14 @@ function LayerToggle({ layer, onChange }: { layer: Layer; onChange: (l: Layer) =
     { key: 'composite', label: 'Composite' },
   ];
   return (
-    <div style={{ display: 'flex', border: '1px solid var(--border-subtle)', borderRadius: 4, overflow: 'hidden' }}>
+    <div
+      style={{
+        display: 'flex',
+        border: '1px solid var(--border-subtle)',
+        borderRadius: 4,
+        overflow: 'hidden',
+      }}
+    >
       {opts.map((o) => {
         const active = o.key === layer;
         return (
@@ -386,22 +462,38 @@ function WindLegend({ meta }: { meta: GwaMeta }) {
       <div style={{ height: 10, borderRadius: 2, background: gradient }} />
       <div
         className="t-mono-data"
-        style={{ display: 'flex', justifyContent: 'space-between', marginTop: 4, fontSize: 11, color: 'var(--text-secondary)' }}
+        style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          marginTop: 4,
+          fontSize: 11,
+          color: 'var(--text-secondary)',
+        }}
       >
         <span>{meta.stretchLoMs.toFixed(1)}</span>
         <span style={{ color: 'var(--confidence-high)' }}>windier →</span>
         <span>{meta.stretchHiMs.toFixed(1)}+</span>
       </div>
-      <p className="t-caption" style={{ margin: '8px 0 0', fontSize: 10, color: 'var(--text-tertiary)', lineHeight: 1.4 }}>
-        {meta.resolutionM} m resolution, onshore + offshore. Click anywhere to run a full
-        six-factor analysis there. Source: {meta.source}.
+      <p
+        className="t-caption"
+        style={{ margin: '8px 0 0', fontSize: 10, color: 'var(--text-tertiary)', lineHeight: 1.4 }}
+      >
+        {meta.resolutionM} m resolution, onshore + offshore. Click anywhere to run a full six-factor
+        analysis there. Source: {meta.source}.
       </p>
     </div>
   );
 }
 
-const LEGEND_COPY: Record<HeatmapMetric, { title: string; fmt: (v: number) => string; lowBest?: boolean }> = {
-  economics: { title: 'LCOE (£/MWh) · lower = better', fmt: (v) => `£${Math.round(v)}`, lowBest: true },
+const LEGEND_COPY: Record<
+  HeatmapMetric,
+  { title: string; fmt: (v: number) => string; lowBest?: boolean }
+> = {
+  economics: {
+    title: 'LCOE (£/MWh) · lower = better',
+    fmt: (v) => `£${Math.round(v)}`,
+    lowBest: true,
+  },
   wind: { title: 'Mean wind speed (m/s)', fmt: (v) => `${v.toFixed(1)}` },
   suitability: { title: 'Suitability score', fmt: (v) => `${Math.round(v)}` },
 };
@@ -434,7 +526,13 @@ function Legend({ metric, lo, hi }: { metric: HeatmapMetric; lo: number; hi: num
       <div style={{ height: 10, borderRadius: 2, background: gradient }} />
       <div
         className="t-mono-data"
-        style={{ display: 'flex', justifyContent: 'space-between', marginTop: 4, fontSize: 11, color: 'var(--text-secondary)' }}
+        style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          marginTop: 4,
+          fontSize: 11,
+          color: 'var(--text-secondary)',
+        }}
       >
         <span>{copy.fmt(left)}</span>
         <span style={{ color: 'var(--confidence-high)' }}>best →</span>
@@ -479,16 +577,25 @@ function EmptyOverlay({ error, url }: { error: string | null; url: string }) {
         <div className="t-eyebrow" style={{ color: 'var(--accent-cool)' }}>
           No data yet
         </div>
-        <p className="t-body" style={{ color: 'var(--text-secondary)', fontSize: 13, marginTop: 'var(--space-2)' }}>
-          The heatmap fills in as the worker computes each grid point. Point this
-          page at a running worker with{' '}
-          <code style={{ fontFamily: 'var(--font-mono)', color: 'var(--text-primary)' }}>?src=</code>, e.g.{' '}
+        <p
+          className="t-body"
+          style={{ color: 'var(--text-secondary)', fontSize: 13, marginTop: 'var(--space-2)' }}
+        >
+          The heatmap fills in as the worker computes each grid point. Point this page at a running
+          worker with{' '}
           <code style={{ fontFamily: 'var(--font-mono)', color: 'var(--text-primary)' }}>
-            /map?src=http://your-server:8088/heatmap.json
+            ?src=
+          </code>
+          , e.g.{' '}
+          <code style={{ fontFamily: 'var(--font-mono)', color: 'var(--text-primary)' }}>
+            /map?src=https%3A%2F%2Fworker-host%2Fheatmap.json
           </code>
           , or set <code style={{ fontFamily: 'var(--font-mono)' }}>NEXT_PUBLIC_HEATMAP_URL</code>.
         </p>
-        <p className="t-mono-data" style={{ color: 'var(--text-tertiary)', fontSize: 11, marginTop: 'var(--space-3)' }}>
+        <p
+          className="t-mono-data"
+          style={{ color: 'var(--text-tertiary)', fontSize: 11, marginTop: 'var(--space-3)' }}
+        >
           source: {url}
           {error ? ` · ${error}` : ''}
         </p>

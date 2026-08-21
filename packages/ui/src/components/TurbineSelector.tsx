@@ -1,8 +1,6 @@
 import type { ReactNode } from 'react';
 import React from 'react';
-import type {
-  TurbineModel,
-} from '@jamieblair/windforge-core';
+import type { TurbineModel } from '@jamieblair/windforge-core';
 import { getAllTurbines } from '@jamieblair/windforge-core';
 import type { WindSiteTheme } from '../styles/theme.js';
 
@@ -13,7 +11,11 @@ export interface TurbineSelectorProps {
   theme?: Partial<WindSiteTheme>;
 }
 
-export function TurbineSelector({ selectedTurbineId, onSelect, className }: TurbineSelectorProps): ReactNode {
+export function TurbineSelector({
+  selectedTurbineId,
+  onSelect,
+  className,
+}: TurbineSelectorProps): ReactNode {
   const turbines = getAllTurbines();
 
   // Group by power class
@@ -43,7 +45,11 @@ export function TurbineSelector({ selectedTurbineId, onSelect, className }: Turb
       role: 'region',
       'aria-label': 'Turbine model selector',
     },
-    React.createElement('h3', { style: { margin: '0 0 12px', fontSize: '16px', fontWeight: 600 } }, 'Select Turbine'),
+    React.createElement(
+      'h3',
+      { style: { margin: '0 0 12px', fontSize: '16px', fontWeight: 600 } },
+      'Select Turbine',
+    ),
     ...groups.map((group) =>
       React.createElement(
         'div',
@@ -67,7 +73,9 @@ export function TurbineSelector({ selectedTurbineId, onSelect, className }: Turb
                 'aria-pressed': isSelected,
                 style: {
                   padding: '8px 12px',
-                  border: isSelected ? '2px solid var(--wsi-primary, #2563eb)' : '1px solid var(--wsi-border, #e2e8f0)',
+                  border: isSelected
+                    ? '2px solid var(--wsi-primary, #2563eb)'
+                    : '1px solid var(--wsi-border, #e2e8f0)',
                   borderRadius: '6px',
                   cursor: 'pointer',
                   backgroundColor: isSelected ? '#eff6ff' : '#fff',
@@ -76,7 +84,11 @@ export function TurbineSelector({ selectedTurbineId, onSelect, className }: Turb
                   minWidth: '160px',
                 },
               },
-              React.createElement('div', { style: { fontWeight: 600, fontSize: '13px' } }, `${turbine.manufacturer} ${turbine.model}`),
+              React.createElement(
+                'div',
+                { style: { fontWeight: 600, fontSize: '13px' } },
+                `${turbine.manufacturer} ${turbine.model}`,
+              ),
               React.createElement(
                 'div',
                 { style: { color: '#64748b', marginTop: '2px' } },

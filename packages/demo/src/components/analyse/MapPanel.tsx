@@ -28,12 +28,7 @@ const LeafletMap = dynamic(() => import('./LeafletMap').then((m) => m.LeafletMap
   ),
 });
 
-export type MapLayerKey =
-  | 'wind'
-  | 'terrain'
-  | 'grid'
-  | 'constraints'
-  | 'exclusion';
+export type MapLayerKey = 'wind' | 'terrain' | 'grid' | 'constraints' | 'exclusion';
 
 const LAYER_LABELS: Record<MapLayerKey, string> = {
   wind: 'Wind resource',
@@ -56,9 +51,9 @@ export type MapPanelProps = {
 
 const STATUS_LINES = [
   'Fetching NASA POWER…',
-  'Reconciling against CERRA…',
   'Querying Overpass…',
   'Sampling Open-Elevation…',
+  'Checking evidence completeness…',
 ];
 
 export function MapPanel({
@@ -76,8 +71,7 @@ export function MapPanel({
     exclusion: false,
   });
 
-  const toggle = (k: MapLayerKey) =>
-    setLayers((prev) => ({ ...prev, [k]: !prev[k] }));
+  const toggle = (k: MapLayerKey) => setLayers((prev) => ({ ...prev, [k]: !prev[k] }));
 
   return (
     <div
@@ -93,10 +87,7 @@ export function MapPanel({
       }}
     >
       {/* Particle field as backing visual: landing → analyse continuity */}
-      <div
-        aria-hidden="true"
-        style={{ position: 'absolute', inset: 0, opacity: 0.6, zIndex: 0 }}
-      >
+      <div aria-hidden="true" style={{ position: 'absolute', inset: 0, opacity: 0.6, zIndex: 0 }}>
         <ParticleField ariaLabel="Animated wind field background" />
       </div>
 
@@ -185,12 +176,7 @@ export function MapPanel({
               color: 'var(--text-secondary)',
             }}
           >
-            <input
-              type="checkbox"
-              checked={layers[k]}
-              onChange={() => toggle(k)}
-              data-layer={k}
-            />
+            <input type="checkbox" checked={layers[k]} onChange={() => toggle(k)} data-layer={k} />
             {LAYER_LABELS[k]}
           </label>
         ))}

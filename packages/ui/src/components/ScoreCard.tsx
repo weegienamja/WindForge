@@ -15,8 +15,15 @@ export interface ScoreCardProps {
   windRoseBands?: WindSpeedBand[];
 }
 
-export function ScoreCard({ analysis, className, theme: _theme, windRoseData, windRoseBands }: ScoreCardProps): ReactNode {
-  const scoreColor = getScoreColor(analysis.compositeScore);
+export function ScoreCard({
+  analysis,
+  className,
+  theme: _theme,
+  windRoseData,
+  windRoseBands,
+}: ScoreCardProps): ReactNode {
+  const scoreColor =
+    analysis.compositeScore === null ? '#64748b' : getScoreColor(analysis.compositeScore);
 
   return React.createElement(
     'div',
@@ -31,7 +38,7 @@ export function ScoreCard({ analysis, className, theme: _theme, windRoseData, wi
         color: 'var(--wsi-text, #0f172a)',
       },
       role: 'region',
-      'aria-label': 'Site suitability score breakdown',
+      'aria-label': 'Site screening score breakdown',
     },
     React.createElement(
       'div',
@@ -51,19 +58,44 @@ export function ScoreCard({ analysis, className, theme: _theme, windRoseData, wi
             fontSize: '28px',
             fontWeight: 'bold',
           },
-          'aria-label': `Composite score: ${analysis.compositeScore} out of 100`,
+          'aria-label':
+            analysis.compositeScore === null
+              ? 'Composite score unavailable'
+              : `Composite score: ${analysis.compositeScore} out of 100`,
         },
-        String(analysis.compositeScore),
+        analysis.compositeScore === null ? '—' : String(analysis.compositeScore),
       ),
       React.createElement(
         'div',
         null,
-        React.createElement('h2', { style: { margin: 0, fontSize: '20px' } }, 'Site Suitability Score'),
+        React.createElement(
+          'h2',
+          { style: { margin: 0, fontSize: '20px' } },
+          analysis.compositeScore === null ? 'Incomplete screening' : 'Composite Screening Score',
+        ),
         React.createElement(
           'p',
-          { style: { margin: '4px 0 0', color: 'var(--wsi-text-secondary, #64748b)', fontSize: '14px' } },
+          {
+            style: {
+              margin: '4px 0 0',
+              color: 'var(--wsi-text-secondary, #64748b)',
+              fontSize: '14px',
+            },
+          },
           `${analysis.coordinate.lat.toFixed(4)}, ${analysis.coordinate.lng.toFixed(4)}`,
         ),
+        analysis.compositeScore === null &&
+          React.createElement(
+            'p',
+            {
+              style: {
+                margin: '4px 0 0',
+                color: 'var(--wsi-text-secondary, #64748b)',
+                fontSize: '12px',
+              },
+            },
+            analysis.metadata.completeness.detail,
+          ),
       ),
     ),
     analysis.hardConstraints.length > 0 &&
@@ -80,7 +112,7 @@ export function ScoreCard({ analysis, className, theme: _theme, windRoseData, wi
             fontSize: '14px',
           },
         },
-        React.createElement('strong', null, 'Hard Constraints Detected'),
+        React.createElement('strong', null, 'Potential Screening Exclusions'),
         React.createElement(
           'ul',
           { style: { margin: '8px 0 0', paddingLeft: '20px' } },

@@ -96,13 +96,17 @@ export function WindSiteScorer({
         color: 'var(--wsi-text, #0f172a)',
       } as React.CSSProperties,
       role: 'main',
-      'aria-label': 'Wind Site Intelligence Scorer',
+      'aria-label': 'WindForge site screener',
     },
-    React.createElement('style', null, '@keyframes wsi-shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }'),
+    React.createElement(
+      'style',
+      null,
+      '@keyframes wsi-shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }',
+    ),
     React.createElement(
       'h1',
       { style: { fontSize: '24px', marginBottom: '24px' } },
-      'Wind Site Intelligence',
+      'WindForge Site Screening',
     ),
     // Map section
     React.createElement(SiteMap, {
@@ -117,7 +121,9 @@ export function WindSiteScorer({
             React.createElement(
               'strong',
               null,
-              `Score: ${analysis.compositeScore}/100`,
+              analysis.compositeScore === null
+                ? 'Screening score unavailable'
+                : `Screening score: ${analysis.compositeScore}/100`,
             ),
             React.createElement(
               'p',
@@ -145,7 +151,10 @@ export function WindSiteScorer({
         null,
         React.createElement(
           'label',
-          { htmlFor: 'wsi-lat', style: { display: 'block', fontSize: '14px', marginBottom: '4px' } },
+          {
+            htmlFor: 'wsi-lat',
+            style: { display: 'block', fontSize: '14px', marginBottom: '4px' },
+          },
           'Latitude',
         ),
         React.createElement('input', {
@@ -172,7 +181,10 @@ export function WindSiteScorer({
         null,
         React.createElement(
           'label',
-          { htmlFor: 'wsi-lng', style: { display: 'block', fontSize: '14px', marginBottom: '4px' } },
+          {
+            htmlFor: 'wsi-lng',
+            style: { display: 'block', fontSize: '14px', marginBottom: '4px' },
+          },
           'Longitude',
         ),
         React.createElement('input', {
@@ -201,7 +213,9 @@ export function WindSiteScorer({
           disabled: loading,
           style: {
             padding: '8px 24px',
-            backgroundColor: loading ? 'var(--wsi-text-secondary, #64748b)' : 'var(--wsi-accent, #22c55e)',
+            backgroundColor: loading
+              ? 'var(--wsi-text-secondary, #64748b)'
+              : 'var(--wsi-accent, #22c55e)',
             color: '#fff',
             border: 'none',
             borderRadius: '6px',

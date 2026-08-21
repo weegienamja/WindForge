@@ -11,9 +11,7 @@ export type ScaleLegendProps = {
 };
 
 export function ScaleLegend({ min, max, unit, colors, label, className, style }: ScaleLegendProps) {
-  const stops = colors
-    .map((c, i) => `${c} ${(i / (colors.length - 1)) * 100}%`)
-    .join(', ');
+  const stops = colors.map((c, i) => `${c} ${(i / (colors.length - 1)) * 100}%`).join(', ');
   const mid = (min + max) / 2;
   const fmt = (v: number) =>
     v.toLocaleString(undefined, { maximumFractionDigits: 1, minimumFractionDigits: 0 });

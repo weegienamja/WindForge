@@ -16,13 +16,13 @@
   powershell -ExecutionPolicy Bypass -File packages\demo\scripts\heatmap-live.ps1
 
 .PARAMETER AppUrl
-  Base URL of the deployed app. Default: https://wind.jamieblair.co.uk
+  Base URL of the deployed app. Default: https://wind-forge-demo.vercel.app
 
 .PARAMETER Port
   Local port the worker serves on. Default: 8088
 #>
 param(
-  [string]$AppUrl = 'https://wind.jamieblair.co.uk',
+  [string]$AppUrl = 'https://wind-forge-demo.vercel.app',
   [int]$Port = 8088
 )
 

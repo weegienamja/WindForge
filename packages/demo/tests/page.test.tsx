@@ -25,17 +25,20 @@ describe('Landing page', () => {
     expect(
       screen.getByRole('heading', { level: 1, name: /Wind site suitability, computed\./ }),
     ).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: /Run an analysis/ })).toHaveAttribute('href', '/analyse');
+    expect(screen.getByRole('link', { name: /Run an analysis/ })).toHaveAttribute(
+      'href',
+      '/analyse',
+    );
     expect(screen.getByRole('link', { name: /View on GitHub/ })).toBeInTheDocument();
   });
 
   it('renders all four stat strip eyebrows', () => {
     render(<LandingPage />);
-    expect(screen.getByText('Tests passing')).toBeInTheDocument();
+    expect(screen.getByText('Automated tests')).toBeInTheDocument();
     expect(screen.getByText('Scoring factors')).toBeInTheDocument();
-    expect(screen.getByText('ERA5 · CERRA')).toBeInTheDocument();
+    expect(screen.getByText('Default wind grid')).toBeInTheDocument();
     expect(screen.getByText('Noise model')).toBeInTheDocument();
-    expect(screen.getByText('ISO 9613-2')).toBeInTheDocument();
+    expect(screen.getByText('ISO-style')).toBeInTheDocument();
   });
 
   it('renders the three measurement cards', () => {

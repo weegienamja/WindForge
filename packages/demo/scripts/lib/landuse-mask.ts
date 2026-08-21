@@ -1,7 +1,7 @@
 /**
  * OSM land-use mask for the heatmap grid: classify each point as built-up,
  * farmland, or open, so the worker can skip housing/industrial land and focus
- * on developable ground (no turbines in central Glasgow).
+ * on open/farmland-tagged screening cells.
  *
  * Fetches landuse polygons from Overpass tile-by-tile (cached to disk, rate
  * limited), buckets them spatially, and exposes a fast point classifier.
@@ -11,10 +11,12 @@ import { mkdirSync, readFileSync, writeFileSync, existsSync } from 'node:fs';
 import { isPointInPolygon, type LatLng } from '@jamieblair/windforge-core';
 
 const OVERPASS = 'https://overpass-api.de/api/interpreter';
-const USER_AGENT = 'WindForge-Heatmap/0.1 (+https://wind.jamieblair.co.uk)';
+const USER_AGENT = 'WindForge-Heatmap/0.3 (+https://github.com/weegienamja/WindForge)';
 const TILE_DEG = 0.2;
-const BUILT = /^(residential|industrial|commercial|retail|military|construction|garages|railway|landfill|quarry|brownfield)$/;
-const FARM = /^(farmland|farmyard|meadow|orchard|vineyard|greenhouse_horticulture|grass|greenfield|allotments)$/;
+const BUILT =
+  /^(residential|industrial|commercial|retail|military|construction|garages|railway|landfill|quarry|brownfield)$/;
+const FARM =
+  /^(farmland|farmyard|meadow|orchard|vineyard|greenhouse_horticulture|grass|greenfield|allotments)$/;
 
 export type LandClass = 'built' | 'farmland' | 'open';
 
@@ -89,8 +91,16 @@ export async function buildLanduseMask(
   const farmByTile = new Map<string, Poly[]>();
   const bucket = (poly: Poly) => {
     const map = poly.cat === 'built' ? builtByTile : farmByTile;
-    for (let lat = Math.floor(poly.bbox.s / TILE_DEG); lat <= Math.floor(poly.bbox.n / TILE_DEG); lat += 1) {
-      for (let lng = Math.floor(poly.bbox.w / TILE_DEG); lng <= Math.floor(poly.bbox.e / TILE_DEG); lng += 1) {
+    for (
+      let lat = Math.floor(poly.bbox.s / TILE_DEG);
+      lat <= Math.floor(poly.bbox.n / TILE_DEG);
+      lat += 1
+    ) {
+      for (
+        let lng = Math.floor(poly.bbox.w / TILE_DEG);
+        lng <= Math.floor(poly.bbox.e / TILE_DEG);
+        lng += 1
+      ) {
         const key = `${lat},${lng}`;
         const arr = map.get(key) ?? [];
         arr.push(poly);
@@ -101,8 +111,16 @@ export async function buildLanduseMask(
 
   // Enumerate tiles covering the window.
   const tiles: Array<[number, number]> = [];
-  for (let lat = Math.floor(window.south / TILE_DEG); lat <= Math.floor(window.north / TILE_DEG); lat += 1) {
-    for (let lng = Math.floor(window.west / TILE_DEG); lng <= Math.floor(window.east / TILE_DEG); lng += 1) {
+  for (
+    let lat = Math.floor(window.south / TILE_DEG);
+    lat <= Math.floor(window.north / TILE_DEG);
+    lat += 1
+  ) {
+    for (
+      let lng = Math.floor(window.west / TILE_DEG);
+      lng <= Math.floor(window.east / TILE_DEG);
+      lng += 1
+    ) {
       tiles.push([lat, lng]);
     }
   }
@@ -117,7 +135,12 @@ export async function buildLanduseMask(
     } else {
       await sleep(delayMs);
       try {
-        polys = await fetchTile(tlat * TILE_DEG, tlng * TILE_DEG, (tlat + 1) * TILE_DEG, (tlng + 1) * TILE_DEG);
+        polys = await fetchTile(
+          tlat * TILE_DEG,
+          tlng * TILE_DEG,
+          (tlat + 1) * TILE_DEG,
+          (tlng + 1) * TILE_DEG,
+        );
         // Cache only on success, so a transient Overpass failure isn't frozen in.
         writeFileSync(cacheFile, JSON.stringify(polys));
       } catch {

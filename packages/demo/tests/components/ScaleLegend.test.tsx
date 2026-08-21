@@ -5,13 +5,7 @@ import { ScaleLegend } from '../../src/components/primitives/ScaleLegend';
 describe('ScaleLegend', () => {
   it('renders min, midpoint and max labels', () => {
     render(
-      <ScaleLegend
-        min={0}
-        max={20}
-        unit="m/s"
-        colors={['#000', '#fff']}
-        label="Wind speed"
-      />,
+      <ScaleLegend min={0} max={20} unit="m/s" colors={['#000', '#fff']} label="Wind speed" />,
     );
     expect(screen.getByText('Wind speed')).toBeInTheDocument();
     expect(screen.getByText('0')).toBeInTheDocument();

@@ -93,9 +93,7 @@ export function LeafletMap({
   defaultCenter = [30, 0],
   defaultZoom = 2,
 }: LeafletMapProps) {
-  const center: [number, number] = coordinate
-    ? [coordinate.lat, coordinate.lng]
-    : defaultCenter;
+  const center: [number, number] = coordinate ? [coordinate.lat, coordinate.lng] : defaultCenter;
   const zoom = coordinate ? 9 : defaultZoom;
 
   return (

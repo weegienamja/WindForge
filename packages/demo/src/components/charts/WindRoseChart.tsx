@@ -73,7 +73,13 @@ export function WindRoseEmpty({ className, style }: { className?: string; style?
   );
 }
 
-export function WindRoseSkeleton({ className, style }: { className?: string; style?: CSSProperties }) {
+export function WindRoseSkeleton({
+  className,
+  style,
+}: {
+  className?: string;
+  style?: CSSProperties;
+}) {
   return (
     <div
       data-testid="wind-rose-skeleton"

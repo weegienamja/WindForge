@@ -31,7 +31,10 @@ export function ConstraintMap({
   }
 
   // Compute bounding box from boundary polygon only (not constraints)
-  let bMinLat = 90, bMaxLat = -90, bMinLng = 180, bMaxLng = -180;
+  let bMinLat = 90,
+    bMaxLat = -90,
+    bMinLng = 180,
+    bMaxLng = -180;
   for (const p of boundaryPolygon) {
     if (p.lat < bMinLat) bMinLat = p.lat;
     if (p.lat > bMaxLat) bMaxLat = p.lat;
@@ -65,29 +68,42 @@ export function ConstraintMap({
     svgW = height * geoAspect;
   }
 
-  const toX = (lng: number) => ((lng - minLng) * cosLat / geoWidth) * svgW;
+  const toX = (lng: number) => (((lng - minLng) * cosLat) / geoWidth) * svgW;
   const toY = (lat: number) => svgH - ((lat - minLat) / geoHeight) * svgH;
 
   // Boundary polygon path
-  const boundaryPath = boundaryPolygon
-    .map((p, i) => `${i === 0 ? 'M' : 'L'}${toX(p.lng).toFixed(1)},${toY(p.lat).toFixed(1)}`)
-    .join(' ') + ' Z';
+  const boundaryPath =
+    boundaryPolygon
+      .map((p, i) => `${i === 0 ? 'M' : 'L'}${toX(p.lng).toFixed(1)},${toY(p.lat).toFixed(1)}`)
+      .join(' ') + ' Z';
 
   // Filter constraints to those visible in the viewport, and deduplicate nearby ones
-  const allConstraints = [...report.hardConstraints, ...report.softConstraints, ...report.infoConstraints];
+  const allConstraints = [
+    ...report.hardConstraints,
+    ...report.softConstraints,
+    ...report.infoConstraints,
+  ];
   const visibleConstraints = allConstraints.filter(
-    (c) => c.location.lat >= minLat && c.location.lat <= maxLat && c.location.lng >= minLng && c.location.lng <= maxLng,
+    (c) =>
+      c.location.lat >= minLat &&
+      c.location.lat <= maxLat &&
+      c.location.lng >= minLng &&
+      c.location.lng <= maxLng,
   );
 
   // Cluster constraints that are very close together in SVG space
-  const clustered: Array<{ x: number; y: number; severity: string; count: number; label: string }> = [];
+  const clustered: Array<{ x: number; y: number; severity: string; count: number; label: string }> =
+    [];
   const clusterRadius = 12;
   for (const c of visibleConstraints) {
     const x = toX(c.location.lng);
     const y = toY(c.location.lat);
     const severity = c.definition.severity;
     const existing = clustered.find(
-      (cl) => Math.abs(cl.x - x) < clusterRadius && Math.abs(cl.y - y) < clusterRadius && cl.severity === severity,
+      (cl) =>
+        Math.abs(cl.x - x) < clusterRadius &&
+        Math.abs(cl.y - y) < clusterRadius &&
+        cl.severity === severity,
     );
     if (existing) {
       existing.count++;
@@ -112,7 +128,11 @@ export function ConstraintMap({
       role: 'figure',
       'aria-label': 'Constraint map showing site boundary and constraint locations',
     },
-    React.createElement('h4', { style: { margin: '0 0 12px', fontSize: '14px', fontWeight: 600 } }, 'Constraint Map'),
+    React.createElement(
+      'h4',
+      { style: { margin: '0 0 12px', fontSize: '14px', fontWeight: 600 } },
+      'Constraint Map',
+    ),
     React.createElement(
       'svg',
       {
@@ -123,18 +143,28 @@ export function ConstraintMap({
       },
       // Background
       React.createElement('rect', {
-        x: 0, y: 0, width: svgW, height: svgH,
+        x: 0,
+        y: 0,
+        width: svgW,
+        height: svgH,
         fill: '#f8fafc',
         rx: 4,
       }),
       // Exclusion zones (only those visible in viewport)
       ...report.exclusionZones
-        .filter((zone) => zone.polygon.some((p) => p.lat >= minLat && p.lat <= maxLat && p.lng >= minLng && p.lng <= maxLng))
+        .filter((zone) =>
+          zone.polygon.some(
+            (p) => p.lat >= minLat && p.lat <= maxLat && p.lng >= minLng && p.lng <= maxLng,
+          ),
+        )
         .map((zone, i) => {
           if (zone.polygon.length < 3) return null;
-          const path = zone.polygon
-            .map((p, j) => `${j === 0 ? 'M' : 'L'}${toX(p.lng).toFixed(1)},${toY(p.lat).toFixed(1)}`)
-            .join(' ') + ' Z';
+          const path =
+            zone.polygon
+              .map(
+                (p, j) => `${j === 0 ? 'M' : 'L'}${toX(p.lng).toFixed(1)},${toY(p.lat).toFixed(1)}`,
+              )
+              .join(' ') + ' Z';
           return React.createElement('path', {
             key: `ez-${i}`,
             d: path,
@@ -191,35 +221,67 @@ export function ConstraintMap({
     // Legend
     React.createElement(
       'div',
-      { style: { display: 'flex', gap: '16px', marginTop: '8px', fontSize: '12px', flexWrap: 'wrap' } },
+      {
+        style: {
+          display: 'flex',
+          gap: '16px',
+          marginTop: '8px',
+          fontSize: '12px',
+          flexWrap: 'wrap',
+        },
+      },
       React.createElement(
         'div',
         { style: { display: 'flex', alignItems: 'center', gap: '4px' } },
-        React.createElement('div', { style: { width: '10px', height: '10px', borderRadius: '50%', backgroundColor: '#dc2626' } }),
+        React.createElement('div', {
+          style: { width: '10px', height: '10px', borderRadius: '50%', backgroundColor: '#dc2626' },
+        }),
         React.createElement('span', null, 'Hard'),
       ),
       React.createElement(
         'div',
         { style: { display: 'flex', alignItems: 'center', gap: '4px' } },
-        React.createElement('div', { style: { width: '10px', height: '10px', borderRadius: '50%', backgroundColor: '#f59e0b' } }),
+        React.createElement('div', {
+          style: { width: '10px', height: '10px', borderRadius: '50%', backgroundColor: '#f59e0b' },
+        }),
         React.createElement('span', null, 'Soft'),
       ),
       React.createElement(
         'div',
         { style: { display: 'flex', alignItems: 'center', gap: '4px' } },
-        React.createElement('div', { style: { width: '10px', height: '10px', borderRadius: '50%', backgroundColor: '#3b82f6' } }),
+        React.createElement('div', {
+          style: { width: '10px', height: '10px', borderRadius: '50%', backgroundColor: '#3b82f6' },
+        }),
         React.createElement('span', null, 'Info'),
       ),
       React.createElement(
         'div',
         { style: { display: 'flex', alignItems: 'center', gap: '4px' } },
-        React.createElement('div', { style: { width: '18px', height: '10px', backgroundColor: '#2563eb', opacity: 0.2, border: '1px solid #2563eb', borderRadius: '2px' } }),
+        React.createElement('div', {
+          style: {
+            width: '18px',
+            height: '10px',
+            backgroundColor: '#2563eb',
+            opacity: 0.2,
+            border: '1px solid #2563eb',
+            borderRadius: '2px',
+          },
+        }),
         React.createElement('span', null, 'Site boundary'),
       ),
       React.createElement(
         'div',
         { style: { display: 'flex', alignItems: 'center', gap: '4px' } },
-        React.createElement('div', { style: { width: '18px', height: '10px', backgroundColor: '#dc2626', opacity: 0.15, border: '1px dashed #dc2626', borderRadius: '2px' } }),
+        React.createElement('div', {
+          style: {
+            width: '18px',
+            height: '10px',
+            backgroundColor: '#dc2626',
+            opacity: 0.15,
+            border: '1px dashed #dc2626',
+            borderRadius: '2px',
+          },
+        }),
         React.createElement('span', null, 'Exclusion zone'),
       ),
       visibleConstraints.length < allConstraints.length

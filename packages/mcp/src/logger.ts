@@ -41,8 +41,10 @@ function emit(level: LogLevel, message: string, fields?: Record<string, unknown>
 }
 
 export const logger = {
-  debug: (message: string, fields?: Record<string, unknown>): void => emit('debug', message, fields),
+  debug: (message: string, fields?: Record<string, unknown>): void =>
+    emit('debug', message, fields),
   info: (message: string, fields?: Record<string, unknown>): void => emit('info', message, fields),
   warn: (message: string, fields?: Record<string, unknown>): void => emit('warn', message, fields),
-  error: (message: string, fields?: Record<string, unknown>): void => emit('error', message, fields),
+  error: (message: string, fields?: Record<string, unknown>): void =>
+    emit('error', message, fields),
 };

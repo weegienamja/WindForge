@@ -57,9 +57,7 @@ describe('cellStepDeg', () => {
 
 describe('parseWindSpeedMs', () => {
   it('returns the highest m/s figure in the detail text', () => {
-    expect(
-      parseWindSpeedMs('4.3 m/s at 2m, 7.2 m/s at 50m, 8.6 m/s at 100m hub height'),
-    ).toBe(8.6);
+    expect(parseWindSpeedMs('4.3 m/s at 2m, 7.2 m/s at 50m, 8.6 m/s at 100m hub height')).toBe(8.6);
   });
 
   it('returns null when there is no speed', () => {

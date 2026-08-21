@@ -13,9 +13,16 @@ export interface SiteAssessmentViewProps {
   theme?: Partial<WindSiteTheme>;
 }
 
-export function SiteAssessmentView({ assessment, className, theme }: SiteAssessmentViewProps): ReactNode {
+export function SiteAssessmentView({
+  assessment,
+  className,
+  theme,
+}: SiteAssessmentViewProps): ReactNode {
   const { aggregatedScore, boundary, constraints, metadata } = assessment;
-  const scoreColor = getScoreColor(aggregatedScore.compositeScore);
+  const scoreColor =
+    aggregatedScore.compositeScore === null
+      ? '#64748b'
+      : getScoreColor(aggregatedScore.compositeScore);
 
   return React.createElement(
     'div',
@@ -62,19 +69,26 @@ export function SiteAssessmentView({ assessment, className, theme }: SiteAssessm
               fontWeight: 'bold',
               flexShrink: 0,
             },
-            'aria-label': `Composite score: ${aggregatedScore.compositeScore}`,
+            'aria-label':
+              aggregatedScore.compositeScore === null
+                ? 'Composite score unavailable'
+                : `Composite score: ${aggregatedScore.compositeScore}`,
           },
-          String(aggregatedScore.compositeScore),
+          aggregatedScore.compositeScore === null ? '—' : String(aggregatedScore.compositeScore),
         ),
         React.createElement(
           'div',
           null,
-          React.createElement('h2', { style: { margin: '0 0 4px', fontSize: '20px' } }, boundary.name || 'Site Assessment'),
+          React.createElement(
+            'h2',
+            { style: { margin: '0 0 4px', fontSize: '20px' } },
+            boundary.name || 'Site Assessment',
+          ),
           React.createElement(
             'div',
             { style: { fontSize: '13px', color: '#64748b' } },
             `Area: ${boundary.areaSqKm.toFixed(2)} km\u00b2 | `,
-            `Viable: ${aggregatedScore.viableAreaPercent.toFixed(0)}% (${aggregatedScore.viableAreaSqKm.toFixed(2)} km\u00b2) | `,
+            `Outside configured exclusions: ${aggregatedScore.viableAreaPercent.toFixed(0)}% (${aggregatedScore.viableAreaSqKm.toFixed(2)} km\u00b2) | `,
             `${aggregatedScore.sampleCount} sample points`,
           ),
         ),
@@ -156,9 +170,7 @@ export function SiteAssessmentView({ assessment, className, theme }: SiteAssessm
       `Grid spacing: ${metadata.sampleSpacingKm}km | `,
       `Hub height: ${metadata.hubHeightM}m | `,
       `Sources: ${metadata.sourcesUsed.join(', ')}`,
-      metadata.sourcesFailed.length > 0
-        ? ` | Failed: ${metadata.sourcesFailed.join(', ')}`
-        : '',
+      metadata.sourcesFailed.length > 0 ? ` | Failed: ${metadata.sourcesFailed.join(', ')}` : '',
     ),
   );
 }

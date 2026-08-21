@@ -54,8 +54,8 @@ vi.mock('../src/components/charts/MonthlyHistoryChart', () => ({
       {corrected ? <span>Corrected ({(reference ?? 'cerra').toUpperCase()})</span> : null}
       {diagnostics ? (
         <div data-testid="monthly-history-stats">
-          Bias {diagnostics.biasBeforeMs.toFixed(2)} → {diagnostics.biasAfterMs.toFixed(2)} m/s · RMSE{' '}
-          {diagnostics.rmseBeforeMs.toFixed(2)} → {diagnostics.rmseAfterMs.toFixed(2)}
+          Bias {diagnostics.biasBeforeMs.toFixed(2)} → {diagnostics.biasAfterMs.toFixed(2)} m/s ·
+          RMSE {diagnostics.rmseBeforeMs.toFixed(2)} → {diagnostics.rmseAfterMs.toFixed(2)}
         </div>
       ) : null}
     </div>
@@ -64,28 +64,17 @@ vi.mock('../src/components/charts/MonthlyHistoryChart', () => ({
   MonthlyHistorySkeleton: () => <div data-testid="monthly-history-skeleton" />,
 }));
 
-// Configurable site-score hook state, controlled per test.
+// Configurable server-backed analysis hook state, controlled per test.
 type HookState = {
-  analysis: SiteAnalysis | null;
-  loading: boolean;
+  status: 'idle' | 'running' | 'success' | 'error';
+  data: SiteAnalysis | null;
   error: ScoringError | null;
-  analyse: ReturnType<typeof vi.fn>;
-  reset: ReturnType<typeof vi.fn>;
+  run: ReturnType<typeof vi.fn>;
+  cancel: ReturnType<typeof vi.fn>;
+  history: HistoryState;
+  aep: AepHookState;
 };
 
-const hookState: HookState = {
-  analysis: null,
-  loading: false,
-  error: null,
-  analyse: vi.fn(),
-  reset: vi.fn(),
-};
-
-vi.mock('@jamieblair/windforge', () => ({
-  useSiteScore: () => hookState,
-}));
-
-// Mutable wind-history hook state.
 type HistoryState = {
   status: 'idle' | 'running' | 'success' | 'error';
   data: { raw: MonthlyWindHistory; corrected: MonthlyWindHistory | null } | null;
@@ -95,38 +84,51 @@ type HistoryState = {
     diagnostics: ReconciliationDiagnostics | null;
   } | null;
   error: ScoringError | null;
-  run: ReturnType<typeof vi.fn>;
-  reset: ReturnType<typeof vi.fn>;
 };
 const historyState: HistoryState = {
   status: 'idle',
   data: null,
   reconciliation: null,
   error: null,
-  run: vi.fn(),
-  reset: vi.fn(),
 };
-vi.mock('../src/hooks/useWindHistory', () => ({
-  useWindHistory: () => historyState,
-}));
 
-// Mutable AEP hook state.
 type AepHookState = {
   status: 'idle' | 'running' | 'success' | 'error';
   data: unknown | null;
   error: ScoringError | null;
-  run: ReturnType<typeof vi.fn>;
-  reset: ReturnType<typeof vi.fn>;
 };
 const aepState: AepHookState = {
   status: 'idle',
   data: null,
   error: null,
-  run: vi.fn(),
-  reset: vi.fn(),
 };
-vi.mock('../src/hooks/useAep', () => ({
-  useAep: () => aepState,
+
+const hookState: HookState = {
+  status: 'idle',
+  data: null,
+  error: null,
+  run: vi.fn(),
+  cancel: vi.fn(),
+  history: historyState,
+  aep: aepState,
+};
+
+vi.mock('../src/hooks/useAnalyse', () => ({
+  useAnalyse: () => hookState,
+}));
+
+const geocodeState = {
+  query: '',
+  results: [] as GeocodeHit[],
+  loading: false,
+  error: null,
+  setQuery: vi.fn(),
+  clear: vi.fn(),
+};
+
+vi.mock('../src/hooks/useGeocode', () => ({
+  useGeocodeSearch: () => geocodeState,
+  useReverseGeocode: () => 'Fixture place',
 }));
 
 // Stub the WindRose and PowerCurve charts so leaflet/recharts heavy-lifting
@@ -145,14 +147,18 @@ vi.mock('../src/components/charts/PowerCurveChart', () => ({
     aep,
   }: {
     turbine: { id: string };
-    aep: { p50: { aepMwh: number }; p75: { aepMwh: number }; p90: { aepMwh: number } };
+    aep: {
+      centralEstimate: { aepMwh: number };
+      downside10: { aepMwh: number };
+      downside20: { aepMwh: number };
+    };
   }) => (
     <div
       data-testid="power-curve-chart"
       data-turbine={turbine.id}
-      data-p50={aep.p50.aepMwh}
-      data-p75={aep.p75.aepMwh}
-      data-p90={aep.p90.aepMwh}
+      data-central={aep.centralEstimate.aepMwh}
+      data-downside-10={aep.downside10.aepMwh}
+      data-downside-20={aep.downside20.aepMwh}
     />
   ),
   PowerCurveEmpty: () => <div data-testid="power-curve-empty" />,
@@ -177,11 +183,11 @@ async function renderPage() {
 }
 
 function resetHook() {
-  hookState.analysis = null;
-  hookState.loading = false;
+  hookState.status = 'idle';
+  hookState.data = null;
   hookState.error = null;
-  hookState.analyse = vi.fn().mockResolvedValue(undefined);
-  hookState.reset = vi.fn();
+  hookState.run = vi.fn().mockResolvedValue(undefined);
+  hookState.cancel = vi.fn();
 }
 
 function resetHistory() {
@@ -189,34 +195,73 @@ function resetHistory() {
   historyState.data = null;
   historyState.reconciliation = null;
   historyState.error = null;
-  historyState.run = vi.fn();
-  historyState.reset = vi.fn();
 }
 
 function resetAep() {
   aepState.status = 'idle';
   aepState.data = null;
   aepState.error = null;
-  aepState.run = vi.fn();
-  aepState.reset = vi.fn();
 }
 
 const SAMPLE_AEP = {
-  turbineModel: { id: 'gw-2mw', manufacturer: 'Generic', model: '2MW', ratedPowerKw: 2000, rotorDiameterM: 90 },
+  turbineModel: {
+    id: 'gw-2mw',
+    manufacturer: 'Generic',
+    model: '2MW',
+    ratedPowerKw: 2000,
+    rotorDiameterM: 90,
+  },
   hubHeightM: 100,
   turbineCount: 1,
   grossAepMwh: 7800,
   grossTotalAepMwh: 7800,
   grossCapacityFactor: 0.44,
-  losses: { wakeLossPct: 8, electricalLossPct: 2, availabilityLossPct: 3, environmentalLossPct: 1, icingLossPct: 0.5, hysteresisLossPct: 0.5, gridCurtailmentPct: 1, totalLossPct: 16, items: [] },
+  losses: {
+    wakeLossPct: 8,
+    electricalLossPct: 2,
+    availabilityLossPct: 3,
+    environmentalLossPct: 1,
+    icingLossPct: 0.5,
+    hysteresisLossPct: 0.5,
+    gridCurtailmentPct: 1,
+    totalLossPct: 16,
+    items: [],
+  },
   netAepMwh: 6552,
   netTotalAepMwh: 6552,
   netCapacityFactor: 0.37,
-  p50: { label: 'P50', aepMwh: 6552, totalAepMwh: 6552, capacityFactor: 0.37, description: '' },
-  p75: { label: 'P75', aepMwh: 6010, totalAepMwh: 6010, capacityFactor: 0.34, description: '' },
-  p90: { label: 'P90', aepMwh: 5500, totalAepMwh: 5500, capacityFactor: 0.31, description: '' },
+  centralEstimate: {
+    label: 'Central estimate',
+    aepMwh: 6552,
+    totalAepMwh: 6552,
+    capacityFactor: 0.37,
+    description: '',
+  },
+  downside10: {
+    label: '10% downside',
+    aepMwh: 5897,
+    totalAepMwh: 5897,
+    capacityFactor: 0.333,
+    description: '',
+  },
+  downside20: {
+    label: '20% downside',
+    aepMwh: 5242,
+    totalAepMwh: 5242,
+    capacityFactor: 0.296,
+    description: '',
+  },
   monthlyProductionMwh: [],
-  assumptions: { windDataYears: 10, referenceHeightM: 50, extrapolationMethod: 'power-law', airDensityKgM3: 1.225, weibullK: 2.1, weibullC: 7.8, lossAssumptions: '', uncertaintyMethod: '' },
+  assumptions: {
+    windDataYears: 10,
+    referenceHeightM: 50,
+    extrapolationMethod: 'power-law',
+    airDensityKgM3: 1.225,
+    weibullK: 2.1,
+    weibullC: 7.8,
+    lossAssumptions: '',
+    uncertaintyMethod: '',
+  },
   confidence: 'high' as const,
   summary: '',
 };
@@ -256,13 +301,11 @@ describe('Analyse page', () => {
   it('renders the empty state with no params', async () => {
     await renderPage();
     expect(screen.getByText('NO ANALYSIS')).toBeInTheDocument();
-    expect(
-      screen.getByText(/Search, click the map, or enter a coordinate/),
-    ).toBeInTheDocument();
+    expect(screen.getByText(/Search, click the map, or enter a coordinate/)).toBeInTheDocument();
   });
 
   it('renders the running state when analysis is in flight', async () => {
-    hookState.loading = true;
+    hookState.status = 'running';
     await renderPage();
     const map = screen.getByTestId('map-panel');
     expect(map).toHaveAttribute('data-loading', 'true');
@@ -271,7 +314,7 @@ describe('Analyse page', () => {
   });
 
   it('renders a successful analysis with composite score and factor bars', async () => {
-    hookState.analysis = glasgowReconciled;
+    hookState.data = glasgowReconciled;
     await renderPage();
     expect(screen.getByTestId('composite-score')).toHaveTextContent('72');
     expect(screen.getAllByText('Wind resource').length).toBeGreaterThan(0);
@@ -285,6 +328,7 @@ describe('Analyse page', () => {
   });
 
   it('renders the failure state with retry button', async () => {
+    hookState.status = 'error';
     hookState.error = {
       code: ScoringErrorCode.DataFetchFailed,
       message: 'NASA POWER did not respond.',
@@ -296,33 +340,33 @@ describe('Analyse page', () => {
   });
 
   it('shows the bias-correction badge only when reconciliation is present', async () => {
-    hookState.analysis = glasgowReconciled;
+    hookState.data = glasgowReconciled;
     const { unmount } = await renderPage();
     expect(screen.getByTestId('bias-correction-badge')).toBeInTheDocument();
     expect(screen.getAllByText(/CERRA/).length).toBeGreaterThan(0);
     expect(screen.getByText(/132 months overlap/)).toBeInTheDocument();
     unmount();
     resetHook();
-    hookState.analysis = englandNoReconciliation;
+    hookState.data = englandNoReconciliation;
     await renderPage();
     expect(screen.queryByTestId('bias-correction-badge')).not.toBeInTheDocument();
   });
 
   it('shows the hard-constraint banner only when hard constraints exist', async () => {
-    hookState.analysis = glasgowReconciled;
+    hookState.data = glasgowReconciled;
     const { unmount } = await renderPage();
     expect(screen.queryByTestId('hard-constraint-banner')).not.toBeInTheDocument();
     unmount();
     resetHook();
-    hookState.analysis = constrainedSite;
+    hookState.data = constrainedSite;
     await renderPage();
     const banner = screen.getByTestId('hard-constraint-banner');
     expect(banner).toBeInTheDocument();
-    expect(banner).toHaveTextContent(/2 hard constraints/i);
+    expect(banner).toHaveTextContent(/2 potential screening exclusions/i);
   });
 
   it('uses the warm accent for sub-20 factor scores', async () => {
-    hookState.analysis = constrainedSite;
+    hookState.data = constrainedSite;
     await renderPage();
     const landUseLi = document.querySelector('[data-factor="landUseCompatibility"]');
     expect(landUseLi).not.toBeNull();
@@ -335,21 +379,22 @@ describe('Analyse page', () => {
   it('triggers automatic analysis when URL params are present on mount', async () => {
     mockParams = new URLSearchParams('lat=55.86&lng=-4.25&hub=120');
     await renderPage();
-    expect(hookState.analyse).toHaveBeenCalledTimes(1);
-    expect(hookState.analyse).toHaveBeenCalledWith({
+    expect(hookState.run).toHaveBeenCalledTimes(1);
+    expect(hookState.run).toHaveBeenCalledWith({
       coordinate: { lat: 55.86, lng: -4.25 },
       hubHeightM: 120,
+      turbineId: expect.any(String),
     });
   });
 
   it('cancel button resets the in-flight analysis', async () => {
-    hookState.loading = true;
+    hookState.status = 'running';
     await renderPage();
     const cancel = screen.getByRole('button', { name: 'Cancel' });
     await act(async () => {
       fireEvent.click(cancel);
     });
-    expect(hookState.reset).toHaveBeenCalledTimes(1);
+    expect(hookState.cancel).toHaveBeenCalledTimes(1);
   });
 
   it('layer toggle checkboxes update state', async () => {
@@ -369,12 +414,13 @@ describe('Analyse page', () => {
   });
 
   it('has no axe violations in the success state', async () => {
-    hookState.analysis = glasgowReconciled;
+    hookState.data = glasgowReconciled;
     const { container } = await renderPage();
     await expectNoAxeViolations(container);
   });
 
   it('has no axe violations in the error state', async () => {
+    hookState.status = 'error';
     hookState.error = {
       code: ScoringErrorCode.DataFetchFailed,
       message: 'Upstream API unavailable.',
@@ -384,7 +430,7 @@ describe('Analyse page', () => {
   });
 
   it('renders the monthly history chart with both series when reconciliation is present', async () => {
-    hookState.analysis = glasgowReconciled;
+    hookState.data = glasgowReconciled;
     historyState.status = 'success';
     historyState.data = { raw: SAMPLE_HISTORY, corrected: SAMPLE_HISTORY };
     historyState.reconciliation = {
@@ -401,7 +447,7 @@ describe('Analyse page', () => {
   });
 
   it('renders the monthly history chart with only the raw series when reconciliation is absent', async () => {
-    hookState.analysis = englandNoReconciliation;
+    hookState.data = englandNoReconciliation;
     historyState.status = 'success';
     historyState.data = { raw: SAMPLE_HISTORY, corrected: null };
     historyState.reconciliation = null;
@@ -413,7 +459,7 @@ describe('Analyse page', () => {
   });
 
   it('shows the correction stats annotation when reconciliation is present', async () => {
-    hookState.analysis = glasgowReconciled;
+    hookState.data = glasgowReconciled;
     historyState.status = 'success';
     historyState.data = { raw: SAMPLE_HISTORY, corrected: SAMPLE_HISTORY };
     historyState.reconciliation = {
@@ -428,7 +474,7 @@ describe('Analyse page', () => {
   });
 
   it('shows a skeleton while the wind history is loading', async () => {
-    hookState.analysis = glasgowReconciled;
+    hookState.data = glasgowReconciled;
     historyState.status = 'running';
     historyState.data = null;
     await renderPage();
@@ -451,7 +497,7 @@ describe('Analyse page', () => {
         dispatchEvent: vi.fn(),
       }) as unknown as MediaQueryList;
     try {
-      hookState.analysis = glasgowReconciled;
+      hookState.data = glasgowReconciled;
       await renderPage();
       // Mobile now gets the real analysis UI — top bar, map and results — not a
       // "use a desktop" fallback.
@@ -467,7 +513,7 @@ describe('Analyse page', () => {
   });
 
   it('uses the bias-corrected eyebrow when reconciliation is present', async () => {
-    hookState.analysis = glasgowReconciled;
+    hookState.data = glasgowReconciled;
     historyState.status = 'success';
     historyState.data = { raw: SAMPLE_HISTORY, corrected: SAMPLE_HISTORY };
     historyState.reconciliation = {
@@ -480,7 +526,7 @@ describe('Analyse page', () => {
   });
 
   it('renders the wind rose drilldown when history data is present', async () => {
-    hookState.analysis = englandNoReconciliation;
+    hookState.data = englandNoReconciliation;
     historyState.status = 'success';
     historyState.data = { raw: SAMPLE_HISTORY, corrected: null };
     historyState.reconciliation = null;
@@ -491,7 +537,7 @@ describe('Analyse page', () => {
   });
 
   it('shows a wind rose skeleton while history is loading', async () => {
-    hookState.analysis = glasgowReconciled;
+    hookState.data = glasgowReconciled;
     historyState.status = 'running';
     historyState.data = null;
     await renderPage();
@@ -500,19 +546,19 @@ describe('Analyse page', () => {
   });
 
   it('renders the power curve drilldown when AEP succeeds', async () => {
-    hookState.analysis = glasgowReconciled;
+    hookState.data = glasgowReconciled;
     aepState.status = 'success';
     aepState.data = SAMPLE_AEP;
     await renderPage();
     const curve = screen.getByTestId('power-curve-chart');
     expect(curve).toBeInTheDocument();
-    expect(curve).toHaveAttribute('data-p50', String(SAMPLE_AEP.p50.aepMwh));
-    expect(curve).toHaveAttribute('data-p75', String(SAMPLE_AEP.p75.aepMwh));
-    expect(curve).toHaveAttribute('data-p90', String(SAMPLE_AEP.p90.aepMwh));
+    expect(curve).toHaveAttribute('data-central', String(SAMPLE_AEP.centralEstimate.aepMwh));
+    expect(curve).toHaveAttribute('data-downside-10', String(SAMPLE_AEP.downside10.aepMwh));
+    expect(curve).toHaveAttribute('data-downside-20', String(SAMPLE_AEP.downside20.aepMwh));
   });
 
   it('shows a power curve skeleton while AEP is loading', async () => {
-    hookState.analysis = glasgowReconciled;
+    hookState.data = glasgowReconciled;
     aepState.status = 'running';
     aepState.data = null;
     await renderPage();
@@ -521,7 +567,7 @@ describe('Analyse page', () => {
   });
 
   it('shows the power curve empty state when AEP errors out', async () => {
-    hookState.analysis = glasgowReconciled;
+    hookState.data = glasgowReconciled;
     aepState.status = 'error';
     aepState.data = null;
     aepState.error = { code: ScoringErrorCode.DataFetchFailed, message: 'AEP failed.' };
@@ -530,12 +576,13 @@ describe('Analyse page', () => {
   });
 
   it('shows the MCP cross-link below the diagnostics card on success', async () => {
-    hookState.analysis = glasgowReconciled;
+    hookState.data = glasgowReconciled;
     await renderPage();
     expect(screen.getByTestId('mcp-cross-link')).toBeInTheDocument();
   });
 
   it('renders human error copy without leaking the raw enum code', async () => {
+    hookState.status = 'error';
     hookState.error = {
       code: ScoringErrorCode.DataFetchFailed,
       message: 'NASA POWER returned 503',
@@ -545,18 +592,17 @@ describe('Analyse page', () => {
     expect(screen.queryByText(/DATA_FETCH_FAILED/)).not.toBeInTheDocument();
   });
 
-  it('shows the singular hard-constraint banner copy when one constraint exists', async () => {
-    hookState.analysis = constrainedSite;
+  it('frames configured exclusions as screening evidence', async () => {
+    hookState.data = constrainedSite;
     await renderPage();
     expect(screen.getByTestId('hard-constraint-banner')).toBeInTheDocument();
-    // The constrainedSite fixture is expected to have at least one hard constraint.
     const text = screen.getByTestId('hard-constraint-banner').textContent ?? '';
-    expect(text).toMatch(/hard constraint/);
-    expect(text).toMatch(/unlikely to be developable/i);
+    expect(text).toMatch(/potential screening exclusion/);
+    expect(text).toMatch(/authoritative sources/i);
   });
 
   it('renders the footer on the analyse page with key links', async () => {
-    hookState.analysis = glasgowReconciled;
+    hookState.data = glasgowReconciled;
     await renderPage();
     const footer = screen.getByTestId('site-footer');
     expect(footer).toBeInTheDocument();

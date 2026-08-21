@@ -42,33 +42,35 @@ const AXIS_STYLE = {
   fill: 'var(--text-secondary)',
 } as const;
 
-function bestSpeed(record: { ws50m: number; ws10m: number; ws2m: number }): number {
-  if (record.ws50m > 0) return record.ws50m;
-  if (record.ws10m > 0) return record.ws10m;
-  return record.ws2m;
+function bestSpeed(record: {
+  ws50m: number | null;
+  ws10m: number | null;
+  ws2m: number | null;
+}): number | null {
+  return record.ws50m ?? record.ws10m ?? record.ws2m;
 }
 
-function buildRows(
-  raw: MonthlyWindHistory,
-  corrected: MonthlyWindHistory | null,
-): ChartRow[] {
+function buildRows(raw: MonthlyWindHistory, corrected: MonthlyWindHistory | null): ChartRow[] {
   const correctedByKey = new Map<string, number>();
   if (corrected) {
     for (const r of corrected.records) {
-      correctedByKey.set(`${r.year}-${r.month}`, bestSpeed(r));
+      const speed = bestSpeed(r);
+      if (speed !== null) correctedByKey.set(`${r.year}-${r.month}`, speed);
     }
   }
-  return raw.records.map((r) => {
+  return raw.records.flatMap((r) => {
     const key = `${r.year}-${r.month}`;
     const rawSpeed = bestSpeed(r);
+    if (rawSpeed === null) return [];
     const correctedSpeed = correctedByKey.get(key) ?? null;
-    return {
-      yearMonth: `${r.year}-${String(r.month).padStart(2, '0')}`,
-      raw: Number(rawSpeed.toFixed(2)),
-      corrected: correctedSpeed === null ? null : Number(correctedSpeed.toFixed(2)),
-      delta:
-        correctedSpeed === null ? null : Number((correctedSpeed - rawSpeed).toFixed(2)),
-    };
+    return [
+      {
+        yearMonth: `${r.year}-${String(r.month).padStart(2, '0')}`,
+        raw: Number(rawSpeed.toFixed(2)),
+        corrected: correctedSpeed === null ? null : Number(correctedSpeed.toFixed(2)),
+        delta: correctedSpeed === null ? null : Number((correctedSpeed - rawSpeed).toFixed(2)),
+      },
+    ];
   });
 }
 
@@ -126,7 +128,7 @@ export function MonthlyHistoryChart({
 }: MonthlyHistoryChartProps) {
   const rows = buildRows(raw, corrected);
   const hasCorrected = corrected !== null && rows.some((r) => r.corrected !== null);
-  const correctedLabel = `Corrected (${(reference ?? 'cerra').toUpperCase()})`;
+  const correctedLabel = `Corrected (${reference ? reference.toUpperCase() : 'REANALYSIS'})`;
 
   return (
     <DataCard
@@ -156,8 +158,8 @@ export function MonthlyHistoryChart({
           >
             Bias reduced from {diagnostics.biasBeforeMs >= 0 ? '+' : ''}
             {diagnostics.biasBeforeMs.toFixed(2)} to {diagnostics.biasAfterMs >= 0 ? '+' : ''}
-            {diagnostics.biasAfterMs.toFixed(2)} m/s · RMSE{' '}
-            {diagnostics.rmseBeforeMs.toFixed(2)} → {diagnostics.rmseAfterMs.toFixed(2)} m/s
+            {diagnostics.biasAfterMs.toFixed(2)} m/s · RMSE {diagnostics.rmseBeforeMs.toFixed(2)} →{' '}
+            {diagnostics.rmseAfterMs.toFixed(2)} m/s
           </div>
         )}
         <ResponsiveContainer width="100%" height="100%">

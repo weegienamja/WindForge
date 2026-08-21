@@ -2,7 +2,15 @@ import type { ReactNode } from 'react';
 import React, { useRef, useState, useCallback, useEffect } from 'react';
 import type { Map as LeafletMap } from 'leaflet';
 import L from 'leaflet';
-import { MapContainer, TileLayer, Marker, Popup, useMapEvents, CircleMarker, Tooltip as MapTooltip } from 'react-leaflet';
+import {
+  MapContainer,
+  TileLayer,
+  Marker,
+  Popup,
+  useMapEvents,
+  CircleMarker,
+  Tooltip as MapTooltip,
+} from 'react-leaflet';
 import type { LatLng } from '@jamieblair/windforge-core';
 import type { MapPin } from '../hooks/use-map-interaction.js';
 import type { WindSiteTheme } from '../styles/theme.js';
@@ -59,21 +67,28 @@ function ClickHandler({ onClick }: { onClick: (coord: LatLng) => void }) {
   return null;
 }
 
-function BoundsWatcher({ onBoundsChange }: { onBoundsChange: (bounds: { south: number; west: number; north: number; east: number }) => void }) {
+function BoundsWatcher({
+  onBoundsChange,
+}: {
+  onBoundsChange: (bounds: { south: number; west: number; north: number; east: number }) => void;
+}) {
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const emitBounds = useCallback((map: LeafletMap) => {
-    if (timerRef.current) clearTimeout(timerRef.current);
-    timerRef.current = setTimeout(() => {
-      const b = map.getBounds();
-      onBoundsChange({
-        south: b.getSouth(),
-        west: b.getWest(),
-        north: b.getNorth(),
-        east: b.getEast(),
-      });
-    }, 500);
-  }, [onBoundsChange]);
+  const emitBounds = useCallback(
+    (map: LeafletMap) => {
+      if (timerRef.current) clearTimeout(timerRef.current);
+      timerRef.current = setTimeout(() => {
+        const b = map.getBounds();
+        onBoundsChange({
+          south: b.getSouth(),
+          west: b.getWest(),
+          north: b.getNorth(),
+          east: b.getEast(),
+        });
+      }, 500);
+    },
+    [onBoundsChange],
+  );
 
   // Clear any pending debounce timer on unmount to avoid the callback firing
   // against a stale/unmounted map and to prevent the closure from retaining the map.
@@ -84,9 +99,15 @@ function BoundsWatcher({ onBoundsChange }: { onBoundsChange: (bounds: { south: n
   }, []);
 
   useMapEvents({
-    moveend(e) { emitBounds(e.target as LeafletMap); },
-    zoomend(e) { emitBounds(e.target as LeafletMap); },
-    load(e) { emitBounds(e.target as LeafletMap); },
+    moveend(e) {
+      emitBounds(e.target as LeafletMap);
+    },
+    zoomend(e) {
+      emitBounds(e.target as LeafletMap);
+    },
+    load(e) {
+      emitBounds(e.target as LeafletMap);
+    },
   });
   return null;
 }
@@ -198,11 +219,7 @@ export function SiteMap({
                 opacity: 0.7,
               },
             },
-            React.createElement(
-              MapTooltip,
-              null,
-              `Score: ${pt.score}/100`,
-            ),
+            React.createElement(MapTooltip, null, `Score: ${pt.score}/100`),
           ),
         ),
       pin &&
@@ -212,9 +229,7 @@ export function SiteMap({
             position: [pin.coordinate.lat, pin.coordinate.lng],
             icon: pin.loading ? LoadingIcon : DefaultIcon,
           },
-          popupContent &&
-            !pin.loading &&
-            React.createElement(Popup, null, popupContent),
+          popupContent && !pin.loading && React.createElement(Popup, null, popupContent),
         ),
     ),
   );

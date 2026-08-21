@@ -28,9 +28,9 @@ export function errorCopyFor(code: string, fallback: string): string {
     case 'DATA_UNAVAILABLE':
       return `Could not reach ${source}. Try again, or run without it.`;
     case 'TIMEOUT':
-      return 'Reanalysis fetch from Copernicus timed out. The CDS service can take 1 to 5 minutes; try again.';
+      return 'An explicitly requested Copernicus reanalysis job timed out; the CDS queue may be busy. Try again later.';
     case 'CONFIGURATION':
-      return 'Reanalysis bias correction is unavailable. Set CDS_API_KEY to enable.';
+      return 'Optional reanalysis is not configured on this server; the default analysis uses raw NASA POWER evidence.';
     case 'INVALID_COORDINATE':
     case 'OUT_OF_RANGE':
       return 'The coordinate is outside the supported range. Latitude is bounded -90 to 90; longitude -180 to 180.';

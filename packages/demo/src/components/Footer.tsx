@@ -67,7 +67,7 @@ export function Footer() {
             href="https://cds.climate.copernicus.eu/datasets/reanalysis-cerra-single-levels"
             external
           >
-            CERRA
+            CERRA (research source)
           </FooterLink>
           <FooterLink href="https://www.openstreetmap.org/copyright" external>
             OpenStreetMap (© contributors)

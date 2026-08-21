@@ -1,9 +1,25 @@
 {
   "name": "@jamieblair/windforge",
   "version": "0.3.0",
-  "description": "React components for wind energy site assessment and visualisation",
+  "description": "React components for screening-level wind energy site evidence",
   "author": "Jamie Blair <jamie@jamieblair.co.uk>",
   "license": "MIT",
+  "homepage": "https://github.com/weegienamja/WindForge#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/weegienamja/WindForge.git",
+    "directory": "packages/ui"
+  },
+  "bugs": {
+    "url": "https://github.com/weegienamja/WindForge/issues"
+  },
+  "keywords": [
+    "wind-energy",
+    "renewable-energy",
+    "react",
+    "gis",
+    "data-visualization"
+  ],
   "type": "module",
   "main": "./dist/index.cjs",
   "module": "./dist/index.js",

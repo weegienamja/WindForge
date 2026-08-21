@@ -25,36 +25,36 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: 'WindForge · Wind site suitability, computed.',
+  title: 'WindForge · Wind site screening',
   description:
-    'Six-factor wind site scoring, bias-corrected against ERA5 and CERRA reanalysis. Open source, free APIs, callable from Claude Desktop and Cursor.',
+    'Open-source, six-factor pre-feasibility screening for wind-energy sites using public evidence and explicit completeness.',
   authors: [{ name: 'Jamie Blair', url: 'https://jamieblair.co.uk' }],
   keywords: [
     'wind energy',
     'wind site assessment',
     'wind turbine siting',
-    'reanalysis bias correction',
+    'wind resource screening',
     'ERA5',
-    'CERRA',
     'NASA POWER',
     'MCP',
     'open source',
   ],
-  alternates: { canonical: 'https://wind.jamieblair.co.uk' },
+  alternates: { canonical: 'https://wind-forge-demo.vercel.app' },
   openGraph: {
-    title: 'WindForge · Wind site suitability, computed.',
+    title: 'WindForge · Wind site screening',
     description:
-      'Six-factor wind site scoring, bias-corrected against ERA5 and CERRA reanalysis. Open source, free APIs.',
+      'Open-source, six-factor pre-feasibility screening with explicit evidence provenance and completeness.',
     type: 'website',
-    url: 'https://wind.jamieblair.co.uk',
+    url: 'https://wind-forge-demo.vercel.app',
     siteName: 'WindForge',
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'WindForge · Wind site suitability, computed.',
-    description: 'Six-factor wind site scoring, bias-corrected against ERA5 and CERRA reanalysis.',
+    title: 'WindForge · Wind site screening',
+    description:
+      'Open-source pre-feasibility screening with explicit evidence provenance and completeness.',
   },
-  metadataBase: new URL('https://wind.jamieblair.co.uk'),
+  metadataBase: new URL('https://wind-forge-demo.vercel.app'),
 };
 
 // Mobile-first viewport. Leaflet's CSS is imported by the LeafletMap component

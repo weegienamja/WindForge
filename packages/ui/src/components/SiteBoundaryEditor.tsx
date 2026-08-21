@@ -1,8 +1,19 @@
 import type { ReactNode } from 'react';
 import React, { useState, useCallback } from 'react';
-import { MapContainer, TileLayer, Polygon, CircleMarker, Tooltip as MapTooltip, useMapEvents } from 'react-leaflet';
+import {
+  MapContainer,
+  TileLayer,
+  Polygon,
+  CircleMarker,
+  Tooltip as MapTooltip,
+  useMapEvents,
+} from 'react-leaflet';
 import type { LatLng, SiteBoundary } from '@jamieblair/windforge-core';
-import { createBoundary, parseBoundaryFromGeoJSON, parseBoundaryFromKML } from '@jamieblair/windforge-core';
+import {
+  createBoundary,
+  parseBoundaryFromGeoJSON,
+  parseBoundaryFromKML,
+} from '@jamieblair/windforge-core';
 import type { WindSiteTheme } from '../styles/theme.js';
 
 export interface SiteBoundaryEditorProps {
@@ -25,8 +36,6 @@ function MapClickHandler({ onMapClick }: { onMapClick: (coord: LatLng) => void }
   });
   return null;
 }
-
-
 
 export function SiteBoundaryEditor({
   onBoundaryChange,
@@ -72,7 +81,14 @@ export function SiteBoundaryEditor({
     const lat = Number.parseFloat(latStr ?? '');
     const lng = Number.parseFloat(lngStr ?? '');
 
-    if (!Number.isFinite(lat) || !Number.isFinite(lng) || lat < -90 || lat > 90 || lng < -180 || lng > 180) {
+    if (
+      !Number.isFinite(lat) ||
+      !Number.isFinite(lng) ||
+      lat < -90 ||
+      lat > 90 ||
+      lng < -180 ||
+      lng > 180
+    ) {
       setError('Invalid coordinates. Lat must be -90 to 90, Lng must be -180 to 180.');
       return;
     }
@@ -185,13 +201,21 @@ export function SiteBoundaryEditor({
       'aria-label': 'Site boundary editor',
     },
     // Title
-    React.createElement('h3', { style: { margin: '0 0 12px', fontSize: '16px', fontWeight: 600 } }, 'Site Boundary'),
+    React.createElement(
+      'h3',
+      { style: { margin: '0 0 12px', fontSize: '16px', fontWeight: 600 } },
+      'Site Boundary',
+    ),
 
     // Name input
     React.createElement(
       'div',
       { style: { marginBottom: '12px' } },
-      React.createElement('label', { style: { fontSize: '13px', marginRight: '8px' } }, 'Site name:'),
+      React.createElement(
+        'label',
+        { style: { fontSize: '13px', marginRight: '8px' } },
+        'Site name:',
+      ),
       React.createElement('input', {
         type: 'text',
         value: name,
@@ -370,15 +394,35 @@ export function SiteBoundaryEditor({
         React.createElement(
           'div',
           { style: { display: 'flex', gap: '8px', alignItems: 'center', marginBottom: '12px' } },
-          React.createElement('input', { id: 'wsi-lat-input', type: 'number', step: '0.0001', placeholder: 'Latitude', style: inputStyle }),
-          React.createElement('input', { id: 'wsi-lng-input', type: 'number', step: '0.0001', placeholder: 'Longitude', style: inputStyle }),
-          React.createElement('button', { onClick: handleAddPoint, type: 'button', style: btnStyle }, 'Add Point'),
+          React.createElement('input', {
+            id: 'wsi-lat-input',
+            type: 'number',
+            step: '0.0001',
+            placeholder: 'Latitude',
+            style: inputStyle,
+          }),
+          React.createElement('input', {
+            id: 'wsi-lng-input',
+            type: 'number',
+            step: '0.0001',
+            placeholder: 'Longitude',
+            style: inputStyle,
+          }),
+          React.createElement(
+            'button',
+            { onClick: handleAddPoint, type: 'button', style: btnStyle },
+            'Add Point',
+          ),
         ),
         // File upload
         React.createElement(
           'div',
           { style: { marginBottom: '8px' } },
-          React.createElement('label', { style: { fontSize: '13px', marginRight: '8px' } }, 'Upload boundary file:'),
+          React.createElement(
+            'label',
+            { style: { fontSize: '13px', marginRight: '8px' } },
+            'Upload boundary file:',
+          ),
           React.createElement('input', {
             type: 'file',
             accept: '.geojson,.json,.kml',
@@ -391,7 +435,11 @@ export function SiteBoundaryEditor({
 
     // Error
     error
-      ? React.createElement('div', { style: { color: '#dc2626', fontSize: '13px', marginBottom: '8px' }, role: 'alert' }, error)
+      ? React.createElement(
+          'div',
+          { style: { color: '#dc2626', fontSize: '13px', marginBottom: '8px' }, role: 'alert' },
+          error,
+        )
       : null,
 
     // Point list
@@ -399,7 +447,11 @@ export function SiteBoundaryEditor({
       ? React.createElement(
           'div',
           { style: { marginTop: '8px' } },
-          React.createElement('div', { style: { fontSize: '13px', fontWeight: 600, marginBottom: '4px' } }, `${points.length} points defined`),
+          React.createElement(
+            'div',
+            { style: { fontSize: '13px', fontWeight: 600, marginBottom: '4px' } },
+            `${points.length} points defined`,
+          ),
           React.createElement(
             'div',
             { style: { maxHeight: '150px', overflowY: 'auto', fontSize: '12px' } },
@@ -410,7 +462,11 @@ export function SiteBoundaryEditor({
                   key: i,
                   style: { display: 'flex', alignItems: 'center', gap: '8px', padding: '2px 0' },
                 },
-                React.createElement('span', null, `${i + 1}. ${p.lat.toFixed(4)}, ${p.lng.toFixed(4)}`),
+                React.createElement(
+                  'span',
+                  null,
+                  `${i + 1}. ${p.lat.toFixed(4)}, ${p.lng.toFixed(4)}`,
+                ),
                 React.createElement(
                   'button',
                   {

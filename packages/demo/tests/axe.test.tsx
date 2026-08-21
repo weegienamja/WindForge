@@ -43,9 +43,7 @@ describe('axe-core sweeps', () => {
   });
 
   it('SectionHeading has no violations', async () => {
-    const { container } = render(
-      <SectionHeading eyebrow="Section">A heading</SectionHeading>,
-    );
+    const { container } = render(<SectionHeading eyebrow="Section">A heading</SectionHeading>);
     await expectNoAxeViolations(container);
   });
 

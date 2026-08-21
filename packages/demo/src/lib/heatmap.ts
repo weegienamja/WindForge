@@ -43,7 +43,7 @@ export interface HeatmapMeta {
   hubHeightM: number;
   /** Planned point count (land cells in the grid). */
   total: number;
-  /** Completed cells (successes + errors). */
+  /** Successfully completed cells. Failed cells remain retryable. */
   done: number;
   failed: number;
   complete: boolean;
@@ -117,7 +117,8 @@ export function makeRelativeColor(
   if (xs.length === 0) {
     return { color: () => scoreColor(50), lo: 0, hi: 1 };
   }
-  const q = (p: number) => xs[Math.min(xs.length - 1, Math.max(0, Math.round(p * (xs.length - 1))))] as number;
+  const q = (p: number) =>
+    xs[Math.min(xs.length - 1, Math.max(0, Math.round(p * (xs.length - 1))))] as number;
   let lo = q(0.05);
   let hi = q(0.95);
   if (hi <= lo) {
@@ -135,7 +136,10 @@ export function makeRelativeColor(
 }
 
 /** Degree cell size for a spacing in km at a given latitude (for drawing). */
-export function cellStepDeg(spacingKm: number, atLat: number): { latStepDeg: number; lngStepDeg: number } {
+export function cellStepDeg(
+  spacingKm: number,
+  atLat: number,
+): { latStepDeg: number; lngStepDeg: number } {
   const latStepDeg = spacingKm / 111.32;
   const lngStepDeg = spacingKm / (111.32 * Math.cos((atLat * Math.PI) / 180));
   return { latStepDeg, lngStepDeg };

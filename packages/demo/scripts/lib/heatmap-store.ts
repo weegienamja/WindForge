@@ -7,14 +7,14 @@
  *
  *   cells            grid registry (coordinate, offshore, land class, status)
  *   wind_resource    NASA POWER summary (mean speed, variability, Weibull…)
- *   terrain          Open-Elevation (elevation, slope, aspect, roughness)
+ *   terrain          Open-Elevation (elevation, slope, aspect, legacy terrain band)
  *   grid_access      OSM Overpass (nearest line/substation/road)
  *   geocode          Nominatim (country, region, display name)
  *   reanalysis       ERA5/CERRA bias-correction diagnostics
- *   energy_yield     calculateAep (capacity factor, AEP, P50/75/90, losses)
+ *   energy_yield     calculateAep (capacity factor, central/downside sensitivities, losses)
  *   economics        calculateLcoe/Irr/Payback (LCOE, IRR, payback, subsidy-free)
  *   factor_scores    six-factor scores (one row per factor)
- *   constraints      hard constraints + warnings (one row each)
+ *   constraints      configured screening exclusions + warnings (one row each)
  *   site_assessment  ← the required, query-ready summary per cell
  *   runs / meta      worker run log + schema metadata
  */
@@ -24,7 +24,7 @@ import { mkdirSync, existsSync, readFileSync } from 'node:fs';
 import { dirname } from 'node:path';
 import type { HeatmapCell } from '../../src/lib/heatmap';
 
-export const SCHEMA_VERSION = 1;
+export const SCHEMA_VERSION = 2;
 
 const SCHEMA = `
 CREATE TABLE IF NOT EXISTS cells (
@@ -66,7 +66,8 @@ CREATE TABLE IF NOT EXISTS reanalysis (
 CREATE TABLE IF NOT EXISTS energy_yield (
   cell_id TEXT PRIMARY KEY REFERENCES cells(id) ON DELETE CASCADE,
   turbine_id TEXT, hub_height_m REAL, gross_capacity_factor REAL, net_capacity_factor REAL,
-  gross_aep_mwh REAL, net_aep_mwh REAL, p50_mwh REAL, p75_mwh REAL, p90_mwh REAL,
+  gross_aep_mwh REAL, net_aep_mwh REAL,
+  central_estimate_mwh REAL, downside_10_mwh REAL, downside_20_mwh REAL,
   total_loss_pct REAL, wake_loss_pct REAL
 );
 
@@ -103,7 +104,9 @@ CREATE INDEX IF NOT EXISTS idx_sa_subsidy ON site_assessment (subsidy_free);
 
 CREATE TABLE IF NOT EXISTS runs (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
-  started_at TEXT, bbox TEXT, spacing_km REAL, acres REAL, hub_m REAL, total_planned INTEGER, notes TEXT
+  started_at TEXT, finished_at TEXT, status TEXT,
+  bbox TEXT, spacing_km REAL, acres REAL, hub_m REAL, total_planned INTEGER,
+  completed_count INTEGER, failed_count INTEGER, notes TEXT
 );
 
 CREATE TABLE IF NOT EXISTS meta (key TEXT PRIMARY KEY, value TEXT);
@@ -126,14 +129,23 @@ export interface CellRecord {
     weibullK?: number | null;
     weibullC?: number | null;
   } | null;
-  terrain?: { elevationM: number; slopePercent: number; aspectDeg: number; roughnessClass: number } | null;
+  terrain?: {
+    elevationM: number;
+    slopePercent: number;
+    aspectDeg: number;
+    roughnessClass: number;
+  } | null;
   grid?: {
     nearestLineDistanceKm: number;
     nearestSubstationDistanceKm: number;
     lineCount: number;
     substationCount: number;
   } | null;
-  road?: { nearestMajorRoadDistanceKm: number; nearestMajorRoadType: string; bestRoadCategory: string } | null;
+  road?: {
+    nearestMajorRoadDistanceKm: number;
+    nearestMajorRoadType: string;
+    bestRoadCategory: string;
+  } | null;
   geocode?: { countryCode: string; country: string; region: string; displayName: string } | null;
   reanalysis?: {
     method: string;
@@ -153,9 +165,9 @@ export interface CellRecord {
     netCapacityFactor: number;
     grossAepMwh: number;
     netAepMwh: number;
-    p50Mwh: number;
-    p75Mwh: number;
-    p90Mwh: number;
+    centralEstimateMwh: number;
+    downside10Mwh: number;
+    downside20Mwh: number;
     totalLossPct: number;
     wakeLossPct: number;
   } | null;
@@ -167,8 +179,19 @@ export interface CellRecord {
     energyPricePerMwh: number;
     subsidyFree: boolean;
   } | null;
-  factors?: Array<{ factor: string; score: number; weight: number; confidence: string; detail: string }>;
-  constraints?: Array<{ kind: 'hard' | 'warning'; factor: string | null; severity: string | null; description: string }>;
+  factors?: Array<{
+    factor: string;
+    score: number;
+    weight: number;
+    confidence: string;
+    detail: string;
+  }>;
+  constraints?: Array<{
+    kind: 'hard' | 'warning';
+    factor: string | null;
+    severity: string | null;
+    description: string;
+  }>;
   // site_assessment summary fields
   compositeScore?: number | null;
   overallConfidence?: string | null;
@@ -197,29 +220,108 @@ export class WindForgeDB {
     // Rollback-journal mode (not WAL): every commit lands directly in the .db
     // file, so the single file is always self-contained for DBeaver / copying.
     // busy_timeout lets DBeaver read while the worker writes.
-    this.db.exec('PRAGMA journal_mode = DELETE; PRAGMA synchronous = NORMAL; PRAGMA busy_timeout = 8000; PRAGMA foreign_keys = ON;');
+    this.db.exec(
+      'PRAGMA journal_mode = DELETE; PRAGMA synchronous = NORMAL; PRAGMA busy_timeout = 8000; PRAGMA foreign_keys = ON;',
+    );
     this.db.exec(SCHEMA);
-    this.db.prepare('INSERT OR REPLACE INTO meta(key,value) VALUES (?,?)').run('schema_version', String(SCHEMA_VERSION));
+    this.migrateSchema();
+    this.db
+      .prepare('INSERT OR REPLACE INTO meta(key,value) VALUES (?,?)')
+      .run('schema_version', String(SCHEMA_VERSION));
   }
 
   has(id: string): boolean {
-    return this.db.prepare('SELECT 1 FROM site_assessment WHERE cell_id = ?').get(id) !== undefined;
+    return (
+      this.db
+        .prepare(
+          `SELECT 1 FROM site_assessment sa
+       JOIN cells c ON c.id = sa.cell_id
+       WHERE sa.cell_id = ? AND c.status = 'ok' AND sa.error IS NULL`,
+        )
+        .get(id) !== undefined
+    );
+  }
+
+  isFailed(id: string): boolean {
+    return (
+      this.db.prepare("SELECT 1 FROM cells WHERE id = ? AND status = 'error'").get(id) !== undefined
+    );
   }
 
   count(): number {
-    return Number((this.db.prepare('SELECT COUNT(*) AS c FROM site_assessment').get() as { c: number }).c);
+    return Number(
+      (this.db.prepare('SELECT COUNT(*) AS c FROM site_assessment').get() as { c: number }).c,
+    );
   }
 
   countWithLcoe(): number {
     return Number(
-      (this.db.prepare('SELECT COUNT(*) AS c FROM site_assessment WHERE lcoe_per_mwh IS NOT NULL').get() as { c: number }).c,
+      (
+        this.db
+          .prepare('SELECT COUNT(*) AS c FROM site_assessment WHERE lcoe_per_mwh IS NOT NULL')
+          .get() as { c: number }
+      ).c,
     );
   }
 
-  startRun(info: { bbox: string; spacingKm: number; acres: number; hubM: number; totalPlanned: number; notes?: string }): void {
+  countSuccessful(): number {
+    return Number(
+      (
+        this.db.prepare("SELECT COUNT(*) AS c FROM cells WHERE status = 'ok'").get() as {
+          c: number;
+        }
+      ).c,
+    );
+  }
+
+  countFailed(): number {
+    return Number(
+      (
+        this.db.prepare("SELECT COUNT(*) AS c FROM cells WHERE status = 'error'").get() as {
+          c: number;
+        }
+      ).c,
+    );
+  }
+
+  startRun(info: {
+    bbox: string;
+    spacingKm: number;
+    acres: number;
+    hubM: number;
+    totalPlanned: number;
+    notes?: string;
+  }): number {
+    const result = this.db
+      .prepare(
+        'INSERT INTO runs (started_at, status, bbox, spacing_km, acres, hub_m, total_planned, completed_count, failed_count, notes) VALUES (?,?,?,?,?,?,?,?,?,?)',
+      )
+      .run(
+        new Date().toISOString(),
+        'running',
+        info.bbox,
+        info.spacingKm,
+        info.acres,
+        info.hubM,
+        info.totalPlanned,
+        0,
+        0,
+        info.notes ?? '',
+      );
+    return Number(result.lastInsertRowid);
+  }
+
+  finishRun(
+    id: number,
+    completedCount: number,
+    failedCount: number,
+    status: 'complete' | 'interrupted' = 'complete',
+  ): void {
     this.db
-      .prepare('INSERT INTO runs (started_at, bbox, spacing_km, acres, hub_m, total_planned, notes) VALUES (?,?,?,?,?,?,?)')
-      .run(new Date().toISOString(), info.bbox, info.spacingKm, info.acres, info.hubM, info.totalPlanned, info.notes ?? '');
+      .prepare(
+        'UPDATE runs SET finished_at = ?, status = ?, completed_count = ?, failed_count = ? WHERE id = ?',
+      )
+      .run(new Date().toISOString(), status, completedCount, failedCount, id);
   }
 
   upsertCell(r: CellRecord): void {
@@ -233,7 +335,16 @@ export class WindForgeDB {
            ON CONFLICT(id) DO UPDATE SET offshore=excluded.offshore, land_class=excluded.land_class,
              status=excluded.status, last_updated=excluded.last_updated`,
         )
-        .run(r.id, r.lat, r.lng, bit(r.offshore), r.landClass ?? null, r.error ? 'error' : 'ok', now, now);
+        .run(
+          r.id,
+          r.lat,
+          r.lng,
+          bit(r.offshore),
+          r.landClass ?? null,
+          r.error ? 'error' : 'ok',
+          now,
+          now,
+        );
 
       if (r.wind) {
         this.db
@@ -243,15 +354,29 @@ export class WindForgeDB {
              VALUES (?,?,?,?,?,?,?,?,?)`,
           )
           .run(
-            r.id, r.wind.annualAvgSpeedMs, r.wind.speedStdDevMs, r.wind.prevailingDirectionDeg,
-            r.wind.directionalConsistency, r.wind.dataYears, orNull(r.wind.referenceHeightM),
-            orNull(r.wind.weibullK), orNull(r.wind.weibullC),
+            r.id,
+            r.wind.annualAvgSpeedMs,
+            r.wind.speedStdDevMs,
+            r.wind.prevailingDirectionDeg,
+            r.wind.directionalConsistency,
+            r.wind.dataYears,
+            orNull(r.wind.referenceHeightM),
+            orNull(r.wind.weibullK),
+            orNull(r.wind.weibullC),
           );
       }
       if (r.terrain) {
         this.db
-          .prepare('INSERT OR REPLACE INTO terrain (cell_id,elevation_m,slope_percent,aspect_deg,roughness_class) VALUES (?,?,?,?,?)')
-          .run(r.id, r.terrain.elevationM, r.terrain.slopePercent, r.terrain.aspectDeg, r.terrain.roughnessClass);
+          .prepare(
+            'INSERT OR REPLACE INTO terrain (cell_id,elevation_m,slope_percent,aspect_deg,roughness_class) VALUES (?,?,?,?,?)',
+          )
+          .run(
+            r.id,
+            r.terrain.elevationM,
+            r.terrain.slopePercent,
+            r.terrain.aspectDeg,
+            r.terrain.roughnessClass,
+          );
       }
       if (r.grid || r.road) {
         this.db
@@ -261,15 +386,28 @@ export class WindForgeDB {
              VALUES (?,?,?,?,?,?,?,?)`,
           )
           .run(
-            r.id, orNull(r.grid?.nearestLineDistanceKm), orNull(r.grid?.nearestSubstationDistanceKm),
-            orNull(r.grid?.lineCount), orNull(r.grid?.substationCount),
-            orNull(r.road?.nearestMajorRoadDistanceKm), r.road?.nearestMajorRoadType ?? null, r.road?.bestRoadCategory ?? null,
+            r.id,
+            orNull(r.grid?.nearestLineDistanceKm),
+            orNull(r.grid?.nearestSubstationDistanceKm),
+            orNull(r.grid?.lineCount),
+            orNull(r.grid?.substationCount),
+            orNull(r.road?.nearestMajorRoadDistanceKm),
+            r.road?.nearestMajorRoadType ?? null,
+            r.road?.bestRoadCategory ?? null,
           );
       }
       if (r.geocode) {
         this.db
-          .prepare('INSERT OR REPLACE INTO geocode (cell_id,country_code,country,region,display_name) VALUES (?,?,?,?,?)')
-          .run(r.id, r.geocode.countryCode, r.geocode.country, r.geocode.region, r.geocode.displayName);
+          .prepare(
+            'INSERT OR REPLACE INTO geocode (cell_id,country_code,country,region,display_name) VALUES (?,?,?,?,?)',
+          )
+          .run(
+            r.id,
+            r.geocode.countryCode,
+            r.geocode.country,
+            r.geocode.region,
+            r.geocode.displayName,
+          );
       }
       if (r.reanalysis) {
         this.db
@@ -279,21 +417,38 @@ export class WindForgeDB {
              VALUES (?,?,?,?,?,?,?,?,?,?)`,
           )
           .run(
-            r.id, r.reanalysis.method, r.reanalysis.reference, r.reanalysis.biasBeforeMs, r.reanalysis.biasAfterMs,
-            r.reanalysis.rmseBeforeMs, r.reanalysis.rmseAfterMs, r.reanalysis.rSquared, r.reanalysis.ksStatistic, r.reanalysis.confidence,
+            r.id,
+            r.reanalysis.method,
+            r.reanalysis.reference,
+            r.reanalysis.biasBeforeMs,
+            r.reanalysis.biasAfterMs,
+            r.reanalysis.rmseBeforeMs,
+            r.reanalysis.rmseAfterMs,
+            r.reanalysis.rSquared,
+            r.reanalysis.ksStatistic,
+            r.reanalysis.confidence,
           );
       }
       if (r.energy) {
         this.db
           .prepare(
             `INSERT OR REPLACE INTO energy_yield
-             (cell_id,turbine_id,hub_height_m,gross_capacity_factor,net_capacity_factor,gross_aep_mwh,net_aep_mwh,p50_mwh,p75_mwh,p90_mwh,total_loss_pct,wake_loss_pct)
+             (cell_id,turbine_id,hub_height_m,gross_capacity_factor,net_capacity_factor,gross_aep_mwh,net_aep_mwh,central_estimate_mwh,downside_10_mwh,downside_20_mwh,total_loss_pct,wake_loss_pct)
              VALUES (?,?,?,?,?,?,?,?,?,?,?,?)`,
           )
           .run(
-            r.id, r.energy.turbineId, r.energy.hubHeightM, r.energy.grossCapacityFactor, r.energy.netCapacityFactor,
-            r.energy.grossAepMwh, r.energy.netAepMwh, r.energy.p50Mwh, r.energy.p75Mwh, r.energy.p90Mwh,
-            r.energy.totalLossPct, r.energy.wakeLossPct,
+            r.id,
+            r.energy.turbineId,
+            r.energy.hubHeightM,
+            r.energy.grossCapacityFactor,
+            r.energy.netCapacityFactor,
+            r.energy.grossAepMwh,
+            r.energy.netAepMwh,
+            r.energy.centralEstimateMwh,
+            r.energy.downside10Mwh,
+            r.energy.downside20Mwh,
+            r.energy.totalLossPct,
+            r.energy.wakeLossPct,
           );
       }
       if (r.economics) {
@@ -304,18 +459,30 @@ export class WindForgeDB {
              VALUES (?,?,?,?,?,?,?)`,
           )
           .run(
-            r.id, r.economics.lcoePerMwh, orNull(r.economics.irrPct), orNull(r.economics.simplePaybackYears),
-            r.economics.capexGbp, r.economics.energyPricePerMwh, bit(r.economics.subsidyFree),
+            r.id,
+            r.economics.lcoePerMwh,
+            orNull(r.economics.irrPct),
+            orNull(r.economics.simplePaybackYears),
+            r.economics.capexGbp,
+            r.economics.energyPricePerMwh,
+            bit(r.economics.subsidyFree),
           );
       }
 
       this.db.prepare('DELETE FROM factor_scores WHERE cell_id = ?').run(r.id);
-      const fs = this.db.prepare('INSERT INTO factor_scores (cell_id,factor,score,weight,confidence,detail) VALUES (?,?,?,?,?,?)');
-      for (const f of r.factors ?? []) fs.run(r.id, f.factor, f.score, f.weight, f.confidence, f.detail);
+      const fs = this.db.prepare(
+        'INSERT INTO factor_scores (cell_id,factor,score,weight,confidence,detail) VALUES (?,?,?,?,?,?)',
+      );
+      for (const f of r.factors ?? [])
+        fs.run(r.id, f.factor, f.score, f.weight, f.confidence, f.detail);
 
       this.db.prepare('DELETE FROM constraints WHERE cell_id = ?').run(r.id);
-      const cs = this.db.prepare('INSERT INTO constraints (cell_id,seq,kind,factor,severity,description) VALUES (?,?,?,?,?,?)');
-      (r.constraints ?? []).forEach((c, i) => cs.run(r.id, i, c.kind, c.factor, c.severity, c.description));
+      const cs = this.db.prepare(
+        'INSERT INTO constraints (cell_id,seq,kind,factor,severity,description) VALUES (?,?,?,?,?,?)',
+      );
+      (r.constraints ?? []).forEach((c, i) =>
+        cs.run(r.id, i, c.kind, c.factor, c.severity, c.description),
+      );
 
       this.db
         .prepare(
@@ -326,11 +493,26 @@ export class WindForgeDB {
            VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
         )
         .run(
-          r.id, r.lat, r.lng, bit(r.offshore), r.landClass ?? null,
-          orNull(r.compositeScore), r.overallConfidence ?? null, orNull(r.hardConstraintCount),
-          orNull(r.windScore), orNull(r.terrainScore), orNull(r.gridScore),
-          orNull(r.landuseScore), orNull(r.planningScore), orNull(r.accessScore),
-          orNull(r.windSpeedMs), orNull(r.capacityFactor), orNull(r.lcoePerMwh), bit(r.subsidyFree), r.error ?? null, now,
+          r.id,
+          r.lat,
+          r.lng,
+          bit(r.offshore),
+          r.landClass ?? null,
+          orNull(r.compositeScore),
+          r.overallConfidence ?? null,
+          orNull(r.hardConstraintCount),
+          orNull(r.windScore),
+          orNull(r.terrainScore),
+          orNull(r.gridScore),
+          orNull(r.landuseScore),
+          orNull(r.planningScore),
+          orNull(r.accessScore),
+          orNull(r.windSpeedMs),
+          orNull(r.capacityFactor),
+          orNull(r.lcoePerMwh),
+          bit(r.subsidyFree),
+          r.error ?? null,
+          now,
         );
       this.db.exec('COMMIT');
     } catch (err) {
@@ -342,11 +524,13 @@ export class WindForgeDB {
   /** Decimated cells for the live feed / committed snapshot. */
   sample(max: number): HeatmapCell[] {
     const total = this.count();
-    const rows = (
-      total <= max
-        ? this.db.prepare('SELECT * FROM site_assessment').all()
-        : this.db.prepare('SELECT * FROM site_assessment WHERE (rowid % ?) = 0 LIMIT ?').all(Math.ceil(total / max), max)
-    ) as unknown as Array<Record<string, number | string | null>>;
+    const rows = (total <= max
+      ? this.db.prepare('SELECT * FROM site_assessment').all()
+      : this.db
+          .prepare('SELECT * FROM site_assessment WHERE (rowid % ?) = 0 LIMIT ?')
+          .all(Math.ceil(total / max), max)) as unknown as Array<
+      Record<string, number | string | null>
+    >;
     return rows.map((r) => ({
       lat: r.lat as number,
       lng: r.lng as number,
@@ -397,5 +581,34 @@ export class WindForgeDB {
 
   close(): void {
     this.db.close();
+  }
+
+  private migrateSchema(): void {
+    const ensureColumn = (table: string, column: string, definition: string): void => {
+      const columns = this.db.prepare(`PRAGMA table_info(${table})`).all() as Array<{
+        name: string;
+      }>;
+      if (!columns.some((entry) => entry.name === column)) {
+        this.db.exec(`ALTER TABLE ${table} ADD COLUMN ${column} ${definition}`);
+      }
+    };
+    ensureColumn('energy_yield', 'central_estimate_mwh', 'REAL');
+    ensureColumn('energy_yield', 'downside_10_mwh', 'REAL');
+    ensureColumn('energy_yield', 'downside_20_mwh', 'REAL');
+    ensureColumn('runs', 'finished_at', 'TEXT');
+    ensureColumn('runs', 'status', 'TEXT');
+    ensureColumn('runs', 'completed_count', 'INTEGER');
+    ensureColumn('runs', 'failed_count', 'INTEGER');
+
+    const energyColumns = this.db.prepare('PRAGMA table_info(energy_yield)').all() as Array<{
+      name: string;
+    }>;
+    const legacy = new Set(energyColumns.map((entry) => entry.name));
+    if (legacy.has('p50_mwh')) {
+      this.db.exec(`UPDATE energy_yield SET
+        central_estimate_mwh = COALESCE(central_estimate_mwh, p50_mwh),
+        downside_10_mwh = COALESCE(downside_10_mwh, p75_mwh),
+        downside_20_mwh = COALESCE(downside_20_mwh, p90_mwh)`);
+    }
   }
 }

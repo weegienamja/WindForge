@@ -67,7 +67,9 @@ export function EconomicsPanel({ aep, className, style }: EconomicsPanelProps) {
 
   return (
     <DataCard eyebrow="ECONOMICS" className={className} style={style}>
-      <div style={{ display: 'flex', alignItems: 'baseline', gap: 'var(--space-2)', flexWrap: 'wrap' }}>
+      <div
+        style={{ display: 'flex', alignItems: 'baseline', gap: 'var(--space-2)', flexWrap: 'wrap' }}
+      >
         <span className="t-mono-large" data-testid="lcoe-value">
           {symbol(params.currency)}
           {lcoe.lcoePerMwh.toFixed(0)}
@@ -99,7 +101,10 @@ export function EconomicsPanel({ aep, className, style }: EconomicsPanelProps) {
           gap: 'var(--space-3)',
         }}
       >
-        <Metric label="Net capacity factor" value={`${(aep.netCapacityFactor * 100).toFixed(0)}%`} />
+        <Metric
+          label="Net capacity factor"
+          value={`${(aep.netCapacityFactor * 100).toFixed(0)}%`}
+        />
         <Metric
           label="Simple payback"
           value={
@@ -108,10 +113,7 @@ export function EconomicsPanel({ aep, className, style }: EconomicsPanelProps) {
               : '—'
           }
         />
-        <Metric
-          label="IRR"
-          value={irr.converged ? `${(irr.irr * 100).toFixed(1)}%` : '—'}
-        />
+        <Metric label="IRR" value={irr.converged ? `${(irr.irr * 100).toFixed(1)}%` : '—'} />
         <Metric label="Est. CAPEX" value={fmtMoney(lcoe.breakdown.capex, params.currency)} />
       </ul>
 
@@ -119,9 +121,26 @@ export function EconomicsPanel({ aep, className, style }: EconomicsPanelProps) {
         <div className="t-eyebrow" style={{ marginBottom: 'var(--space-2)' }}>
           Energy losses · {aep.losses.totalLossPct.toFixed(1)}% total
         </div>
-        <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'flex', flexDirection: 'column', gap: 6 }}>
+        <ul
+          style={{
+            listStyle: 'none',
+            margin: 0,
+            padding: 0,
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 6,
+          }}
+        >
           {losses.map((l) => (
-            <li key={l.name} style={{ display: 'grid', gridTemplateColumns: '110px 1fr 44px', alignItems: 'center', gap: 8 }}>
+            <li
+              key={l.name}
+              style={{
+                display: 'grid',
+                gridTemplateColumns: '110px 1fr 44px',
+                alignItems: 'center',
+                gap: 8,
+              }}
+            >
               <span className="t-caption" style={{ color: 'var(--text-secondary)' }}>
                 {l.name}
               </span>
@@ -152,12 +171,17 @@ export function EconomicsPanel({ aep, className, style }: EconomicsPanelProps) {
 
       <p
         className="t-caption"
-        style={{ color: 'var(--text-tertiary)', marginTop: 'var(--space-4)', marginBottom: 0, fontSize: 11 }}
+        style={{
+          color: 'var(--text-tertiary)',
+          marginTop: 'var(--space-4)',
+          marginBottom: 0,
+          fontSize: 11,
+        }}
       >
         Assumes {symbol(params.currency)}
         {(params.capexPerMw / 1_000_000).toFixed(1)}M/MW CAPEX, {symbol(params.currency)}
-        {params.energyPricePerMwh}/MWh price, {(params.discountRate * 100).toFixed(0)}% discount rate,{' '}
-        {params.projectLifeYears}-year life. Indicative only.
+        {params.energyPricePerMwh}/MWh price, {(params.discountRate * 100).toFixed(0)}% discount
+        rate, {params.projectLifeYears}-year life. Indicative only.
       </p>
     </DataCard>
   );

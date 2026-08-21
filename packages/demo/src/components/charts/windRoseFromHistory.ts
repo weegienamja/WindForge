@@ -20,16 +20,19 @@ export function windRoseFromHistory(
   bands: WindSpeedBand[] = DEFAULT_WIND_BANDS,
 ): WindRoseDirectionData[] {
   const rows = emptyRoseData(bands);
-  const total = history.records.length;
-  if (total === 0) return rows;
+  let usableRecords = 0;
 
-  const indexByDirection = new Map(
-    COMPASS_DIRECTIONS.map((d, i) => [d, i] as const),
-  );
+  const indexByDirection = new Map(COMPASS_DIRECTIONS.map((d, i) => [d, i] as const));
 
   for (const record of history.records) {
-    const speed = record.ws50m > 0 ? record.ws50m : record.ws10m;
-    const direction = record.wd50m > 0 ? record.wd50m : record.wd10m;
+    const pair =
+      record.ws50m !== null && record.wd50m !== null
+        ? { speed: record.ws50m, direction: record.wd50m }
+        : record.ws10m !== null && record.wd10m !== null
+          ? { speed: record.ws10m, direction: record.wd10m }
+          : null;
+    if (pair === null) continue;
+    const { speed, direction } = pair;
     const compass = degreesToCompass(direction);
     const rowIndex = indexByDirection.get(compass);
     if (rowIndex === undefined) continue;
@@ -39,13 +42,16 @@ export function windRoseFromHistory(
     if (!band) continue;
     const current = (row[band.label] as number | undefined) ?? 0;
     row[band.label] = current + 1;
+    usableRecords += 1;
   }
+
+  if (usableRecords === 0) return rows;
 
   // Convert raw counts into percentages of the total sample.
   for (const row of rows) {
     for (const band of bands) {
       const count = (row[band.label] as number | undefined) ?? 0;
-      row[band.label] = (count / total) * 100;
+      row[band.label] = (count / usableRecords) * 100;
     }
   }
   return rows;

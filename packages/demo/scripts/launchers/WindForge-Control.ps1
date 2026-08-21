@@ -6,12 +6,13 @@ Add-Type -AssemblyName System.Drawing
 [System.Windows.Forms.Application]::EnableVisualStyles()
 
 # ---- configuration -----------------------------------------------------------
-$Repo = 'C:\Users\jab19\wind-site-intelligence'
 $Here = Split-Path -Parent $MyInvocation.MyCommand.Path
-$Db   = Join-Path $Here 'windforge.db'
-$Out  = Join-Path $Here 'heatmap.json'
+$Repo = (Resolve-Path (Join-Path $Here '..\..\..\..')).Path
+$Data = Join-Path $Repo 'heatmap-data'
+$Db   = Join-Path $Data 'uk.db'
+$Out  = Join-Path $Data 'uk.json'
 $Log  = Join-Path $Here 'worker.log'
-$MapUrl = 'https://wind.jamieblair.co.uk/map'
+$MapUrl = 'https://wind-forge-demo.vercel.app/map'
 # ------------------------------------------------------------------------------
 
 $script:proc = $null

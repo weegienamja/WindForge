@@ -22,6 +22,8 @@ export async function expectNoAxeViolations(container: Element): Promise<void> {
     const detail = results.violations
       .map((v) => `[${v.id}] ${v.help} (${v.nodes.length} node(s))`)
       .join('\n');
-    expect.fail(`axe-core found ${results.violations.length} accessibility violation(s):\n${detail}`);
+    expect.fail(
+      `axe-core found ${results.violations.length} accessibility violation(s):\n${detail}`,
+    );
   }
 }

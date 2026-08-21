@@ -2,7 +2,6 @@
 
 import Link from 'next/link';
 import { DataCard } from '../components/primitives/DataCard';
-import { NumberTicker } from '../components/primitives/NumberTicker';
 import { ParticleField } from '../components/primitives/ParticleField';
 import { SectionHeading } from '../components/primitives/SectionHeading';
 import { CopyableCommand } from '../components/primitives/CopyableCommand';
@@ -85,7 +84,8 @@ export default function LandingPage() {
               margin: '0 0 var(--space-7)',
             }}
           >
-            Six-factor scoring. Bias-corrected against ERA5 and CERRA reanalysis. ISO 9613-2 noise modelling. Open source, free APIs, callable from Claude Desktop and Cursor.
+            Six-factor pre-feasibility screening from public data, with explicit provenance and
+            missing-evidence states. Open source and callable from MCP clients.
           </p>
           <div
             style={{
@@ -176,14 +176,10 @@ export default function LandingPage() {
             gap: 'var(--space-6)',
           }}
         >
-          <Stat eyebrow="Tests passing" value={<NumberTicker value={925} />} unit="vitest" />
-          <Stat eyebrow="Scoring factors" value={<NumberTicker value={6} />} unit="weighted" />
-          <Stat
-            eyebrow="ERA5 · CERRA"
-            value={<NumberTicker value={2} />}
-            unit="reanalysis sources"
-          />
-          <Stat eyebrow="Noise model" value={<span className="t-mono-large">ISO 9613-2</span>} unit="standard" />
+          <Stat eyebrow="Automated tests" value="900+" unit="deterministic" />
+          <Stat eyebrow="Scoring factors" value="6" unit="evidence-based" />
+          <Stat eyebrow="Default wind grid" value="~50" unit="km · NASA POWER" />
+          <Stat eyebrow="Noise model" value="ISO-style" unit="screening only" />
         </div>
       </section>
 
@@ -207,16 +203,19 @@ export default function LandingPage() {
                 className="t-body"
                 style={{ color: 'var(--text-secondary)', marginTop: 'var(--space-3)' }}
               >
-                Long-term mean speed, Weibull distribution, directional consistency. NASA POWER raw, ERA5 and CERRA bias-corrected at 50m and extrapolated to hub height.
+                Long-term gridded mean speed, Weibull screening distribution, and directional
+                consistency from NASA POWER, extrapolated with a documented fixed open-terrain
+                assumption.
               </p>
             </DataCard>
-            <DataCard eyebrow="TERRAIN" title="Slope, roughness, flow" interactive>
+            <DataCard eyebrow="TERRAIN" title="Elevation, slope, aspect" interactive>
               <ThumbnailContours />
               <p
                 className="t-body"
                 style={{ color: 'var(--text-secondary)', marginTop: 'var(--space-3)' }}
               >
-                Open-Elevation samples, slope and aspect derived locally, surface roughness class informs the wind shear exponent for hub-height extrapolation.
+                Open-Elevation samples with locally derived slope and aspect. Resolution varies by
+                the provider and is not a microscale flow or land-cover model.
               </p>
             </DataCard>
             <DataCard eyebrow="CONSTRAINTS" title="Grid, land use, planning" interactive>
@@ -225,7 +224,9 @@ export default function LandingPage() {
                 className="t-body"
                 style={{ color: 'var(--text-secondary)', marginTop: 'var(--space-3)' }}
               >
-                Distance to transmission lines and substations, protected zones and residential buffers, planning precedent from existing wind installations within 20km.
+                Geometry-based distances to mapped grid, roads, land use, protected-area tags, and
+                existing wind installations. OpenStreetMap evidence is supplementary, not a
+                statutory search.
               </p>
             </DataCard>
           </div>
@@ -256,9 +257,8 @@ export default function LandingPage() {
               Call WindForge from your editor.
             </h2>
             <p className="t-body" style={{ color: 'var(--text-secondary)' }}>
-              Six tools served over MCP stdio. Add the package to Claude
-              Desktop, Cursor or any MCP-compatible client and ask in plain
-              language.
+              Six tools served over MCP stdio. Add the package to Claude Desktop, Cursor or any
+              MCP-compatible client and ask in plain language.
             </p>
             <p
               className="t-body"
@@ -309,15 +309,7 @@ export default function LandingPage() {
   );
 }
 
-function Stat({
-  eyebrow,
-  value,
-  unit,
-}: {
-  eyebrow: string;
-  value: React.ReactNode;
-  unit: string;
-}) {
+function Stat({ eyebrow, value, unit }: { eyebrow: string; value: React.ReactNode; unit: string }) {
   return (
     <div>
       <div className="t-eyebrow">{eyebrow}</div>

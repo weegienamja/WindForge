@@ -37,7 +37,8 @@ function num(value: number | null, suffix = '', digits = 0): string {
 export function CompareTray({ items, onLoad, onRemove, onClear, activeId }: CompareTrayProps) {
   if (items.length === 0) return null;
 
-  const bestScore = Math.max(...items.map((i) => i.composite));
+  const scores = items.flatMap((i) => (i.composite === null ? [] : [i.composite]));
+  const bestScore = scores.length > 0 ? Math.max(...scores) : null;
   const lcoes = items.map((i) => i.lcoePerMwh).filter((v): v is number => v !== null);
   const bestLcoe = lcoes.length > 0 ? Math.min(...lcoes) : null;
 
@@ -59,7 +60,9 @@ export function CompareTray({ items, onLoad, onRemove, onClear, activeId }: Comp
           marginBottom: 'var(--space-3)',
         }}
       >
-        <div className="t-eyebrow">Compare · {items.length} site{items.length === 1 ? '' : 's'}</div>
+        <div className="t-eyebrow">
+          Compare · {items.length} site{items.length === 1 ? '' : 's'}
+        </div>
         <button
           type="button"
           onClick={onClear}
@@ -130,13 +133,14 @@ export function CompareTray({ items, onLoad, onRemove, onClear, activeId }: Comp
                       ...td,
                       textAlign: 'right',
                       color:
-                        item.composite === bestScore
+                        item.composite !== null && item.composite === bestScore
                           ? 'var(--confidence-high)'
                           : 'var(--text-primary)',
-                      fontWeight: item.composite === bestScore ? 600 : 400,
+                      fontWeight:
+                        item.composite !== null && item.composite === bestScore ? 600 : 400,
                     }}
                   >
-                    {item.composite.toFixed(0)}
+                    {num(item.composite)}
                   </td>
                   <td style={{ ...td, textAlign: 'right' }}>{num(item.windSpeedMs, ' m/s', 1)}</td>
                   <td style={{ ...td, textAlign: 'right' }}>{num(item.netAepMwh, ' MWh')}</td>
@@ -157,7 +161,8 @@ export function CompareTray({ items, onLoad, onRemove, onClear, activeId }: Comp
                     style={{
                       ...td,
                       textAlign: 'right',
-                      color: item.hardConstraints > 0 ? 'var(--accent-warm)' : 'var(--text-secondary)',
+                      color:
+                        item.hardConstraints > 0 ? 'var(--accent-warm)' : 'var(--text-secondary)',
                     }}
                   >
                     {item.hardConstraints}

@@ -35,7 +35,10 @@ describe('assess_site_polygon tool', () => {
 
   it('rejects polygons with fewer than 3 points', () => {
     const parsed = assessSitePolygonTool.inputSchema.safeParse({
-      polygon: [{ lat: 0, lng: 0 }, { lat: 1, lng: 1 }],
+      polygon: [
+        { lat: 0, lng: 0 },
+        { lat: 1, lng: 1 },
+      ],
     });
     expect(parsed.success).toBe(false);
   });
