@@ -7,7 +7,7 @@
  * still contains the install command, a generic MCP client config block, and
  * the tool reference table. Any failure here is a real publish blocker.
  */
-import { execSync, spawnSync } from 'node:child_process';
+import { execSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -63,12 +63,10 @@ function fail(message: string): never {
 
 function runBuild(): void {
   console.log('validate-publish: running pnpm build...');
-  const result = spawnSync('pnpm', ['build'], {
+  execSync('pnpm build', {
     cwd: PACKAGE_DIR,
     stdio: 'inherit',
-    shell: true,
   });
-  if (result.status !== 0) fail('pnpm build exited non-zero');
 }
 
 function runPackDryRun(): PackResult {
@@ -76,12 +74,20 @@ function runPackDryRun(): PackResult {
   const raw = execSync('npm pack --dry-run --json', {
     cwd: PACKAGE_DIR,
     encoding: 'utf8',
+    env: npmEnvironment(),
   });
   const parsed: Array<{ files: PackTarballEntry[]; size: number; unpackedSize: number }> =
     JSON.parse(raw);
   const entry = parsed[0];
   if (!entry) fail('npm pack returned no entries');
   return { files: entry.files, totalBytes: entry.size };
+}
+
+function npmEnvironment(): NodeJS.ProcessEnv {
+  const env = { ...process.env };
+  delete env['npm_config_recursive'];
+  delete env['NPM_CONFIG_RECURSIVE'];
+  return env;
 }
 
 function assertTarballSize(bytes: number): void {
