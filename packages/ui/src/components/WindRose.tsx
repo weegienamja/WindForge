@@ -130,7 +130,12 @@ export function WindRose({
     },
     React.createElement(
       ResponsiveContainer,
-      { width: '100%', height: '100%', children: null as unknown as React.ReactElement },
+      {
+        width: '100%',
+        height: '100%',
+        minWidth: 0,
+        children: null as unknown as React.ReactElement,
+      },
       React.createElement(
         RadarChart,
         { data: orderedData, cx: '50%', cy: '50%', outerRadius: '75%' },
