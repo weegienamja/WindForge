@@ -19,10 +19,7 @@ import {
   computeJensenWakeField,
   generateThrustCurveFromPower,
 } from './jensen-wake.js';
-import {
-  bastankhahExpansionFromRoughness,
-  computeBastankhahWakeField,
-} from './bastankhah-wake.js';
+import { bastankhahExpansionFromRoughness, computeBastankhahWakeField } from './bastankhah-wake.js';
 
 const HOURS_PER_YEAR = 8760;
 const DEFAULT_SECTOR_COUNT = 36;
@@ -69,9 +66,8 @@ export function buildWindRose(
 
   for (const sector of sectors) {
     sector.frequency = sector.count / totalCount;
-    sector.meanSpeedMs = sector.count > 0
-      ? sector.speedSum / sector.count
-      : windData.annualAverageSpeedMs;
+    sector.meanSpeedMs =
+      sector.count > 0 ? sector.speedSum / sector.count : windData.annualAverageSpeedMs;
   }
 
   // Smooth out very sparse distributions by adding a small baseline
@@ -159,15 +155,14 @@ export function calculateDirectionalWakeLoss(
   const roughnessClass = options.roughnessClass ?? 1;
 
   // Get or generate thrust curve
-  const thrustCurve = turbine.thrustCurve ?? generateThrustCurveFromPower(
-    turbine.powerCurve,
-    turbine.rotorDiameterM,
-  );
+  const thrustCurve =
+    turbine.thrustCurve ?? generateThrustCurveFromPower(turbine.powerCurve, turbine.rotorDiameterM);
 
   // Determine model-specific decay/expansion parameter
-  const decayConstant = model === 'bastankhah'
-    ? (options.wakeDecayConstant ?? bastankhahExpansionFromRoughness(roughnessClass))
-    : (options.wakeDecayConstant ?? wakeDecayFromRoughness(roughnessClass));
+  const decayConstant =
+    model === 'bastankhah'
+      ? (options.wakeDecayConstant ?? bastankhahExpansionFromRoughness(roughnessClass))
+      : (options.wakeDecayConstant ?? wakeDecayFromRoughness(roughnessClass));
 
   // Build wind rose
   const windRose = buildWindRose(windData, sectorCount);
@@ -185,9 +180,22 @@ export function calculateDirectionalWakeLoss(
     if (sectorSpeedMs <= 0) continue;
 
     // Compute wake field for this direction
-    const wakeField = model === 'bastankhah'
-      ? computeBastankhahWakeField(layout, sectorSpeedMs, sector.directionDeg, thrustCurve, decayConstant)
-      : computeJensenWakeField(layout, sectorSpeedMs, sector.directionDeg, thrustCurve, decayConstant);
+    const wakeField =
+      model === 'bastankhah'
+        ? computeBastankhahWakeField(
+            layout,
+            sectorSpeedMs,
+            sector.directionDeg,
+            thrustCurve,
+            decayConstant,
+          )
+        : computeJensenWakeField(
+            layout,
+            sectorSpeedMs,
+            sector.directionDeg,
+            thrustCurve,
+            decayConstant,
+          );
 
     // Calculate power at each turbine
     const powerOutputKw = wakeField.effectiveSpeedMs.map((speed) =>
@@ -230,12 +238,9 @@ export function calculateDirectionalWakeLoss(
 
   const grossFarmAepMwh = freeStreamAep.reduce((s, v) => s + v, 0);
   const wakeAdjustedFarmAepMwh = wakedAep.reduce((s, v) => s + v, 0);
-  const wakeLossPercent = grossFarmAepMwh > 0
-    ? ((grossFarmAepMwh - wakeAdjustedFarmAepMwh) / grossFarmAepMwh) * 100
-    : 0;
-  const farmEfficiency = grossFarmAepMwh > 0
-    ? wakeAdjustedFarmAepMwh / grossFarmAepMwh
-    : 1;
+  const wakeLossPercent =
+    grossFarmAepMwh > 0 ? ((grossFarmAepMwh - wakeAdjustedFarmAepMwh) / grossFarmAepMwh) * 100 : 0;
+  const farmEfficiency = grossFarmAepMwh > 0 ? wakeAdjustedFarmAepMwh / grossFarmAepMwh : 1;
 
   const modelName = model === 'bastankhah' ? 'Bastankhah Gaussian' : 'Jensen/Park';
   const summary = [
@@ -312,14 +317,16 @@ function singleTurbineResult(
     wakeAdjustedFarmAepMwh: round2(totalAepMwh),
     wakeLossPercent: 0,
     farmEfficiency: 1,
-    perTurbineResults: [{
-      turbineId: position.id,
-      location: position.location,
-      freeStreamAepMwh: round2(totalAepMwh),
-      wakeAdjustedAepMwh: round2(totalAepMwh),
-      wakeLossPercent: 0,
-      efficiency: 1,
-    }],
+    perTurbineResults: [
+      {
+        turbineId: position.id,
+        location: position.location,
+        freeStreamAepMwh: round2(totalAepMwh),
+        wakeAdjustedAepMwh: round2(totalAepMwh),
+        wakeLossPercent: 0,
+        efficiency: 1,
+      },
+    ],
     sectorResults: [],
     wakeDecayConstant: 0,
     summary: `Single turbine - no wake losses. AEP: ${round2(totalAepMwh)} MWh.`,

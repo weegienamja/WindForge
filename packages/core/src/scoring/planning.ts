@@ -9,8 +9,28 @@ import type { ReverseGeocodeResult } from '../datasources/nominatim.js';
 
 // Countries with generally favourable wind energy planning frameworks
 const FAVOURABLE_COUNTRIES = new Set([
-  'GB', 'DE', 'DK', 'NL', 'SE', 'NO', 'IE', 'ES', 'PT', 'US', 'CA', 'AU',
-  'FR', 'BE', 'AT', 'FI', 'EE', 'LT', 'LV', 'PL', 'IT', 'GR',
+  'GB',
+  'DE',
+  'DK',
+  'NL',
+  'SE',
+  'NO',
+  'IE',
+  'ES',
+  'PT',
+  'US',
+  'CA',
+  'AU',
+  'FR',
+  'BE',
+  'AT',
+  'FI',
+  'EE',
+  'LT',
+  'LV',
+  'PL',
+  'IT',
+  'GR',
 ]);
 
 export interface PlanningInputs {
@@ -75,7 +95,8 @@ export function scorePlanning(
 
   const detail =
     `Estimated planning feasibility based on proximity to existing wind installations, population density, and regional context. ` +
-    signals.join('. ') + '. ' +
+    signals.join('. ') +
+    '. ' +
     'This is not a substitute for formal planning assessment.';
 
   return ok({

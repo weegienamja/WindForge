@@ -122,7 +122,9 @@ export function parseBoundaryFromKML(kml: string): Result<SiteBoundary, ScoringE
   const pointStrings = coordsText.split(/\s+/).filter((s) => s.length > 0);
 
   if (pointStrings.length < 3) {
-    return err(scoringError(ScoringErrorCode.Unknown, 'KML polygon must have at least 3 coordinates'));
+    return err(
+      scoringError(ScoringErrorCode.Unknown, 'KML polygon must have at least 3 coordinates'),
+    );
   }
 
   const polygon: LatLng[] = [];
@@ -136,7 +138,9 @@ export function parseBoundaryFromKML(kml: string): Result<SiteBoundary, ScoringE
   }
 
   if (polygon.length < 3) {
-    return err(scoringError(ScoringErrorCode.Unknown, 'KML polygon has fewer than 3 valid coordinates'));
+    return err(
+      scoringError(ScoringErrorCode.Unknown, 'KML polygon has fewer than 3 valid coordinates'),
+    );
   }
 
   // Remove closing point if it duplicates the first

@@ -38,9 +38,7 @@ function CurveTooltip({ active, payload }: { active?: boolean; payload?: Tooltip
         color: 'var(--text-primary)',
       }}
     >
-      <div style={{ color: 'var(--text-secondary)' }}>
-        {point.windSpeedMs?.toFixed(1)} m/s
-      </div>
+      <div style={{ color: 'var(--text-secondary)' }}>{point.windSpeedMs?.toFixed(1)} m/s</div>
       <div>{point.powerKw?.toFixed(0)} kW</div>
     </div>
   );
@@ -55,7 +53,7 @@ export interface PowerCurveChartProps {
 
 /**
  * Recharts line chart of the selected turbine's power curve, with three
- * P50/P75/P90 AEP readouts beneath. Drives the analyse-page yield
+ * explicitly non-probabilistic AEP sensitivity readouts beneath.
  * drilldown.
  */
 export function PowerCurveChart({ turbine, aep, className, style }: PowerCurveChartProps) {
@@ -76,7 +74,12 @@ export function PowerCurveChart({ turbine, aep, className, style }: PowerCurveCh
       }}
     >
       <div style={{ width: '100%', height: 240 }}>
-        <ResponsiveContainer width="100%" height="100%">
+        <ResponsiveContainer
+          width="100%"
+          height="100%"
+          minWidth={0}
+          initialDimension={{ width: 1, height: 1 }}
+        >
           <LineChart data={points} margin={{ top: 8, right: 16, bottom: 24, left: 8 }}>
             <CartesianGrid stroke="var(--border-subtle)" strokeDasharray="2 4" vertical={false} />
             <XAxis
@@ -125,9 +128,9 @@ export function PowerCurveChart({ turbine, aep, className, style }: PowerCurveCh
           gap: 'var(--space-3)',
         }}
       >
-        <AepRow label="P50" mwh={aep.p50.aepMwh} confidence={aep.confidence} />
-        <AepRow label="P75" mwh={aep.p75.aepMwh} confidence={aep.confidence} />
-        <AepRow label="P90" mwh={aep.p90.aepMwh} confidence={aep.confidence} />
+        <AepRow label="Central" mwh={aep.centralEstimate.aepMwh} confidence={aep.confidence} />
+        <AepRow label="10% downside" mwh={aep.downside10.aepMwh} confidence={aep.confidence} />
+        <AepRow label="20% downside" mwh={aep.downside20.aepMwh} confidence={aep.confidence} />
       </ul>
     </div>
   );
@@ -154,7 +157,13 @@ function AepRow({
   );
 }
 
-export function PowerCurveEmpty({ className, style }: { className?: string; style?: CSSProperties }) {
+export function PowerCurveEmpty({
+  className,
+  style,
+}: {
+  className?: string;
+  style?: CSSProperties;
+}) {
   return (
     <div
       data-testid="power-curve-empty"
@@ -175,7 +184,13 @@ export function PowerCurveEmpty({ className, style }: { className?: string; styl
   );
 }
 
-export function PowerCurveSkeleton({ className, style }: { className?: string; style?: CSSProperties }) {
+export function PowerCurveSkeleton({
+  className,
+  style,
+}: {
+  className?: string;
+  style?: CSSProperties;
+}) {
   return (
     <div
       data-testid="power-curve-skeleton"

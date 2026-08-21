@@ -5,7 +5,7 @@ import {
   dateToJulianDay,
   dayOfYear,
   calculateShadowFlicker,
-  assessShadowCompliance,
+  assessShadowThresholds,
   isFlickerOccurring,
   bearing,
   angleDifference,
@@ -249,8 +249,8 @@ describe('calculateShadowFlicker', () => {
 
   it('handles multiple receptors', () => {
     const receptors: LatLng[] = [
-      { lat: 55.0018, lng: -3.0 },   // close, north
-      { lat: 56.0, lng: -3.0 },       // far away
+      { lat: 55.0018, lng: -3.0 }, // close, north
+      { lat: 56.0, lng: -3.0 }, // far away
     ];
     const result = calculateShadowFlicker([turbine], receptors, { year: 2024 });
     expect(result.receptors).toHaveLength(2);
@@ -277,9 +277,9 @@ describe('calculateShadowFlicker', () => {
 
 // ─── Shadow Compliance ───
 
-describe('assessShadowCompliance', () => {
-  it('marks compliant when below limits', () => {
-    const result = assessShadowCompliance(
+describe('assessShadowThresholds', () => {
+  it('marks estimates within configured thresholds', () => {
+    const result = assessShadowThresholds(
       {
         receptors: [
           {
@@ -289,7 +289,6 @@ describe('assessShadowCompliance', () => {
               month: i + 1,
               maxMinutes: 40,
             })),
-            compliant: true,
           },
         ],
         worstCaseHoursPerYear: 50,
@@ -298,13 +297,14 @@ describe('assessShadowCompliance', () => {
       { maxHoursPerYear: 30, maxMinutesPerDay: 30, sunshineFraction: 0.32 },
     );
     // 50 * 0.32 = 16 expected hours, 40 * 0.32 = 12.8 minutes
-    expect(result.overallCompliant).toBe(true);
+    expect(result.overallWithinThresholds).toBe(true);
     expect(result.receptors[0].expectedHoursPerYear).toBeCloseTo(16, 0);
-    expect(result.summary).toContain('compliant');
+    expect(result.summary).toContain('configured screening thresholds');
+    expect(result.disclaimer).toContain('not a planning compliance assessment');
   });
 
-  it('marks non-compliant when above hours limit', () => {
-    const result = assessShadowCompliance(
+  it('marks an annual screening-threshold exceedance', () => {
+    const result = assessShadowThresholds(
       {
         receptors: [
           {
@@ -314,7 +314,6 @@ describe('assessShadowCompliance', () => {
               month: i + 1,
               maxMinutes: 60,
             })),
-            compliant: true,
           },
         ],
         worstCaseHoursPerYear: 200,
@@ -323,12 +322,12 @@ describe('assessShadowCompliance', () => {
       { maxHoursPerYear: 30, maxMinutesPerDay: 30, sunshineFraction: 0.32 },
     );
     // 200 * 0.32 = 64 expected hours - exceeds 30h limit
-    expect(result.overallCompliant).toBe(false);
-    expect(result.receptors[0].compliantHoursPerYear).toBe(false);
+    expect(result.overallWithinThresholds).toBe(false);
+    expect(result.receptors[0].withinAnnualThreshold).toBe(false);
   });
 
   it('uses default UK sunshine fraction of 0.32', () => {
-    const result = assessShadowCompliance({
+    const result = assessShadowThresholds({
       receptors: [
         {
           location: { lat: 55, lng: -3 },
@@ -337,19 +336,18 @@ describe('assessShadowCompliance', () => {
             month: i + 1,
             maxMinutes: 0,
           })),
-          compliant: true,
         },
       ],
       worstCaseHoursPerYear: 80,
       summary: '',
     });
-    // 80 * 0.32 = 25.6 (compliant with default 30h limit)
-    expect(result.overallCompliant).toBe(true);
+    // 80 * 0.32 = 25.6 (within the default 30h screening threshold)
+    expect(result.overallWithinThresholds).toBe(true);
     expect(result.receptors[0].expectedHoursPerYear).toBeCloseTo(25.6, 0);
   });
 
-  it('generates meaningful summary for non-compliant case', () => {
-    const result = assessShadowCompliance(
+  it('generates a meaningful threshold-exceedance summary', () => {
+    const result = assessShadowThresholds(
       {
         receptors: [
           {
@@ -359,7 +357,6 @@ describe('assessShadowCompliance', () => {
               month: i + 1,
               maxMinutes: 120,
             })),
-            compliant: true,
           },
         ],
         worstCaseHoursPerYear: 300,
@@ -367,7 +364,7 @@ describe('assessShadowCompliance', () => {
       },
       { sunshineFraction: 0.5 },
     );
-    expect(result.summary).toContain('exceed limits');
+    expect(result.summary).toContain('exceed the configured screening thresholds');
     expect(result.worstCaseExpectedHoursPerYear).toBeCloseTo(150, 0);
   });
 });

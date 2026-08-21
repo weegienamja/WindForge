@@ -6,13 +6,17 @@ import {
   fitGumbel,
   gumbelQuantile,
 } from '../src/index.js';
-import type { HourlyWindData, DailyWindData, MonthlyWindHistory } from '../src/types/datasources.js';
+import type {
+  HourlyWindData,
+  DailyWindData,
+  MonthlyWindHistory,
+} from '../src/types/datasources.js';
 
 // ─── Turbulence Intensity ───
 
 describe('classifyTurbulence', () => {
   it('classifies low turbulence as Class C', () => {
-    expect(classifyTurbulence(0.10)).toBe('C');
+    expect(classifyTurbulence(0.1)).toBe('C');
   });
 
   it('classifies medium turbulence as Class B', () => {
@@ -24,7 +28,7 @@ describe('classifyTurbulence', () => {
   });
 
   it('classifies very high turbulence as exceeds_A', () => {
-    expect(classifyTurbulence(0.20)).toBe('exceeds_A');
+    expect(classifyTurbulence(0.2)).toBe('exceeds_A');
   });
 
   it('classifies boundary values correctly', () => {
@@ -51,7 +55,7 @@ describe('estimateTurbulenceIntensity - hourly data', () => {
     };
   }
 
-  it('computes TI from hourly data', () => {
+  it('computes an explicitly limited variability proxy from hourly means', () => {
     // Create data with known variability: speeds around 10 m/s with some spread
     const speeds: number[] = [];
     for (let i = 0; i < 100; i++) {
@@ -64,13 +68,16 @@ describe('estimateTurbulenceIntensity - hourly data', () => {
     expect(result.meanTi).toBeLessThan(0.5);
     expect(result.tiBins.length).toBeGreaterThan(0);
     expect(result.dataSource).toBe('hourly');
-    expect(result.summary).toContain('Mean TI');
+    expect(result.assessmentLevel).toBe('variability_proxy');
+    expect(result.referenceCategory).toBeNull();
+    expect(result.summary).toContain('Hourly variability proxy');
+    expect(result.limitation).toContain('do not resolve');
   });
 
   it('returns empty result for insufficient data', () => {
     const data = makeHourlyData([5, 6, 7]);
     const result = estimateTurbulenceIntensity(data, 'ws50m');
-    expect(result.meanTi).toBe(0);
+    expect(result.meanTi).toBeNull();
     expect(result.summary).toContain('Insufficient');
   });
 
@@ -90,12 +97,12 @@ describe('estimateTurbulenceIntensity - hourly data', () => {
     }
   });
 
-  it('assigns IEC class based on representative TI', () => {
+  it('does not assign an IEC class from hourly mean data', () => {
     // Very steady wind (low TI)
     const steadySpeeds = Array.from({ length: 200 }, () => 15);
     const data = makeHourlyData(steadySpeeds);
     const result = estimateTurbulenceIntensity(data, 'ws50m');
-    expect(result.iecClass).toBe('C'); // very low TI
+    expect(result.referenceCategory).toBeNull();
   });
 });
 
@@ -116,7 +123,7 @@ describe('estimateTurbulenceIntensity - daily data', () => {
     };
   }
 
-  it('estimates TI from daily data with correction factor', () => {
+  it('rejects daily mean data as unsuitable for turbulence assessment', () => {
     const speeds: number[] = [];
     for (let i = 0; i < 30; i++) {
       speeds.push(8 + Math.sin(i * 0.3) * 3);
@@ -124,9 +131,10 @@ describe('estimateTurbulenceIntensity - daily data', () => {
     const data = makeDailyData(speeds);
     const result = estimateTurbulenceIntensity(data, 'ws50m');
 
-    expect(result.meanTi).toBeGreaterThan(0);
-    expect(result.dataSource).toBe('daily_estimated');
-    expect(result.summary).toContain('daily data');
+    expect(result.meanTi).toBeNull();
+    expect(result.dataSource).toBe('daily_unsupported');
+    expect(result.assessmentLevel).toBe('unsupported');
+    expect(result.summary).toContain('unsuitable');
   });
 });
 
@@ -160,11 +168,11 @@ describe('fitGumbel', () => {
 
 describe('gumbelQuantile', () => {
   it('returns higher values for longer return periods', () => {
-    const v1 = gumbelQuantile(20, 3, 1);
+    const v2 = gumbelQuantile(20, 3, 2);
     const v10 = gumbelQuantile(20, 3, 10);
     const v50 = gumbelQuantile(20, 3, 50);
 
-    expect(v10).toBeGreaterThan(v1);
+    expect(v10).toBeGreaterThan(v2);
     expect(v50).toBeGreaterThan(v10);
   });
 
@@ -173,6 +181,10 @@ describe('gumbelQuantile', () => {
     // F(mu) = exp(-exp(0)) = exp(-1) ≈ 0.368, so T = 1/(1-0.368) ≈ 1.58
     const v = gumbelQuantile(20, 3, 1 / (1 - Math.exp(-1)));
     expect(v).toBeCloseTo(20, 0);
+  });
+
+  it('rejects the undefined one-year return period', () => {
+    expect(() => gumbelQuantile(20, 3, 1)).toThrow(RangeError);
   });
 
   it('is sensitive to sigma', () => {
@@ -212,21 +224,21 @@ describe('estimateExtremeWind', () => {
     };
   }
 
-  it('estimates V50 from monthly history', () => {
+  it('estimates a coarse return level from monthly history', () => {
     const history = makeMonthlyHistory(20, 12);
     const result = estimateExtremeWind(history, 'ws50m');
 
     expect(result.v50YearMs).toBeGreaterThan(10);
-    expect(result.v1YearMs).toBeGreaterThan(0);
-    expect(result.v50YearMs).toBeGreaterThan(result.v1YearMs);
+    expect(result.v1YearMs).toBeNull();
     expect(result.annualMaxima.length).toBe(20);
     expect(result.referenceHeightM).toBe(50);
   });
 
-  it('determines IEC wind class', () => {
+  it('does not assign an IEC wind class from monthly mean data', () => {
     const history = makeMonthlyHistory(20, 12);
     const result = estimateExtremeWind(history, 'ws50m');
-    expect(['I', 'II', 'III', 'S']).toContain(result.iecWindClass);
+    expect(result.referenceCategory).toBeNull();
+    expect(result.assessmentLevel).toBe('coarse_return_level');
   });
 
   it('returns low confidence for monthly data', () => {
@@ -239,7 +251,7 @@ describe('estimateExtremeWind', () => {
   it('returns insufficient data for short records', () => {
     const history = makeMonthlyHistory(3, 10);
     const result = estimateExtremeWind(history, 'ws50m');
-    expect(result.v50YearMs).toBe(0);
+    expect(result.v50YearMs).toBeNull();
     expect(result.summary).toContain('Insufficient');
     expect(result.confidence).toBe('low');
   });
@@ -247,8 +259,8 @@ describe('estimateExtremeWind', () => {
   it('generates meaningful summary', () => {
     const history = makeMonthlyHistory(20, 12);
     const result = estimateExtremeWind(history, 'ws50m');
-    expect(result.summary).toContain('50-year return');
-    expect(result.summary).toContain('IEC Wind Class');
+    expect(result.summary).toContain('50-year return level');
+    expect(result.summary).toContain('No IEC turbine class');
     expect(result.summary).toContain('20 years');
   });
 

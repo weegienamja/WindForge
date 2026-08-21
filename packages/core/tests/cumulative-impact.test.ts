@@ -30,10 +30,7 @@ describe('Cumulative Impact Assessment', () => {
   const receptor: LatLng = { lat: 55.85, lng: -4.28 };
 
   it('returns valid structure with no existing turbines (baseline)', () => {
-    const proposed = [
-      makeProposedTurbine(1, 55.84, -4.26),
-      makeProposedTurbine(2, 55.84, -4.25),
-    ];
+    const proposed = [makeProposedTurbine(1, 55.84, -4.26), makeProposedTurbine(2, 55.84, -4.25)];
 
     const result = assessCumulativeImpact(proposed, [], [receptor]);
 

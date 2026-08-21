@@ -45,10 +45,9 @@ function mockFetchSequence(responses: MockResponse[]): ReturnType<typeof vi.fn> 
   const fn = vi.fn(async () => {
     const r = responses[Math.min(i, responses.length - 1)];
     i++;
-    return new Response(
-      r?.bodyBuffer ?? (r?.body !== undefined ? JSON.stringify(r.body) : null),
-      { status: r?.status ?? 200 },
-    );
+    return new Response(r?.bodyBuffer ?? (r?.body !== undefined ? JSON.stringify(r.body) : null), {
+      status: r?.status ?? 200,
+    });
   });
   globalThis.fetch = fn as unknown as typeof fetch;
   return fn;
@@ -85,6 +84,14 @@ function setMockNetCdf(records: Array<{ year: number; month: number; speed: numb
 function hoursSince1900(year: number, month: number): number {
   const ms = Date.UTC(year, month - 1, 1) - Date.UTC(1900, 0, 1);
   return ms / (3600 * 1000);
+}
+
+function completeYear(speed: number): Array<{ year: number; month: number; speed: number }> {
+  return Array.from({ length: 12 }, (_, index) => ({
+    year: 2020,
+    month: index + 1,
+    speed: speed + index * 0.05,
+  }));
 }
 
 // ─── Tests ─────────────────────────────────────────────────────
@@ -126,9 +133,12 @@ describe('fetchEra5MonthlyHistory', () => {
 
   it('reads CDS_API_KEY from environment', async () => {
     process.env.CDS_API_KEY = 'env-key';
-    setMockNetCdf([{ year: 2020, month: 1, speed: 8.0 }]);
+    setMockNetCdf(completeYear(8));
     const fetchMock = mockFetchSequence([
-      { status: 200, body: { state: 'completed', request_id: 'r1', location: 'http://download/file' } },
+      {
+        status: 200,
+        body: { state: 'completed', request_id: 'r1', location: 'http://download/file' },
+      },
       { status: 200, bodyBuffer: new ArrayBuffer(8) },
     ]);
     const result = await fetchEra5MonthlyHistory(COORD, {
@@ -137,18 +147,18 @@ describe('fetchEra5MonthlyHistory', () => {
     });
     expect(result.ok).toBe(true);
     expect(fetchMock).toHaveBeenCalled();
-    const firstCallHeaders = (fetchMock.mock.calls[0]?.[1] as RequestInit | undefined)?.headers as Record<string, string>;
-    expect(firstCallHeaders.Authorization).toBe('Bearer env-key');
+    const firstCallHeaders = (fetchMock.mock.calls[0]?.[1] as RequestInit | undefined)
+      ?.headers as Record<string, string>;
+    expect(firstCallHeaders['PRIVATE-TOKEN']).toBe('env-key');
   });
 
   it('returns ReanalysisSource on happy path (immediate completion)', async () => {
-    setMockNetCdf([
-      { year: 2020, month: 1, speed: 9.0 },
-      { year: 2020, month: 2, speed: 7.5 },
-      { year: 2020, month: 3, speed: 8.2 },
-    ]);
-    mockFetchSequence([
-      { status: 200, body: { state: 'completed', request_id: 'r1', location: 'http://download/file' } },
+    setMockNetCdf(completeYear(8));
+    const fetchMock = mockFetchSequence([
+      {
+        status: 200,
+        body: { state: 'completed', request_id: 'r1', location: 'http://download/file' },
+      },
       { status: 200, bodyBuffer: new ArrayBuffer(8) },
     ]);
     const result = await fetchEra5MonthlyHistory(COORD, {
@@ -157,8 +167,16 @@ describe('fetchEra5MonthlyHistory', () => {
       endYear: 2020,
     });
     expect(result.ok).toBe(true);
+    expect(fetchMock.mock.calls[0]?.[0]).toContain(
+      '/api/retrieve/v1/processes/reanalysis-era5-single-levels-monthly-means/execution',
+    );
+    const submitInit = fetchMock.mock.calls[0]?.[1] as RequestInit;
+    expect((submitInit.headers as Record<string, string>)['PRIVATE-TOKEN']).toBe('key');
+    expect(JSON.parse(submitInit.body as string).inputs.product_type).toBe(
+      'monthly_averaged_reanalysis',
+    );
     if (result.ok) {
-      expect(result.value.history.records).toHaveLength(3);
+      expect(result.value.history.records).toHaveLength(12);
       expect(result.value.summary.referenceHeightM).toBe(100);
       expect(result.value.summary.annualAverageSpeedMs).toBeGreaterThan(7);
       expect(result.value.summary.annualAverageSpeedMs).toBeLessThan(10);
@@ -166,7 +184,7 @@ describe('fetchEra5MonthlyHistory', () => {
   });
 
   it('caches results across calls', async () => {
-    setMockNetCdf([{ year: 2020, month: 1, speed: 8.0 }]);
+    setMockNetCdf(completeYear(8));
     const fetchMock = mockFetchSequence([
       { status: 200, body: { state: 'completed', request_id: 'r1', location: 'http://d/x' } },
       { status: 200, bodyBuffer: new ArrayBuffer(8) },
@@ -189,7 +207,7 @@ describe('fetchEra5MonthlyHistory', () => {
   });
 
   it('cache key respects ~25km grid (nearby coords share cache)', async () => {
-    setMockNetCdf([{ year: 2020, month: 1, speed: 8.0 }]);
+    setMockNetCdf(completeYear(8));
     const fetchMock = mockFetchSequence([
       { status: 200, body: { state: 'completed', request_id: 'r1', location: 'http://d/x' } },
       { status: 200, bodyBuffer: new ArrayBuffer(8) },
@@ -232,11 +250,12 @@ describe('fetchEra5MonthlyHistory', () => {
   });
 
   it('polls until completion', async () => {
-    setMockNetCdf([{ year: 2020, month: 1, speed: 8.0 }]);
+    setMockNetCdf(completeYear(8));
     mockFetchSequence([
       { status: 200, body: { state: 'queued', request_id: 'r99' } },
       { status: 200, body: { state: 'running', request_id: 'r99' } },
       { status: 200, body: { state: 'completed', location: 'http://d/file' } },
+      { status: 200, body: { output: { href: 'http://d/file' } } },
       { status: 200, bodyBuffer: new ArrayBuffer(8) },
     ]);
     const result = await fetchEra5MonthlyHistory(COORD, {
@@ -302,7 +321,7 @@ describe('fetchEra5MonthlyHistory', () => {
   });
 
   it('uses 10m variables when heightM=10', async () => {
-    setMockNetCdf([{ year: 2020, month: 1, speed: 6.0 }]);
+    setMockNetCdf(completeYear(6));
     const fetchMock = mockFetchSequence([
       { status: 200, body: { state: 'completed', request_id: 'r', location: 'http://d/x' } },
       { status: 200, bodyBuffer: new ArrayBuffer(8) },
@@ -320,12 +339,12 @@ describe('fetchEra5MonthlyHistory', () => {
     }
     const init = fetchMock.mock.calls[0]?.[1] as RequestInit;
     const body = JSON.parse(init.body as string);
-    expect(body.variable).toContain('10m_u_component_of_wind');
-    expect(body.variable).toContain('10m_v_component_of_wind');
+    expect(body.inputs.variable).toContain('10m_u_component_of_wind');
+    expect(body.inputs.variable).toContain('10m_v_component_of_wind');
   });
 
   it('default year range covers about 10 years', async () => {
-    setMockNetCdf([{ year: 2020, month: 1, speed: 8.0 }]);
+    setMockNetCdf(completeYear(8));
     const fetchMock = mockFetchSequence([
       { status: 200, body: { state: 'completed', request_id: 'r', location: 'http://d/x' } },
       { status: 200, bodyBuffer: new ArrayBuffer(8) },
@@ -334,7 +353,7 @@ describe('fetchEra5MonthlyHistory', () => {
     expect(result.ok).toBe(true);
     const init = fetchMock.mock.calls[0]?.[1] as RequestInit;
     const body = JSON.parse(init.body as string);
-    expect(body.year.length).toBe(10);
+    expect(body.inputs.year.length).toBe(10);
   });
 });
 

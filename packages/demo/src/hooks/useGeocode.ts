@@ -76,16 +76,12 @@ export function useGeocodeSearch(): UseGeocodeSearchReturn {
  * `/api/geocode`. Returns `null` until a label resolves. Re-runs whenever the
  * rounded coordinate changes; stale responses are ignored.
  */
-export function useReverseGeocode(
-  coordinate: { lat: number; lng: number } | null,
-): string | null {
+export function useReverseGeocode(coordinate: { lat: number; lng: number } | null): string | null {
   const [label, setLabel] = useState<string | null>(null);
   const runIdRef = useRef(0);
 
   // Round to ~100 m so tiny coordinate jitter doesn't trigger refetches.
-  const key = coordinate
-    ? `${coordinate.lat.toFixed(3)},${coordinate.lng.toFixed(3)}`
-    : null;
+  const key = coordinate ? `${coordinate.lat.toFixed(3)},${coordinate.lng.toFixed(3)}` : null;
 
   useEffect(() => {
     if (!coordinate || !key) {

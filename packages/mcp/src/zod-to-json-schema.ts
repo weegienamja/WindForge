@@ -70,7 +70,8 @@ export function zodToJsonSchema(schema: ZodTypeAny): JsonSchema {
       const result: JsonSchema = { type: 'number' };
       const description = readDescription(schema);
       if (description) result.description = description;
-      const checks = (schema._def as { checks?: Array<{ kind: string; value?: number }> }).checks ?? [];
+      const checks =
+        (schema._def as { checks?: Array<{ kind: string; value?: number }> }).checks ?? [];
       for (const check of checks) {
         if (check.kind === 'min' && typeof check.value === 'number') result.minimum = check.value;
         if (check.kind === 'max' && typeof check.value === 'number') result.maximum = check.value;
@@ -95,7 +96,8 @@ export function zodToJsonSchema(schema: ZodTypeAny): JsonSchema {
       return zodToJsonSchema(inner);
     }
     case 'ZodDefault': {
-      const inner = (schema._def as { innerType: ZodTypeAny; defaultValue: () => unknown }).innerType;
+      const inner = (schema._def as { innerType: ZodTypeAny; defaultValue: () => unknown })
+        .innerType;
       const result = zodToJsonSchema(inner);
       try {
         result.default = (schema._def as { defaultValue: () => unknown }).defaultValue();
@@ -110,7 +112,8 @@ export function zodToJsonSchema(schema: ZodTypeAny): JsonSchema {
     }
     case 'ZodLiteral': {
       const value = (schema._def as { value: unknown }).value;
-      const t = typeof value === 'number' ? 'number' : typeof value === 'boolean' ? 'boolean' : 'string';
+      const t =
+        typeof value === 'number' ? 'number' : typeof value === 'boolean' ? 'boolean' : 'string';
       return { type: t, const: value };
     }
     case 'ZodNullable': {
@@ -136,8 +139,9 @@ export function zodToJsonSchema(schema: ZodTypeAny): JsonSchema {
     case 'ZodCatch':
     case 'ZodReadonly':
     case 'ZodBranded': {
-      const inner = (schema._def as { innerType?: ZodTypeAny; type?: ZodTypeAny }).innerType
-        ?? (schema._def as { type?: ZodTypeAny }).type;
+      const inner =
+        (schema._def as { innerType?: ZodTypeAny; type?: ZodTypeAny }).innerType ??
+        (schema._def as { type?: ZodTypeAny }).type;
       if (!inner) return {};
       return zodToJsonSchema(inner);
     }
@@ -169,7 +173,12 @@ function unwrap(schema: ZodTypeAny): { optional: boolean; hasDefault: boolean } 
   if (def.typeName === 'ZodDefault') return { optional: false, hasDefault: true };
   // Unwrap effects/branded/readonly to peek at the underlying optional/default.
   if (def.typeName === 'ZodEffects' && def.schema) return unwrap(def.schema);
-  if ((def.typeName === 'ZodBranded' || def.typeName === 'ZodReadonly' || def.typeName === 'ZodCatch') && def.innerType) {
+  if (
+    (def.typeName === 'ZodBranded' ||
+      def.typeName === 'ZodReadonly' ||
+      def.typeName === 'ZodCatch') &&
+    def.innerType
+  ) {
     return unwrap(def.innerType);
   }
   return { optional: false, hasDefault: false };

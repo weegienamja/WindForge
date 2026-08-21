@@ -13,7 +13,7 @@ function mockFetchOnce(payload: unknown, ok = true, status = 200) {
 }
 
 function req(qs: string): Request {
-  return new Request(`https://example.com/api/geocode${qs}`);
+  return new Request(`https://windforge.test/api/geocode${qs}`);
 }
 
 afterEach(() => {
@@ -61,6 +61,12 @@ describe('/api/geocode', () => {
   it('rejects an invalid reverse coordinate', async () => {
     const res = await GET(req('?lat=abc&lng=def'));
     expect(res.status).toBe(400);
+    expect(res.headers.get('cache-control')).toContain('no-store');
+  });
+
+  it('rejects out-of-range coordinates and oversized queries', async () => {
+    expect((await GET(req('?lat=91&lng=0'))).status).toBe(400);
+    expect((await GET(req(`?q=${'x'.repeat(121)}`))).status).toBe(400);
   });
 
   it('requires either q or lat/lng', async () => {
@@ -72,5 +78,6 @@ describe('/api/geocode', () => {
     mockFetchOnce([], false, 503);
     const res = await GET(req('?q=Stornoway'));
     expect(res.status).toBe(502);
+    expect(res.headers.get('cache-control')).toContain('no-store');
   });
 });

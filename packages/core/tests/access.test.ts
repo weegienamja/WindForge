@@ -16,11 +16,11 @@ function makeRoads(overrides: Partial<RoadAccess> = {}): RoadAccess {
 
 describe('scoreAccess', () => {
   it('returns a valid FactorScore for accessLogistics', () => {
-    const result = scoreAccess(makeRoads(), 0.10);
+    const result = scoreAccess(makeRoads(), 0.1);
     expect(result.ok).toBe(true);
     if (result.ok) {
       expect(result.value.factor).toBe('accessLogistics');
-      expect(result.value.weight).toBe(0.10);
+      expect(result.value.weight).toBe(0.1);
       expect(result.value.score).toBeGreaterThanOrEqual(0);
       expect(result.value.score).toBeLessThanOrEqual(100);
       expect(result.value.dataSource).toContain('Overpass');
@@ -36,7 +36,7 @@ describe('scoreAccess', () => {
         nearestMajorRoadDistanceKm: 1.0,
         nearestMajorRoadType: 'primary',
       }),
-      0.10,
+      0.1,
     );
     expect(result.ok).toBe(true);
     if (result.ok) {
@@ -48,7 +48,7 @@ describe('scoreAccess', () => {
   it('scores 100 when primary road at 0 km', () => {
     const result = scoreAccess(
       makeRoads({ bestRoadCategory: 'primary', nearestMajorRoadDistanceKm: 0 }),
-      0.10,
+      0.1,
     );
     expect(result.ok).toBe(true);
     if (result.ok) {
@@ -59,7 +59,7 @@ describe('scoreAccess', () => {
   it('scores 80 when primary road at exactly 2km', () => {
     const result = scoreAccess(
       makeRoads({ bestRoadCategory: 'primary', nearestMajorRoadDistanceKm: 2.0 }),
-      0.10,
+      0.1,
     );
     expect(result.ok).toBe(true);
     if (result.ok) {
@@ -72,7 +72,7 @@ describe('scoreAccess', () => {
   it('scores 60-80 when primary road 2-5km away', () => {
     const result = scoreAccess(
       makeRoads({ bestRoadCategory: 'primary', nearestMajorRoadDistanceKm: 3.5 }),
-      0.10,
+      0.1,
     );
     expect(result.ok).toBe(true);
     if (result.ok) {
@@ -91,7 +91,7 @@ describe('scoreAccess', () => {
         nearestSecondaryRoadDistanceKm: 1.0,
         nearestMajorRoadType: '',
       }),
-      0.10,
+      0.1,
     );
     expect(result.ok).toBe(true);
     if (result.ok) {
@@ -107,7 +107,7 @@ describe('scoreAccess', () => {
         nearestSecondaryRoadDistanceKm: 0,
         nearestMajorRoadDistanceKm: -1,
       }),
-      0.10,
+      0.1,
     );
     expect(result.ok).toBe(true);
     if (result.ok) {
@@ -126,7 +126,7 @@ describe('scoreAccess', () => {
         nearestSecondaryRoadDistanceKm: -1,
         secondaryRoadCount: 0,
       }),
-      0.10,
+      0.1,
     );
     expect(result.ok).toBe(true);
     if (result.ok) {
@@ -145,19 +145,19 @@ describe('scoreAccess', () => {
         nearestSecondaryRoadDistanceKm: -1,
         secondaryRoadCount: 0,
       }),
-      0.10,
+      0.1,
     );
     expect(result.ok).toBe(true);
     if (result.ok) {
       expect(result.value.score).toBe(10);
-      expect(result.value.detail).toContain('No roads found');
+      expect(result.value.detail).toContain('construction access is indeterminate');
     }
   });
 
   // --- Confidence ---
 
   it('has high confidence when roads are found', () => {
-    const result = scoreAccess(makeRoads(), 0.10);
+    const result = scoreAccess(makeRoads(), 0.1);
     expect(result.ok).toBe(true);
     if (result.ok) {
       expect(result.value.confidence).toBe('high');
@@ -165,7 +165,7 @@ describe('scoreAccess', () => {
   });
 
   it('has medium confidence when no roads found', () => {
-    const result = scoreAccess(makeRoads({ bestRoadCategory: 'none' }), 0.10);
+    const result = scoreAccess(makeRoads({ bestRoadCategory: 'none' }), 0.1);
     expect(result.ok).toBe(true);
     if (result.ok) {
       expect(result.value.confidence).toBe('medium');
@@ -177,7 +177,7 @@ describe('scoreAccess', () => {
   it('includes road type and distance in detail', () => {
     const result = scoreAccess(
       makeRoads({ nearestMajorRoadType: 'trunk', nearestMajorRoadDistanceKm: 3.4 }),
-      0.10,
+      0.1,
     );
     expect(result.ok).toBe(true);
     if (result.ok) {
@@ -187,7 +187,7 @@ describe('scoreAccess', () => {
   });
 
   it('includes secondary road count in detail', () => {
-    const result = scoreAccess(makeRoads({ secondaryRoadCount: 7 }), 0.10);
+    const result = scoreAccess(makeRoads({ secondaryRoadCount: 7 }), 0.1);
     expect(result.ok).toBe(true);
     if (result.ok) {
       expect(result.value.detail).toContain('7 secondary roads');
@@ -197,7 +197,7 @@ describe('scoreAccess', () => {
   it('includes no major roads message when none found', () => {
     const result = scoreAccess(
       makeRoads({ nearestMajorRoadDistanceKm: -1, nearestMajorRoadType: '' }),
-      0.10,
+      0.1,
     );
     expect(result.ok).toBe(true);
     if (result.ok) {
@@ -208,10 +208,10 @@ describe('scoreAccess', () => {
   // --- Weight ---
 
   it('applies weight correctly to weightedScore', () => {
-    const result = scoreAccess(makeRoads(), 0.20);
+    const result = scoreAccess(makeRoads(), 0.2);
     expect(result.ok).toBe(true);
     if (result.ok) {
-      expect(result.value.weightedScore).toBeCloseTo(result.value.score * 0.20, 1);
+      expect(result.value.weightedScore).toBeCloseTo(result.value.score * 0.2, 1);
     }
   });
 

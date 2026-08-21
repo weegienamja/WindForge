@@ -31,6 +31,36 @@ interface NasaPowerResponse {
   };
 }
 
+const inflightMonthlyRequests = new Map<string, Promise<Result<NasaPowerResponse, ScoringError>>>();
+
+function fetchMonthlyPayload(
+  url: string,
+  signal?: AbortSignal,
+): Promise<Result<NasaPowerResponse, ScoringError>> {
+  const existing = inflightMonthlyRequests.get(url);
+  if (existing) return existing;
+  const request = (async (): Promise<Result<NasaPowerResponse, ScoringError>> => {
+    const result = await fetchWithRetry(url, signal ? { signal } : {});
+    if (!result.ok) return result;
+    try {
+      const data = (await result.value.json()) as NasaPowerResponse;
+      if (!data?.properties?.parameter) {
+        return err(
+          scoringError(ScoringErrorCode.ParseError, 'NASA POWER response missing parameter data'),
+        );
+      }
+      return ok(data);
+    } catch (cause) {
+      return err(
+        scoringError(ScoringErrorCode.ParseError, 'Failed to parse NASA POWER response', cause),
+      );
+    }
+  })();
+  inflightMonthlyRequests.set(url, request);
+  void request.finally(() => inflightMonthlyRequests.delete(url));
+  return request;
+}
+
 function cacheKey(coord: LatLng, suffix = ''): string {
   return `${coord.lat.toFixed(4)},${coord.lng.toFixed(4)}${suffix}`;
 }
@@ -61,19 +91,9 @@ export async function fetchWindData(
     `&end=${endYear}` +
     `&format=JSON`;
 
-  const result = await fetchWithRetry(url, signal ? { signal } : {});
-  if (!result.ok) {
-    return result;
-  }
-
-  let data: NasaPowerResponse;
-  try {
-    data = (await result.value.json()) as NasaPowerResponse;
-  } catch (cause) {
-    return err(
-      scoringError(ScoringErrorCode.DataFetchFailed, 'Failed to parse NASA POWER response', cause),
-    );
-  }
+  const result = await fetchMonthlyPayload(url, signal);
+  if (!result.ok) return result;
+  const data = result.value;
 
   const params = data.properties.parameter;
   const hasWs50m = params.WS50M && Object.keys(params.WS50M).length > 0;
@@ -90,6 +110,18 @@ export async function fetchWindData(
   }
 
   const summary = parseWindData(coordinate, windSpeeds, windDirections, referenceHeightM);
+  if (
+    summary.monthlyAverages.length !== 12 ||
+    !Number.isFinite(summary.annualAverageSpeedMs) ||
+    summary.dataYears < 1
+  ) {
+    return err(
+      scoringError(
+        ScoringErrorCode.InsufficientData,
+        'NASA POWER response did not contain 12 complete monthly wind-speed and direction bins',
+      ),
+    );
+  }
   windDataCache.set(key, summary);
   return ok(summary);
 }
@@ -106,14 +138,16 @@ function parseWindData(
     if (yearMonth.length !== 6) continue;
     const month = Number.parseInt(yearMonth.slice(4), 10);
     const directionDeg = directionsByYearMonth[yearMonth];
-    if (speedMs < 0 || directionDeg === undefined || directionDeg < 0) continue;
+    if (!Number.isFinite(speedMs) || speedMs < 0) continue;
 
     if (!monthlyBuckets.has(month)) {
       monthlyBuckets.set(month, { speeds: [], directions: [] });
     }
     const bucket = monthlyBuckets.get(month)!;
     bucket.speeds.push(speedMs);
-    bucket.directions.push(directionDeg);
+    if (directionDeg !== undefined && Number.isFinite(directionDeg) && directionDeg >= 0) {
+      bucket.directions.push(directionDeg);
+    }
   }
 
   const monthlyAverages: MonthlyWindAverage[] = [];
@@ -121,10 +155,7 @@ function parseWindData(
 
   for (let month = 1; month <= 12; month++) {
     const bucket = monthlyBuckets.get(month);
-    if (!bucket || bucket.speeds.length === 0) {
-      monthlyAverages.push({ month, averageSpeedMs: 0, averageDirectionDeg: 0 });
-      continue;
-    }
+    if (!bucket || bucket.speeds.length === 0 || bucket.directions.length === 0) continue;
     const avgSpeed = mean(bucket.speeds);
     const avgDir = meanAngle(bucket.directions);
     monthlyAverages.push({ month, averageSpeedMs: avgSpeed, averageDirectionDeg: avgDir });
@@ -181,17 +212,19 @@ export async function fetchMonthlyWindHistory(
     `&end=${endYear}` +
     `&format=JSON`;
 
-  const result = await fetchWithRetry(url, signal ? { signal } : {});
+  const result = await fetchMonthlyPayload(url, signal);
   if (!result.ok) return result;
-
-  let data: NasaPowerResponse;
-  try {
-    data = (await result.value.json()) as NasaPowerResponse;
-  } catch (cause) {
-    return err(scoringError(ScoringErrorCode.DataFetchFailed, 'Failed to parse NASA POWER monthly response', cause));
-  }
+  const data = result.value;
 
   const records = parseMonthlyRecords(data.properties.parameter);
+  if (records.length === 0) {
+    return err(
+      scoringError(
+        ScoringErrorCode.InsufficientData,
+        'NASA POWER monthly response contained no usable wind records',
+      ),
+    );
+  }
   const history: MonthlyWindHistory = { coordinate, records, startYear, endYear };
   monthlyHistoryCache.set(key, history);
   return ok(history);
@@ -217,10 +250,10 @@ function parseMonthlyRecords(params: Record<string, Record<string, number>>): Mo
       year,
       month,
       ws2m: v2,
-      ws10m: ws10m[yearMonth] ?? -999,
-      ws50m: ws50m[yearMonth] ?? -999,
-      wd10m: wd10m[yearMonth] ?? -999,
-      wd50m: wd50m[yearMonth] ?? -999,
+      ws10m: validProviderValue(ws10m[yearMonth]),
+      ws50m: validProviderValue(ws50m[yearMonth]),
+      wd10m: validProviderValue(wd10m[yearMonth]),
+      wd50m: validProviderValue(wd50m[yearMonth]),
     });
   }
 
@@ -260,10 +293,24 @@ export async function fetchDailyWindData(
   try {
     data = (await result.value.json()) as NasaPowerResponse;
   } catch (cause) {
-    return err(scoringError(ScoringErrorCode.DataFetchFailed, 'Failed to parse NASA POWER daily response', cause));
+    return err(
+      scoringError(
+        ScoringErrorCode.DataFetchFailed,
+        'Failed to parse NASA POWER daily response',
+        cause,
+      ),
+    );
   }
 
   const records = parseDailyRecords(data.properties.parameter);
+  if (records.length === 0) {
+    return err(
+      scoringError(
+        ScoringErrorCode.InsufficientData,
+        'NASA POWER daily response contained no usable wind records',
+      ),
+    );
+  }
   const daily: DailyWindData = { coordinate, records, startDate, endDate };
   dailyDataCache.set(key, daily);
   return ok(daily);
@@ -287,10 +334,10 @@ function parseDailyRecords(params: Record<string, Record<string, number>>): Dail
     records.push({
       date,
       ws2m: v2,
-      ws10m: ws10m[dateKey] ?? -999,
-      ws50m: ws50m[dateKey] ?? -999,
-      wd10m: wd10m[dateKey] ?? -999,
-      wd50m: wd50m[dateKey] ?? -999,
+      ws10m: validProviderValue(ws10m[dateKey]),
+      ws50m: validProviderValue(ws50m[dateKey]),
+      wd10m: validProviderValue(wd10m[dateKey]),
+      wd50m: validProviderValue(wd50m[dateKey]),
     });
   }
 
@@ -330,10 +377,24 @@ export async function fetchHourlyWindData(
   try {
     data = (await result.value.json()) as NasaPowerResponse;
   } catch (cause) {
-    return err(scoringError(ScoringErrorCode.DataFetchFailed, 'Failed to parse NASA POWER hourly response', cause));
+    return err(
+      scoringError(
+        ScoringErrorCode.DataFetchFailed,
+        'Failed to parse NASA POWER hourly response',
+        cause,
+      ),
+    );
   }
 
   const records = parseHourlyRecords(data.properties.parameter);
+  if (records.length === 0) {
+    return err(
+      scoringError(
+        ScoringErrorCode.InsufficientData,
+        'NASA POWER hourly response contained no usable wind records',
+      ),
+    );
+  }
   const hourly: HourlyWindData = { coordinate, records, startDate, endDate };
   hourlyDataCache.set(key, hourly);
   return ok(hourly);
@@ -357,10 +418,10 @@ function parseHourlyRecords(params: Record<string, Record<string, number>>): Hou
     records.push({
       datetime,
       ws2m: v2,
-      ws10m: ws10m[dtKey] ?? -999,
-      ws50m: ws50m[dtKey] ?? -999,
-      wd10m: wd10m[dtKey] ?? -999,
-      wd50m: wd50m[dtKey] ?? -999,
+      ws10m: validProviderValue(ws10m[dtKey]),
+      ws50m: validProviderValue(ws50m[dtKey]),
+      wd10m: validProviderValue(wd10m[dtKey]),
+      wd50m: validProviderValue(wd50m[dtKey]),
     });
   }
 
@@ -382,6 +443,10 @@ function meanAngle(anglesDeg: number[]): number {
   let result = (Math.atan2(sinSum / anglesDeg.length, cosSum / anglesDeg.length) * 180) / Math.PI;
   if (result < 0) result += 360;
   return result;
+}
+
+function validProviderValue(value: number | undefined): number | null {
+  return value !== undefined && Number.isFinite(value) && value >= 0 ? value : null;
 }
 
 function computeDirectionalConsistency(anglesDeg: number[]): number {

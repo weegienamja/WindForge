@@ -7,10 +7,16 @@ import type {
   ConstraintSummary,
 } from '../types/constraints.js';
 import type { ConstraintOverpassResponse, ConstraintElement } from './constraint-queries.js';
-import { getElementCoordinate } from './constraint-queries.js';
 import { getConstraintDefinition } from './constraint-definitions.js';
 import { distanceKm } from '../utils/geo.js';
-import { pointToPolygonEdgeDistanceM, isPointInPolygon } from '../utils/geometry.js';
+import {
+  geometryDistanceToSiteM,
+  geometryIntersectionAreaSqKm,
+  geometryIntersectsSite,
+  osmElementToGeometry,
+  representativeLocation,
+  type SupportedGeometry,
+} from '../utils/feature-geometry.js';
 import { computeExclusionZones } from './exclusion-geometry.js';
 
 /**
@@ -36,22 +42,24 @@ export function detectConstraints(
   };
 
   for (const element of osmData.elements) {
-    const coord = getElementCoordinate(element);
-    if (!coord) continue;
+    const geometry = osmElementToGeometry(element);
+    if (!geometry) continue;
+    const coord = representativeLocation(geometry);
 
     const tags = element.tags ?? {};
-    const distFromSiteM = pointToPolygonEdgeDistanceM(coord, boundary.polygon);
+    const distFromSiteM = geometryDistanceToSiteM(geometry, boundary);
     const distFromCentroidM = distanceKm(coord, boundary.centroid) * 1000;
-    const isInsideSite = isPointInPolygon(coord, boundary.polygon);
+    const intersectsSite = geometryIntersectsSite(geometry, boundary);
 
     // Categorize the element and detect constraints
     const detected = categorizeElement(
       element,
       tags,
+      geometry,
       coord,
       distFromSiteM,
       distFromCentroidM,
-      isInsideSite,
+      intersectsSite,
       boundary,
     );
 
@@ -70,10 +78,10 @@ export function detectConstraints(
     }
 
     // Update nearest receptor table
-    updateReceptors(receptors, tags, distFromSiteM, isInsideSite);
+    updateReceptors(receptors, tags, distFromSiteM, intersectsSite);
   }
 
-  // Compute exclusion zones from hard constraints
+  // Compute zones from configured screening exclusions (legacy field name).
   const exclusionZones = computeExclusionZones(boundary, hardConstraints);
 
   const summary = buildSummary(hardConstraints, softConstraints, infoConstraints, boundary);
@@ -91,18 +99,27 @@ export function detectConstraints(
 function categorizeElement(
   element: ConstraintElement,
   tags: Record<string, string>,
+  geometry: SupportedGeometry,
   coord: LatLng,
   distFromSiteM: number,
   distFromCentroidM: number,
   isInsideSite: boolean,
-  _boundary: SiteBoundary,
+  boundary: SiteBoundary,
 ): DetectedConstraint | null {
   // Environmental - nature reserve
   if (tags.leisure === 'nature_reserve') {
     const def = getConstraintDefinition('nature_reserve')!;
     if (isInsideSite || distFromSiteM < (def.defaultSetbackM ?? 0)) {
-      return makeDetected(def, coord, distFromSiteM, distFromCentroidM, element,
-        `Nature reserve ${isInsideSite ? 'overlaps with site' : `${Math.round(distFromSiteM)}m from site boundary`}`);
+      return makeDetected(
+        def,
+        geometry,
+        coord,
+        distFromSiteM,
+        distFromCentroidM,
+        element,
+        boundary,
+        `Nature reserve ${isInsideSite ? 'overlaps with site' : `${Math.round(distFromSiteM)}m from site boundary`}`,
+      );
     }
   }
 
@@ -110,8 +127,16 @@ function categorizeElement(
   if (tags.boundary === 'protected_area') {
     const def = getConstraintDefinition('protected_area')!;
     if (isInsideSite || distFromSiteM < (def.defaultSetbackM ?? 0)) {
-      return makeDetected(def, coord, distFromSiteM, distFromCentroidM, element,
-        `Protected area ${isInsideSite ? 'overlaps with site' : `${Math.round(distFromSiteM)}m from site boundary (200m buffer required)`}`);
+      return makeDetected(
+        def,
+        geometry,
+        coord,
+        distFromSiteM,
+        distFromCentroidM,
+        element,
+        boundary,
+        `Protected area ${isInsideSite ? 'overlaps with site' : `${Math.round(distFromSiteM)}m from site boundary (200m buffer required)`}`,
+      );
     }
   }
 
@@ -121,8 +146,16 @@ function categorizeElement(
     const defId = isHelipad ? 'helipad' : 'airport';
     const def = getConstraintDefinition(defId)!;
     if (distFromSiteM < (def.defaultSetbackM ?? 0) || isInsideSite) {
-      return makeDetected(def, coord, distFromSiteM, distFromCentroidM, element,
-        `${tags.aeroway} ${Math.round(distFromSiteM)}m from site boundary (${(def.defaultSetbackM ?? 0) / 1000}km setback required)`);
+      return makeDetected(
+        def,
+        geometry,
+        coord,
+        distFromSiteM,
+        distFromCentroidM,
+        element,
+        boundary,
+        `${tags.aeroway} ${Math.round(distFromSiteM)}m from site boundary (${(def.defaultSetbackM ?? 0) / 1000}km setback required)`,
+      );
     }
   }
 
@@ -130,8 +163,16 @@ function categorizeElement(
   if (tags.landuse === 'military') {
     const def = getConstraintDefinition('military')!;
     if (isInsideSite) {
-      return makeDetected(def, coord, distFromSiteM, distFromCentroidM, element,
-        'Military land overlaps with site');
+      return makeDetected(
+        def,
+        geometry,
+        coord,
+        distFromSiteM,
+        distFromCentroidM,
+        element,
+        boundary,
+        'Military land overlaps with site',
+      );
     }
   }
 
@@ -140,17 +181,37 @@ function categorizeElement(
     const def = getConstraintDefinition('heritage')!;
     if (distFromSiteM < (def.defaultSetbackM ?? 0) || isInsideSite) {
       const name = tags.name ?? tags.historic ?? 'heritage site';
-      return makeDetected(def, coord, distFromSiteM, distFromCentroidM, element,
-        `${name} ${Math.round(distFromSiteM)}m from site boundary (1km setting impact zone)`);
+      return makeDetected(
+        def,
+        geometry,
+        coord,
+        distFromSiteM,
+        distFromCentroidM,
+        element,
+        boundary,
+        `${name} ${Math.round(distFromSiteM)}m from site boundary (1km setting impact zone)`,
+      );
     }
   }
 
   // Residential - dwellings
-  if (tags.building === 'residential' || tags.building === 'house' || tags.building === 'detached') {
+  if (
+    tags.building === 'residential' ||
+    tags.building === 'house' ||
+    tags.building === 'detached'
+  ) {
     const def = getConstraintDefinition('dwelling')!;
     if (distFromSiteM < (def.defaultSetbackM ?? 0) || isInsideSite) {
-      return makeDetected(def, coord, distFromSiteM, distFromCentroidM, element,
-        `Residential dwelling ${Math.round(distFromSiteM)}m from site boundary (500m setback required)`);
+      return makeDetected(
+        def,
+        geometry,
+        coord,
+        distFromSiteM,
+        distFromCentroidM,
+        element,
+        boundary,
+        `Residential dwelling ${Math.round(distFromSiteM)}m from site boundary (500m setback required)`,
+      );
     }
   }
 
@@ -159,8 +220,16 @@ function categorizeElement(
     const def = getConstraintDefinition('settlement')!;
     if (distFromSiteM < (def.defaultSetbackM ?? 0) || isInsideSite) {
       const name = tags.name ?? tags.place;
-      return makeDetected(def, coord, distFromSiteM, distFromCentroidM, element,
-        `${name} (${tags.place}) ${Math.round(distFromSiteM)}m from site boundary (2km visual impact zone)`);
+      return makeDetected(
+        def,
+        geometry,
+        coord,
+        distFromSiteM,
+        distFromCentroidM,
+        element,
+        boundary,
+        `${name} (${tags.place}) ${Math.round(distFromSiteM)}m from site boundary (2km visual impact zone)`,
+      );
     }
   }
 
@@ -168,8 +237,16 @@ function categorizeElement(
   if (tags.railway && (tags.railway === 'rail' || tags.railway === 'light_rail')) {
     const def = getConstraintDefinition('railway')!;
     if (distFromSiteM < (def.defaultSetbackM ?? 0) || isInsideSite) {
-      return makeDetected(def, coord, distFromSiteM, distFromCentroidM, element,
-        `Railway ${Math.round(distFromSiteM)}m from site boundary (150m topple distance)`);
+      return makeDetected(
+        def,
+        geometry,
+        coord,
+        distFromSiteM,
+        distFromCentroidM,
+        element,
+        boundary,
+        `Railway ${Math.round(distFromSiteM)}m from site boundary (150m topple distance)`,
+      );
     }
   }
 
@@ -177,8 +254,16 @@ function categorizeElement(
   if (tags.highway && (tags.highway === 'motorway' || tags.highway === 'trunk')) {
     const def = getConstraintDefinition('motorway')!;
     if (distFromSiteM < (def.defaultSetbackM ?? 0) || isInsideSite) {
-      return makeDetected(def, coord, distFromSiteM, distFromCentroidM, element,
-        `${tags.highway} ${Math.round(distFromSiteM)}m from site boundary (150m topple distance)`);
+      return makeDetected(
+        def,
+        geometry,
+        coord,
+        distFromSiteM,
+        distFromCentroidM,
+        element,
+        boundary,
+        `${tags.highway} ${Math.round(distFromSiteM)}m from site boundary (150m topple distance)`,
+      );
     }
   }
 
@@ -186,8 +271,16 @@ function categorizeElement(
   if (tags.power === 'line' && tags.voltage) {
     const def = getConstraintDefinition('powerline')!;
     if (distFromSiteM < (def.defaultSetbackM ?? 0) || isInsideSite) {
-      return makeDetected(def, coord, distFromSiteM, distFromCentroidM, element,
-        `High-voltage line (${tags.voltage}V) ${Math.round(distFromSiteM)}m from site boundary`);
+      return makeDetected(
+        def,
+        geometry,
+        coord,
+        distFromSiteM,
+        distFromCentroidM,
+        element,
+        boundary,
+        `High-voltage line (${tags.voltage}V) ${Math.round(distFromSiteM)}m from site boundary`,
+      );
     }
   }
 
@@ -196,16 +289,32 @@ function categorizeElement(
     const def = getConstraintDefinition('waterbody')!;
     if (distFromSiteM < (def.defaultSetbackM ?? 0) || isInsideSite) {
       const waterType = tags.waterway ?? tags.natural ?? 'water feature';
-      return makeDetected(def, coord, distFromSiteM, distFromCentroidM, element,
-        `${waterType} ${Math.round(distFromSiteM)}m from site boundary`);
+      return makeDetected(
+        def,
+        geometry,
+        coord,
+        distFromSiteM,
+        distFromCentroidM,
+        element,
+        boundary,
+        `${waterType} ${Math.round(distFromSiteM)}m from site boundary`,
+      );
     }
   }
 
   // Existing wind farms (info only)
   if (tags['generator:source'] === 'wind') {
     const def = getConstraintDefinition('existing_wind')!;
-    return makeDetected(def, coord, distFromSiteM, distFromCentroidM, element,
-      `Existing wind turbine ${(distFromSiteM / 1000).toFixed(1)}km from site`);
+    return makeDetected(
+      def,
+      geometry,
+      coord,
+      distFromSiteM,
+      distFromCentroidM,
+      element,
+      boundary,
+      `Existing wind turbine ${(distFromSiteM / 1000).toFixed(1)}km from site`,
+    );
   }
 
   return null;
@@ -213,19 +322,25 @@ function categorizeElement(
 
 function makeDetected(
   definition: ReturnType<typeof getConstraintDefinition>,
+  geometry: SupportedGeometry,
   location: LatLng,
   distFromSiteM: number,
   distFromCentroidM: number,
   element: ConstraintElement,
+  boundary: SiteBoundary,
   detail: string,
 ): DetectedConstraint | null {
   if (!definition) return null;
   return {
     definition,
+    geometry,
     location,
     distanceFromSiteM: distFromSiteM,
     distanceFromCentroidM: distFromCentroidM,
+    affectedAreaSqKm: geometryIntersectionAreaSqKm(geometry, boundary),
     osmFeatureId: `${element.type}/${element.id}`,
+    evidenceSource: 'OpenStreetMap',
+    evidenceQuality: 'screening',
     detail,
   };
 }
@@ -238,7 +353,11 @@ function updateReceptors(
 ): void {
   const effectiveDistM = isInside ? 0 : distM;
 
-  if (tags.building === 'residential' || tags.building === 'house' || tags.building === 'detached') {
+  if (
+    tags.building === 'residential' ||
+    tags.building === 'house' ||
+    tags.building === 'detached'
+  ) {
     if (receptors.nearestDwellingM === null || effectiveDistM < receptors.nearestDwellingM) {
       receptors.nearestDwellingM = effectiveDistM;
     }
@@ -251,7 +370,10 @@ function updateReceptors(
   }
 
   if (tags.leisure === 'nature_reserve' || tags.boundary === 'protected_area') {
-    if (receptors.nearestProtectedAreaM === null || effectiveDistM < receptors.nearestProtectedAreaM) {
+    if (
+      receptors.nearestProtectedAreaM === null ||
+      effectiveDistM < receptors.nearestProtectedAreaM
+    ) {
       receptors.nearestProtectedAreaM = effectiveDistM;
     }
   }
@@ -262,14 +384,20 @@ function updateReceptors(
     }
   }
 
-  if (tags.highway && (tags.highway === 'motorway' || tags.highway === 'trunk' || tags.highway === 'primary')) {
+  if (
+    tags.highway &&
+    (tags.highway === 'motorway' || tags.highway === 'trunk' || tags.highway === 'primary')
+  ) {
     if (receptors.nearestMajorRoadM === null || effectiveDistM < receptors.nearestMajorRoadM) {
       receptors.nearestMajorRoadM = effectiveDistM;
     }
   }
 
   if (tags['generator:source'] === 'wind') {
-    if (receptors.nearestExistingWindFarmM === null || effectiveDistM < receptors.nearestExistingWindFarmM) {
+    if (
+      receptors.nearestExistingWindFarmM === null ||
+      effectiveDistM < receptors.nearestExistingWindFarmM
+    ) {
       receptors.nearestExistingWindFarmM = effectiveDistM;
     }
   }
@@ -305,23 +433,37 @@ function buildSummary(
     topBlocker = hard[0]!.detail;
     if (totalHard >= 3) {
       recommendation = 'likely_unviable';
-      reasoningParts.push(`${totalHard} hard constraints detected, including ${topBlocker}.`);
-      reasoningParts.push('Multiple blocking constraints make this site likely unviable for wind development.');
+      reasoningParts.push(
+        `${totalHard} configured screening exclusions detected, including ${topBlocker}.`,
+      );
+      reasoningParts.push(
+        'These findings require authoritative confirmation before viability can be judged.',
+      );
     } else {
       recommendation = 'significant_concerns';
-      reasoningParts.push(`${totalHard} hard constraint(s) detected: ${topBlocker}.`);
-      reasoningParts.push('These issues require resolution before development can proceed.');
+      reasoningParts.push(
+        `${totalHard} configured screening exclusion(s) detected: ${topBlocker}.`,
+      );
+      reasoningParts.push(
+        'These findings require authoritative confirmation and resolution before further development decisions.',
+      );
     }
   } else if (totalSoft > 5) {
     recommendation = 'proceed_with_caution';
-    reasoningParts.push(`No hard constraints, but ${totalSoft} soft constraints detected.`);
+    reasoningParts.push(
+      `No configured screening exclusions were detected, but ${totalSoft} cautions were found.`,
+    );
     reasoningParts.push('Significant mitigation measures may be required.');
   } else if (totalSoft > 0) {
     recommendation = 'proceed_with_caution';
-    reasoningParts.push(`No hard constraints. ${totalSoft} soft constraint(s) to consider during planning.`);
+    reasoningParts.push(
+      `No configured screening exclusions were detected. ${totalSoft} caution(s) require further review.`,
+    );
   } else {
     recommendation = 'proceed';
-    reasoningParts.push('No significant constraints detected. Site appears suitable for further assessment.');
+    reasoningParts.push(
+      'No configured OSM screening concerns were detected; this is not evidence that the site is unconstrained.',
+    );
   }
 
   if (totalInfo > 0) {

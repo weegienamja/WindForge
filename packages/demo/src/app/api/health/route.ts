@@ -19,7 +19,8 @@ const PROBE_COORD = { lat: 55.86, lng: -4.25 } as const;
 
 // 60-second cache. A single fast call per source per minute is the right
 // ceiling for what is intended to be a manual aid, not a polled monitor.
-export const revalidate = 60;
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
 
 interface SourceResult {
   source: string;
@@ -28,7 +29,10 @@ interface SourceResult {
   error?: string;
 }
 
-async function timeIt(label: string, run: () => Promise<{ ok: boolean; error?: string }>): Promise<SourceResult> {
+async function timeIt(
+  label: string,
+  run: () => Promise<{ ok: boolean; error?: string }>,
+): Promise<SourceResult> {
   const start = Date.now();
   try {
     const { ok, error } = await run();
@@ -50,30 +54,22 @@ const probes: Array<() => Promise<SourceResult>> = [
   () =>
     timeIt('nasa-power', async () => {
       const result = await fetchWindData(PROBE_COORD);
-      return result.ok
-        ? { ok: true }
-        : { ok: false, error: result.error.message };
+      return result.ok ? { ok: true } : { ok: false, error: result.error.message };
     }),
   () =>
     timeIt('open-elevation', async () => {
       const result = await fetchElevationData(PROBE_COORD);
-      return result.ok
-        ? { ok: true }
-        : { ok: false, error: result.error.message };
+      return result.ok ? { ok: true } : { ok: false, error: result.error.message };
     }),
   () =>
     timeIt('overpass', async () => {
       const result = await fetchGridInfrastructure(PROBE_COORD);
-      return result.ok
-        ? { ok: true }
-        : { ok: false, error: result.error.message };
+      return result.ok ? { ok: true } : { ok: false, error: result.error.message };
     }),
   () =>
     timeIt('nominatim', async () => {
       const result = await reverseGeocode(PROBE_COORD);
-      return result.ok
-        ? { ok: true }
-        : { ok: false, error: result.error.message };
+      return result.ok ? { ok: true } : { ok: false, error: result.error.message };
     }),
   () =>
     timeIt('cds', async () => {
@@ -82,9 +78,12 @@ const probes: Array<() => Promise<SourceResult>> = [
         return { ok: false, error: 'CDS_API_KEY not set; skipped' };
       }
       const result = await validateEra5ApiKey(apiKey);
-      return result.ok
+      return result.ok && result.value
         ? { ok: true }
-        : { ok: false, error: result.error.message };
+        : {
+            ok: false,
+            error: result.ok ? 'CDS rejected the configured credential' : result.error.message,
+          };
     }),
 ];
 
@@ -105,16 +104,16 @@ export async function GET(): Promise<Response> {
         }
         for (const probe of probes) {
           probe()
-            .catch((err): SourceResult => ({
-              source: 'unknown',
-              status: 'fail',
-              latencyMs: 0,
-              error: err instanceof Error ? err.message : String(err),
-            }))
+            .catch(
+              (err): SourceResult => ({
+                source: 'unknown',
+                status: 'fail',
+                latencyMs: 0,
+                error: err instanceof Error ? err.message : String(err),
+              }),
+            )
             .then((payload) => {
-              controller.enqueue(
-                encoder.encode((first ? '' : ',') + JSON.stringify(payload)),
-              );
+              controller.enqueue(encoder.encode((first ? '' : ',') + JSON.stringify(payload)));
               first = false;
               remaining -= 1;
               if (remaining === 0) resolve();
@@ -129,7 +128,7 @@ export async function GET(): Promise<Response> {
   return new Response(stream, {
     headers: {
       'content-type': 'application/json; charset=utf-8',
-      'cache-control': `public, s-maxage=${revalidate}, stale-while-revalidate=${revalidate}`,
+      'cache-control': 'private, no-store, max-age=0',
     },
   });
 }

@@ -19,7 +19,12 @@ const FACTOR_LABELS: Record<keyof ScoringWeights, string> = {
   accessLogistics: 'Access Logistics',
 };
 
-export function WeightSliders({ weights, onChange, className, theme: _theme }: WeightSlidersProps): ReactNode {
+export function WeightSliders({
+  weights,
+  onChange,
+  className,
+  theme: _theme,
+}: WeightSlidersProps): ReactNode {
   const handleChange = useCallback(
     (factor: keyof ScoringWeights, rawValue: number) => {
       const updated = { ...weights, [factor]: rawValue / 100 };
@@ -64,11 +69,7 @@ export function WeightSliders({ weights, onChange, className, theme: _theme }: W
               fontSize: '14px',
             },
           },
-          React.createElement(
-            'label',
-            { htmlFor: `wsi-weight-${factor}` },
-            FACTOR_LABELS[factor],
-          ),
+          React.createElement('label', { htmlFor: `wsi-weight-${factor}` }, FACTOR_LABELS[factor]),
           React.createElement(
             'span',
             { style: { color: 'var(--wsi-text-secondary, #64748b)' } },

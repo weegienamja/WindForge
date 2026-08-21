@@ -12,10 +12,7 @@ const RAD_TO_DEG = 180 / Math.PI;
  * @param coord - Geographic coordinate
  * @returns Solar position with azimuth (0=N, clockwise) and elevation above horizon
  */
-export function calculateSolarPosition(
-  date: Date,
-  coord: LatLng,
-): SolarPosition {
+export function calculateSolarPosition(date: Date, coord: LatLng): SolarPosition {
   const jd = dateToJulianDay(date);
   const jc = (jd - 2451545.0) / 36525.0;
 
@@ -42,18 +39,14 @@ export function calculateSolarPosition(
 
   // Mean obliquity of the ecliptic (degrees)
   const epsilon0 =
-    23.0 +
-    (26.0 + (21.448 - jc * (46.815 + jc * (0.00059 - jc * 0.001813))) / 60.0) / 60.0;
+    23.0 + (26.0 + (21.448 - jc * (46.815 + jc * (0.00059 - jc * 0.001813))) / 60.0) / 60.0;
 
   // Corrected obliquity (degrees)
   const epsilon = epsilon0 + 0.00256 * Math.cos(omega * DEG_TO_RAD);
   const epsilonRad = epsilon * DEG_TO_RAD;
 
   // Sun's right ascension (radians)
-  const ra = Math.atan2(
-    Math.cos(epsilonRad) * Math.sin(lambdaRad),
-    Math.cos(lambdaRad),
-  );
+  const ra = Math.atan2(Math.cos(epsilonRad) * Math.sin(lambdaRad), Math.cos(lambdaRad));
 
   // Sun's declination (radians)
   const declination = Math.asin(Math.sin(epsilonRad) * Math.sin(lambdaRad));
@@ -123,13 +116,9 @@ export function solarDeclination(date: Date): number {
   const omega = 125.04 - 1934.136 * jc;
   const lambda = sunTrueLong - 0.00569 - 0.00478 * Math.sin(omega * DEG_TO_RAD);
   const epsilon0 =
-    23.0 +
-    (26.0 + (21.448 - jc * (46.815 + jc * (0.00059 - jc * 0.001813))) / 60.0) / 60.0;
+    23.0 + (26.0 + (21.448 - jc * (46.815 + jc * (0.00059 - jc * 0.001813))) / 60.0) / 60.0;
   const epsilon = epsilon0 + 0.00256 * Math.cos(omega * DEG_TO_RAD);
-  return (
-    Math.asin(Math.sin(epsilon * DEG_TO_RAD) * Math.sin(lambda * DEG_TO_RAD)) *
-    RAD_TO_DEG
-  );
+  return Math.asin(Math.sin(epsilon * DEG_TO_RAD) * Math.sin(lambda * DEG_TO_RAD)) * RAD_TO_DEG;
 }
 
 /**
@@ -156,12 +145,7 @@ export function dateToJulianDay(date: Date): number {
   const b = 2 - a + Math.floor(a / 4);
 
   return (
-    Math.floor(365.25 * (yr + 4716)) +
-    Math.floor(30.6001 * (mo + 1)) +
-    d +
-    h / 24.0 +
-    b -
-    1524.5
+    Math.floor(365.25 * (yr + 4716)) + Math.floor(30.6001 * (mo + 1)) + d + h / 24.0 + b - 1524.5
   );
 }
 

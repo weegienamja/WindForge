@@ -13,10 +13,7 @@ import { fileURLToPath } from 'node:url';
 
 import { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
-import {
-  CallToolRequestSchema,
-  ListToolsRequestSchema,
-} from '@modelcontextprotocol/sdk/types.js';
+import { CallToolRequestSchema, ListToolsRequestSchema } from '@modelcontextprotocol/sdk/types.js';
 import { z } from 'zod';
 import { zodToJsonSchema } from './zod-to-json-schema.js';
 
@@ -66,9 +63,6 @@ function printHelp(): void {
   lines.push('  windforge-mcp --version Print the server version.');
   lines.push('');
   lines.push('Environment variables:');
-  lines.push('  CDS_API_KEY    Optional Copernicus CDS API key. When set, ERA5');
-  lines.push('                 (and CERRA in Europe) bias-correct NASA POWER and');
-  lines.push('                 lift wind-resource confidence to high.');
   lines.push('  LOG_LEVEL      debug | info | warn | error. Default info.');
   lines.push('');
   lines.push('Tools:');
@@ -106,7 +100,9 @@ export async function runServer(transport?: StdioServerTransport): Promise<Serve
         content: [
           {
             type: 'text',
-            text: JSON.stringify({ error: { code: 'UNKNOWN_TOOL', message: `Unknown tool: ${request.params.name}` } }),
+            text: JSON.stringify({
+              error: { code: 'UNKNOWN_TOOL', message: `Unknown tool: ${request.params.name}` },
+            }),
           },
         ],
       };
@@ -114,7 +110,9 @@ export async function runServer(transport?: StdioServerTransport): Promise<Serve
 
     const parsed = tool.inputSchema.safeParse(request.params.arguments ?? {});
     if (!parsed.success) {
-      const message = parsed.error.issues.map((i) => `${i.path.join('.') || '<root>'}: ${i.message}`).join('; ');
+      const message = parsed.error.issues
+        .map((i) => `${i.path.join('.') || '<root>'}: ${i.message}`)
+        .join('; ');
       logger.warn('invalid tool input', { tool: tool.name, message });
       return {
         isError: true,
@@ -190,7 +188,9 @@ const invokedDirectly = (() => {
 
 if (invokedDirectly) {
   main().catch((error) => {
-    logger.error('server failed to start', { error: error instanceof Error ? error.message : String(error) });
+    logger.error('server failed to start', {
+      error: error instanceof Error ? error.message : String(error),
+    });
     process.exit(1);
   });
 }

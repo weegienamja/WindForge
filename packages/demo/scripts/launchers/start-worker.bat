@@ -3,9 +3,9 @@ setlocal
 title WindForge data worker (20-acre, UK)
 
 rem ---- configuration -------------------------------------------------------
-set "REPO=C:\Users\jab19\wind-site-intelligence"
-set "DB=F:\WindForge database\windforge.db"
-set "OUT=F:\WindForge database\heatmap.json"
+for %%I in ("%~dp0..\..\..\..") do set "REPO=%%~fI"
+set "DB=%REPO%\heatmap-data\uk.db"
+set "OUT=%REPO%\heatmap-data\uk.json"
 set "SPACING_KM=0.2845"
 set "HUB_M=100"
 set "CONCURRENCY=2"

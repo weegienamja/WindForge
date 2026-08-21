@@ -20,9 +20,9 @@ import {
 /** Default Bastankhah expansion rate by roughness class */
 const EXPANSION_RATE_BY_ROUGHNESS: Record<number, number> = {
   0: 0.022, // Offshore
-  1: 0.03,  // Open terrain
-  2: 0.04,  // Agricultural
-  3: 0.05,  // Suburban / forest
+  1: 0.03, // Open terrain
+  2: 0.04, // Agricultural
+  3: 0.05, // Suburban / forest
 };
 
 const DEFAULT_EXPANSION_RATE = 0.04;
@@ -62,7 +62,7 @@ export function bastankhahSingleWake(
   if (sqrtTerm <= 0) {
     return { velocityDeficit: 0 };
   }
-  const beta = 0.5 * (1 + sqrtTerm) / sqrtTerm;
+  const beta = (0.5 * (1 + sqrtTerm)) / sqrtTerm;
   const epsilon = 0.25 * Math.sqrt(beta);
 
   // Wake width (sigma) at downwind distance

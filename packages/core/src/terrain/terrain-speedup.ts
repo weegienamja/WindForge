@@ -29,7 +29,10 @@ export function computeTerrainSpeedUp(
   const { rows, cols, points, spacingM } = grid;
 
   // Analysis radius in grid cells (look ~500m in each direction, capped at grid extent)
-  const radiusCells = Math.max(1, Math.min(Math.round(500 / spacingM), Math.floor(Math.min(rows, cols) / 2)));
+  const radiusCells = Math.max(
+    1,
+    Math.min(Math.round(500 / spacingM), Math.floor(Math.min(rows, cols) / 2)),
+  );
 
   const z0 = Math.max(roughnessLengthM, 0.001); // prevent log(0)
 
@@ -43,16 +46,15 @@ export function computeTerrainSpeedUp(
   for (let r = 0; r < rows; r++) {
     const row: SpeedUpPoint[] = [];
     for (let c = 0; c < cols; c++) {
-
       // Analyse in 8 directions
       const directions = [
-        [0, 1],   // east
-        [0, -1],  // west
-        [1, 0],   // south
-        [-1, 0],  // north
-        [1, 1],   // southeast
-        [1, -1],  // southwest
-        [-1, 1],  // northeast
+        [0, 1], // east
+        [0, -1], // west
+        [1, 0], // south
+        [-1, 0], // north
+        [1, 1], // southeast
+        [1, -1], // southwest
+        [-1, 1], // northeast
         [-1, -1], // northwest
       ] as const;
 
@@ -160,8 +162,7 @@ function analyseProfile(
   }
 
   // Average surrounding elevation in this direction
-  const avgSurrounding =
-    elevations.reduce((sum, e) => sum + e, 0) / elevations.length;
+  const avgSurrounding = elevations.reduce((sum, e) => sum + e, 0) / elevations.length;
 
   // Hill height: positive = above surroundings (ridge), negative = below (valley)
   const hillHeightM = centreElev - avgSurrounding;

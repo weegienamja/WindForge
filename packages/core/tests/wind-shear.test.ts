@@ -1,9 +1,13 @@
 import { describe, it, expect } from 'vitest';
-import { extrapolateWindSpeed, roughnessClassToAlpha, REFERENCE_HEIGHT_M } from '../src/utils/wind-shear.js';
+import {
+  extrapolateWindSpeed,
+  roughnessClassToAlpha,
+  REFERENCE_HEIGHT_M,
+} from '../src/utils/wind-shear.js';
 
 describe('roughnessClassToAlpha', () => {
   it('maps class 0 (water/open) to 0.10', () => {
-    expect(roughnessClassToAlpha(0)).toBe(0.10);
+    expect(roughnessClassToAlpha(0)).toBe(0.1);
   });
 
   it('maps class 1 (open terrain) to 0.14', () => {
@@ -11,7 +15,7 @@ describe('roughnessClassToAlpha', () => {
   });
 
   it('maps class 2 (suburban) to 0.20', () => {
-    expect(roughnessClassToAlpha(2)).toBe(0.20);
+    expect(roughnessClassToAlpha(2)).toBe(0.2);
   });
 
   it('maps class 3 (urban/forest) to 0.25', () => {
@@ -43,7 +47,7 @@ describe('extrapolateWindSpeed', () => {
   });
 
   it('returns higher speed with larger alpha', () => {
-    const smoothAlpha = extrapolateWindSpeed(4.0, 2, 80, 0.10);
+    const smoothAlpha = extrapolateWindSpeed(4.0, 2, 80, 0.1);
     const roughAlpha = extrapolateWindSpeed(4.0, 2, 80, 0.25);
     expect(roughAlpha).toBeGreaterThan(smoothAlpha);
   });

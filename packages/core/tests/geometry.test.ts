@@ -50,7 +50,12 @@ describe('isPointInPolygon', () => {
   });
 
   it('returns false for a line (2 points)', () => {
-    expect(isPointInPolygon({ lat: 55, lng: -4 }, [{ lat: 55, lng: -4 }, { lat: 55, lng: -3 }])).toBe(false);
+    expect(
+      isPointInPolygon({ lat: 55, lng: -4 }, [
+        { lat: 55, lng: -4 },
+        { lat: 55, lng: -3 },
+      ]),
+    ).toBe(false);
   });
 
   it('handles concave polygons', () => {
@@ -74,7 +79,12 @@ describe('polygonAreaSqKm', () => {
   });
 
   it('returns 0 for a line', () => {
-    expect(polygonAreaSqKm([{ lat: 0, lng: 0 }, { lat: 1, lng: 0 }])).toBe(0);
+    expect(
+      polygonAreaSqKm([
+        { lat: 0, lng: 0 },
+        { lat: 1, lng: 0 },
+      ]),
+    ).toBe(0);
   });
 
   it('computes area of a roughly 1km x 1km square', () => {
@@ -145,7 +155,7 @@ describe('circleBufferPolygon', () => {
     // Import distanceKm from geo to check distances
     for (const p of circle) {
       const dLat = (p.lat - center.lat) * 111320;
-      const dLng = (p.lng - center.lng) * 111320 * Math.cos(center.lat * Math.PI / 180);
+      const dLng = (p.lng - center.lng) * 111320 * Math.cos((center.lat * Math.PI) / 180);
       const dist = Math.sqrt(dLat * dLat + dLng * dLng);
       expect(dist).toBeGreaterThan(400);
       expect(dist).toBeLessThan(600);
@@ -156,20 +166,32 @@ describe('circleBufferPolygon', () => {
 describe('polygonOverlapAreaSqKm', () => {
   it('returns 0 for non-overlapping polygons', () => {
     const polyA: LatLng[] = [
-      { lat: 0, lng: 0 }, { lat: 0, lng: 1 }, { lat: 1, lng: 1 }, { lat: 1, lng: 0 },
+      { lat: 0, lng: 0 },
+      { lat: 0, lng: 1 },
+      { lat: 1, lng: 1 },
+      { lat: 1, lng: 0 },
     ];
     const polyB: LatLng[] = [
-      { lat: 2, lng: 2 }, { lat: 2, lng: 3 }, { lat: 3, lng: 3 }, { lat: 3, lng: 2 },
+      { lat: 2, lng: 2 },
+      { lat: 2, lng: 3 },
+      { lat: 3, lng: 3 },
+      { lat: 3, lng: 2 },
     ];
     expect(polygonOverlapAreaSqKm(polyA, polyB)).toBe(0);
   });
 
   it('returns positive area for overlapping polygons', () => {
     const polyA: LatLng[] = [
-      { lat: 0, lng: 0 }, { lat: 0, lng: 1 }, { lat: 1, lng: 1 }, { lat: 1, lng: 0 },
+      { lat: 0, lng: 0 },
+      { lat: 0, lng: 1 },
+      { lat: 1, lng: 1 },
+      { lat: 1, lng: 0 },
     ];
     const polyB: LatLng[] = [
-      { lat: 0.5, lng: 0.5 }, { lat: 0.5, lng: 1.5 }, { lat: 1.5, lng: 1.5 }, { lat: 1.5, lng: 0.5 },
+      { lat: 0.5, lng: 0.5 },
+      { lat: 0.5, lng: 1.5 },
+      { lat: 1.5, lng: 1.5 },
+      { lat: 1.5, lng: 0.5 },
     ];
     const overlap = polygonOverlapAreaSqKm(polyA, polyB);
     expect(overlap).toBeGreaterThan(0);
@@ -225,7 +247,10 @@ describe('generateGridWithinPolygon', () => {
 
 describe('rotateGrid', () => {
   it('returns same points for 0 degree rotation', () => {
-    const points: LatLng[] = [{ lat: 55, lng: -4 }, { lat: 55.01, lng: -4 }];
+    const points: LatLng[] = [
+      { lat: 55, lng: -4 },
+      { lat: 55.01, lng: -4 },
+    ];
     const rotated = rotateGrid(points, { lat: 55.005, lng: -4 }, 0);
     expect(rotated).toHaveLength(2);
     expect(rotated[0]!.lat).toBeCloseTo(55, 3);

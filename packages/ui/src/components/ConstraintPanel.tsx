@@ -1,6 +1,10 @@
 import type { ReactNode } from 'react';
 import React from 'react';
-import type { SiteConstraintReport, DetectedConstraint, NearestReceptorTable } from '@jamieblair/windforge-core';
+import type {
+  SiteConstraintReport,
+  DetectedConstraint,
+  NearestReceptorTable,
+} from '@jamieblair/windforge-core';
 import type { WindSiteTheme } from '../styles/theme.js';
 
 export interface ConstraintPanelProps {
@@ -23,10 +27,10 @@ const RECOMMENDATION_COLORS: Record<string, string> = {
 };
 
 const RECOMMENDATION_LABELS: Record<string, string> = {
-  proceed: 'Proceed',
-  proceed_with_caution: 'Proceed with Caution',
-  significant_concerns: 'Significant Concerns',
-  likely_unviable: 'Likely Unviable',
+  proceed: 'No configured concerns found',
+  proceed_with_caution: 'Screening concerns found',
+  significant_concerns: 'Material screening concerns',
+  likely_unviable: 'Multiple screening exclusions',
 };
 
 export function ConstraintPanel({ report, className }: ConstraintPanelProps): ReactNode {
@@ -46,10 +50,14 @@ export function ConstraintPanel({ report, className }: ConstraintPanelProps): Re
         backgroundColor: 'var(--wsi-surface, #f8fafc)',
       },
       role: 'region',
-      'aria-label': 'Constraint analysis results',
+      'aria-label': 'Constraint screening results',
     },
     // Header
-    React.createElement('h3', { style: { margin: '0 0 16px', fontSize: '16px', fontWeight: 600 } }, 'Constraint Analysis'),
+    React.createElement(
+      'h3',
+      { style: { margin: '0 0 16px', fontSize: '16px', fontWeight: 600 } },
+      'Constraint Screen',
+    ),
 
     // Recommendation badge
     React.createElement(
@@ -73,27 +81,39 @@ export function ConstraintPanel({ report, className }: ConstraintPanelProps): Re
     React.createElement(
       'div',
       { style: { display: 'flex', gap: '16px', marginBottom: '16px', fontSize: '13px' } },
-      renderCount('Hard', summary.totalHard, SEVERITY_COLORS.hard!),
-      renderCount('Soft', summary.totalSoft, SEVERITY_COLORS.soft!),
+      renderCount('Exclusion', summary.totalHard, SEVERITY_COLORS.hard!),
+      renderCount('Caution', summary.totalSoft, SEVERITY_COLORS.soft!),
       renderCount('Info', summary.totalInfo, SEVERITY_COLORS.info!),
     ),
 
     // Reasoning
-    React.createElement('p', { style: { fontSize: '13px', lineHeight: 1.5, margin: '0 0 16px', color: '#475569' } }, summary.reasoning),
+    React.createElement(
+      'p',
+      { style: { fontSize: '13px', lineHeight: 1.5, margin: '0 0 16px', color: '#475569' } },
+      summary.reasoning,
+    ),
 
     // Viable area
     React.createElement(
       'div',
-      { style: { fontSize: '13px', marginBottom: '16px', padding: '8px 12px', backgroundColor: '#f1f5f9', borderRadius: '6px' } },
-      `Viable area: ${summary.viableAreaPercent.toFixed(0)}%`,
+      {
+        style: {
+          fontSize: '13px',
+          marginBottom: '16px',
+          padding: '8px 12px',
+          backgroundColor: '#f1f5f9',
+          borderRadius: '6px',
+        },
+      },
+      `Area outside configured screening exclusions: ${summary.viableAreaPercent.toFixed(0)}%`,
     ),
 
     // Constraint lists
     report.hardConstraints.length > 0
-      ? renderConstraintGroup('Hard Constraints', report.hardConstraints, 'hard')
+      ? renderConstraintGroup('Potential Screening Exclusions', report.hardConstraints, 'hard')
       : null,
     report.softConstraints.length > 0
-      ? renderConstraintGroup('Soft Constraints', report.softConstraints, 'soft')
+      ? renderConstraintGroup('Screening Cautions', report.softConstraints, 'soft')
       : null,
     report.infoConstraints.length > 0
       ? renderConstraintGroup('Information', report.infoConstraints, 'info')
@@ -115,7 +135,11 @@ function renderCount(label: string, count: number, color: string): ReactNode {
   );
 }
 
-function renderConstraintGroup(title: string, constraints: DetectedConstraint[], severity: string): ReactNode {
+function renderConstraintGroup(
+  title: string,
+  constraints: DetectedConstraint[],
+  severity: string,
+): ReactNode {
   const color = SEVERITY_COLORS[severity] ?? '#6b7280';
 
   return React.createElement(
@@ -167,7 +191,11 @@ function renderReceptorTable(receptors: NearestReceptorTable): ReactNode {
   return React.createElement(
     'div',
     { style: { marginTop: '16px' } },
-    React.createElement('h4', { style: { fontSize: '14px', fontWeight: 600, margin: '0 0 8px' } }, 'Nearest Receptors'),
+    React.createElement(
+      'h4',
+      { style: { fontSize: '14px', fontWeight: 600, margin: '0 0 8px' } },
+      'Nearest Receptors',
+    ),
     React.createElement(
       'table',
       {
@@ -185,7 +213,11 @@ function renderReceptorTable(receptors: NearestReceptorTable): ReactNode {
               key: i,
               style: { borderBottom: '1px solid #e2e8f0' },
             },
-            React.createElement('td', { style: { padding: '6px 8px', color: '#475569' } }, row.label),
+            React.createElement(
+              'td',
+              { style: { padding: '6px 8px', color: '#475569' } },
+              row.label,
+            ),
             React.createElement(
               'td',
               { style: { padding: '6px 8px', textAlign: 'right', fontWeight: 500 } },

@@ -47,7 +47,11 @@ export function LossStackChart({ losses, className }: LossStackChartProps): Reac
       role: 'figure',
       'aria-label': 'Loss stack breakdown chart',
     },
-    React.createElement('h4', { style: { margin: '0 0 12px', fontSize: '14px', fontWeight: 600 } }, 'Loss Breakdown'),
+    React.createElement(
+      'h4',
+      { style: { margin: '0 0 12px', fontSize: '14px', fontWeight: 600 } },
+      'Loss Breakdown',
+    ),
 
     // Stacked bar
     React.createElement(

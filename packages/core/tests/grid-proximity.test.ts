@@ -15,11 +15,11 @@ function makeGrid(overrides: Partial<GridInfrastructure> = {}): GridInfrastructu
 
 describe('scoreGridProximity', () => {
   it('returns a valid FactorScore for gridProximity factor', () => {
-    const result = scoreGridProximity(makeGrid(), 0.10);
+    const result = scoreGridProximity(makeGrid(), 0.1);
     expect(result.ok).toBe(true);
     if (result.ok) {
       expect(result.value.factor).toBe('gridProximity');
-      expect(result.value.weight).toBe(0.10);
+      expect(result.value.weight).toBe(0.1);
       expect(result.value.score).toBeGreaterThanOrEqual(0);
       expect(result.value.score).toBeLessThanOrEqual(100);
       expect(result.value.dataSource).toContain('Overpass');
@@ -29,7 +29,7 @@ describe('scoreGridProximity', () => {
   it('scores very close infrastructure highly (< 5km)', () => {
     const result = scoreGridProximity(
       makeGrid({ nearestLineDistanceKm: 1, nearestSubstationDistanceKm: 2 }),
-      0.10,
+      0.1,
     );
     expect(result.ok).toBe(true);
     if (result.ok) {
@@ -40,7 +40,7 @@ describe('scoreGridProximity', () => {
   it('scores infrastructure at 5-15km as good (70-89)', () => {
     const result = scoreGridProximity(
       makeGrid({ nearestLineDistanceKm: 10, nearestSubstationDistanceKm: 10 }),
-      0.10,
+      0.1,
     );
     expect(result.ok).toBe(true);
     if (result.ok) {
@@ -52,7 +52,7 @@ describe('scoreGridProximity', () => {
   it('scores infrastructure at 15-30km as moderate (40-69)', () => {
     const result = scoreGridProximity(
       makeGrid({ nearestLineDistanceKm: 25, nearestSubstationDistanceKm: 25 }),
-      0.10,
+      0.1,
     );
     expect(result.ok).toBe(true);
     if (result.ok) {
@@ -64,7 +64,7 @@ describe('scoreGridProximity', () => {
   it('scores infrastructure at 30-50km as poor (20-39)', () => {
     const result = scoreGridProximity(
       makeGrid({ nearestLineDistanceKm: 40, nearestSubstationDistanceKm: 40 }),
-      0.10,
+      0.1,
     );
     expect(result.ok).toBe(true);
     if (result.ok) {
@@ -76,7 +76,7 @@ describe('scoreGridProximity', () => {
   it('scores infrastructure beyond 50km very poorly', () => {
     const result = scoreGridProximity(
       makeGrid({ nearestLineDistanceKm: 80, nearestSubstationDistanceKm: 90 }),
-      0.10,
+      0.1,
     );
     expect(result.ok).toBe(true);
     if (result.ok) {
@@ -86,8 +86,13 @@ describe('scoreGridProximity', () => {
 
   it('handles no infrastructure found (sentinel -1)', () => {
     const result = scoreGridProximity(
-      makeGrid({ nearestLineDistanceKm: -1, nearestSubstationDistanceKm: -1, lineCount: 0, substationCount: 0 }),
-      0.10,
+      makeGrid({
+        nearestLineDistanceKm: -1,
+        nearestSubstationDistanceKm: -1,
+        lineCount: 0,
+        substationCount: 0,
+      }),
+      0.1,
     );
     expect(result.ok).toBe(true);
     if (result.ok) {
@@ -100,7 +105,7 @@ describe('scoreGridProximity', () => {
   it('handles only lines, no substations', () => {
     const result = scoreGridProximity(
       makeGrid({ nearestLineDistanceKm: 5, nearestSubstationDistanceKm: -1, substationCount: 0 }),
-      0.10,
+      0.1,
     );
     expect(result.ok).toBe(true);
     if (result.ok) {
@@ -113,7 +118,7 @@ describe('scoreGridProximity', () => {
   it('handles only substations, no lines', () => {
     const result = scoreGridProximity(
       makeGrid({ nearestLineDistanceKm: -1, nearestSubstationDistanceKm: 3, lineCount: 0 }),
-      0.10,
+      0.1,
     );
     expect(result.ok).toBe(true);
     if (result.ok) {
@@ -126,11 +131,11 @@ describe('scoreGridProximity', () => {
   it('weights substations higher than lines (60/40 split)', () => {
     const closeSubstation = scoreGridProximity(
       makeGrid({ nearestLineDistanceKm: 50, nearestSubstationDistanceKm: 1 }),
-      0.10,
+      0.1,
     );
     const closeLine = scoreGridProximity(
       makeGrid({ nearestLineDistanceKm: 1, nearestSubstationDistanceKm: 50 }),
-      0.10,
+      0.1,
     );
     expect(closeSubstation.ok && closeLine.ok).toBe(true);
     if (closeSubstation.ok && closeLine.ok) {
@@ -148,7 +153,7 @@ describe('scoreGridProximity', () => {
   });
 
   it('has high confidence when infrastructure found within 50km', () => {
-    const result = scoreGridProximity(makeGrid(), 0.10);
+    const result = scoreGridProximity(makeGrid(), 0.1);
     expect(result.ok).toBe(true);
     if (result.ok) {
       expect(result.value.confidence).toBe('high');
@@ -157,8 +162,14 @@ describe('scoreGridProximity', () => {
 
   it('has medium confidence when expanded search radius used', () => {
     const result = scoreGridProximity(
-      makeGrid({ searchRadiusKm: 100, lineCount: 0, substationCount: 0, nearestLineDistanceKm: -1, nearestSubstationDistanceKm: -1 }),
-      0.10,
+      makeGrid({
+        searchRadiusKm: 100,
+        lineCount: 0,
+        substationCount: 0,
+        nearestLineDistanceKm: -1,
+        nearestSubstationDistanceKm: -1,
+      }),
+      0.1,
     );
     expect(result.ok).toBe(true);
     if (result.ok) {
@@ -168,8 +179,13 @@ describe('scoreGridProximity', () => {
 
   it('includes distance details in description', () => {
     const result = scoreGridProximity(
-      makeGrid({ nearestLineDistanceKm: 7.3, nearestSubstationDistanceKm: 12.8, lineCount: 5, substationCount: 2 }),
-      0.10,
+      makeGrid({
+        nearestLineDistanceKm: 7.3,
+        nearestSubstationDistanceKm: 12.8,
+        lineCount: 5,
+        substationCount: 2,
+      }),
+      0.1,
     );
     expect(result.ok).toBe(true);
     if (result.ok) {

@@ -12,7 +12,20 @@ export interface SeasonalHeatmapProps {
   loading?: boolean;
 }
 
-const MONTH_LABELS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+const MONTH_LABELS = [
+  'Jan',
+  'Feb',
+  'Mar',
+  'Apr',
+  'May',
+  'Jun',
+  'Jul',
+  'Aug',
+  'Sep',
+  'Oct',
+  'Nov',
+  'Dec',
+];
 
 function speedToColor(speed: number, maxSpeed: number): string {
   if (maxSpeed === 0) return '#f0f0f0';
@@ -20,9 +33,9 @@ function speedToColor(speed: number, maxSpeed: number): string {
   // Blue (low) → green (mid) → red (high)
   if (ratio < 0.5) {
     const t = ratio * 2;
-    const r = Math.round(66 + (34) * t);
-    const g = Math.round(133 + (122) * t);
-    const b = Math.round(244 - (100) * t);
+    const r = Math.round(66 + 34 * t);
+    const g = Math.round(133 + 122 * t);
+    const b = Math.round(244 - 100 * t);
     return `rgb(${r},${g},${b})`;
   }
   const t = (ratio - 0.5) * 2;
@@ -32,7 +45,14 @@ function speedToColor(speed: number, maxSpeed: number): string {
   return `rgb(${r},${g},${b})`;
 }
 
-export function SeasonalHeatmap({ data, width = 600, height = 320, className, theme: _theme, loading }: SeasonalHeatmapProps) {
+export function SeasonalHeatmap({
+  data,
+  width = 600,
+  height = 320,
+  className,
+  theme: _theme,
+  loading,
+}: SeasonalHeatmapProps) {
   const { cells, maxSpeed } = useMemo(() => {
     const raw = Array.isArray(data) ? data : data.cells;
     const max = raw.reduce((m, c) => Math.max(m, c.speedMs), 0);
@@ -40,11 +60,28 @@ export function SeasonalHeatmap({ data, width = 600, height = 320, className, th
   }, [data]);
 
   if (loading) {
-    return <div className={className} style={{ height, background: 'linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%)', backgroundSize: '200% 100%', animation: 'wsi-shimmer 1.5s infinite', borderRadius: 8 }} aria-busy="true" aria-label="Loading seasonal heatmap" />;
+    return (
+      <div
+        className={className}
+        style={{
+          height,
+          background: 'linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%)',
+          backgroundSize: '200% 100%',
+          animation: 'wsi-shimmer 1.5s infinite',
+          borderRadius: 8,
+        }}
+        aria-busy="true"
+        aria-label="Loading seasonal heatmap"
+      />
+    );
   }
 
   if (cells.length === 0) {
-    return <div className={className} style={{ padding: 20, textAlign: 'center', color: '#888' }}>No seasonal data available</div>;
+    return (
+      <div className={className} style={{ padding: 20, textAlign: 'center', color: '#888' }}>
+        No seasonal data available
+      </div>
+    );
   }
 
   const marginLeft = 40;
@@ -57,8 +94,14 @@ export function SeasonalHeatmap({ data, width = 600, height = 320, className, th
   const cellH = plotH / 12;
 
   return (
-    <div className={className} role="img" aria-label="Seasonal heatmap showing average wind speed by month and hour">
-      <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 8 }}>Seasonal Heatmap (Month × Hour)</div>
+    <div
+      className={className}
+      role="img"
+      aria-label="Seasonal heatmap showing average wind speed by month and hour"
+    >
+      <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 8 }}>
+        Seasonal Heatmap (Month × Hour)
+      </div>
       <svg width={width} height={height} style={{ fontFamily: 'sans-serif' }}>
         {cells.map((c) => (
           <rect
@@ -100,7 +143,15 @@ export function SeasonalHeatmap({ data, width = 600, height = 320, className, th
           </text>
         ))}
         {/* Axis titles */}
-        <text x={marginLeft + plotW / 2} y={height - 2} textAnchor="middle" fontSize={11} fill="#333">Hour of day</text>
+        <text
+          x={marginLeft + plotW / 2}
+          y={height - 2}
+          textAnchor="middle"
+          fontSize={11}
+          fill="#333"
+        >
+          Hour of day
+        </text>
         {/* Legend bar */}
         {Array.from({ length: 10 }, (_, i) => {
           const val = (i / 9) * maxSpeed;
@@ -115,9 +166,15 @@ export function SeasonalHeatmap({ data, width = 600, height = 320, className, th
             />
           );
         })}
-        <text x={width - marginRight + 30} y={marginTop + 10} fontSize={9} fill="#666">{maxSpeed.toFixed(1)}</text>
-        <text x={width - marginRight + 30} y={marginTop + plotH} fontSize={9} fill="#666">0</text>
-        <text x={width - marginRight + 30} y={marginTop + plotH / 2} fontSize={9} fill="#666">m/s</text>
+        <text x={width - marginRight + 30} y={marginTop + 10} fontSize={9} fill="#666">
+          {maxSpeed.toFixed(1)}
+        </text>
+        <text x={width - marginRight + 30} y={marginTop + plotH} fontSize={9} fill="#666">
+          0
+        </text>
+        <text x={width - marginRight + 30} y={marginTop + plotH / 2} fontSize={9} fill="#666">
+          m/s
+        </text>
       </svg>
     </div>
   );

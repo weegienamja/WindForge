@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 import React from 'react';
-import type { EnergyYieldResult, LossStack, PScenario } from '@jamieblair/windforge-core';
+import type { EnergyYieldResult, LossStack, SensitivityScenario } from '@jamieblair/windforge-core';
 import type { WindSiteTheme } from '../styles/theme.js';
 
 export interface EnergyYieldCardProps {
@@ -25,7 +25,11 @@ export function EnergyYieldCard({ result, className }: EnergyYieldCardProps): Re
       'aria-label': 'Energy yield estimate',
     },
     // Header
-    React.createElement('h3', { style: { margin: '0 0 4px', fontSize: '16px', fontWeight: 600 } }, 'Energy Yield Estimate'),
+    React.createElement(
+      'h3',
+      { style: { margin: '0 0 4px', fontSize: '16px', fontWeight: 600 } },
+      'Energy Yield Estimate',
+    ),
     React.createElement(
       'div',
       { style: { fontSize: '13px', color: '#64748b', marginBottom: '16px' } },
@@ -35,22 +39,56 @@ export function EnergyYieldCard({ result, className }: EnergyYieldCardProps): Re
     // Main metrics
     React.createElement(
       'div',
-      { style: { display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '16px', marginBottom: '20px' } },
-      renderMetric('Gross AEP', `${result.grossAepMwh.toFixed(0)} MWh`, `per turbine (CF ${(result.grossCapacityFactor * 100).toFixed(1)}%)`),
-      renderMetric('Net AEP (P50)', `${result.netAepMwh.toFixed(0)} MWh`, `per turbine (CF ${(result.netCapacityFactor * 100).toFixed(1)}%)`),
+      {
+        style: {
+          display: 'grid',
+          gridTemplateColumns: 'repeat(3, 1fr)',
+          gap: '16px',
+          marginBottom: '20px',
+        },
+      },
+      renderMetric(
+        'Gross AEP',
+        `${result.grossAepMwh.toFixed(0)} MWh`,
+        `per turbine (CF ${(result.grossCapacityFactor * 100).toFixed(1)}%)`,
+      ),
+      renderMetric(
+        'Central net AEP',
+        `${result.netAepMwh.toFixed(0)} MWh`,
+        `per turbine (CF ${(result.netCapacityFactor * 100).toFixed(1)}%)`,
+      ),
       result.turbineCount > 1
-        ? renderMetric('Total P50', `${result.netTotalAepMwh.toFixed(0)} MWh`, `${result.turbineCount} turbines`)
-        : renderMetric('Confidence', result.confidence.toUpperCase(), confidenceDescription(result.confidence)),
+        ? renderMetric(
+            'Central total',
+            `${result.netTotalAepMwh.toFixed(0)} MWh`,
+            `${result.turbineCount} turbines`,
+          )
+        : renderMetric(
+            'Confidence',
+            result.confidence.toUpperCase(),
+            confidenceDescription(result.confidence),
+          ),
     ),
 
-    // P-scenarios
-    React.createElement('h4', { style: { margin: '0 0 8px', fontSize: '14px', fontWeight: 600 } }, 'Exceedance Scenarios'),
+    // Deterministic sensitivities
+    React.createElement(
+      'h4',
+      { style: { margin: '0 0 8px', fontSize: '14px', fontWeight: 600 } },
+      'Illustrative sensitivities',
+    ),
     React.createElement(
       'div',
-      { style: { display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '12px', marginBottom: '20px' } },
-      renderPScenario(result.p50),
-      renderPScenario(result.p75),
-      renderPScenario(result.p90),
+      {
+        style: {
+          display: 'grid',
+          gridTemplateColumns: 'repeat(3, 1fr)',
+          gap: '12px',
+          marginBottom: '20px',
+        },
+      },
+      renderSensitivity(result.centralEstimate),
+      renderSensitivity(result.downside10),
+      renderSensitivity(result.downside20),
     ),
 
     // Loss stack
@@ -63,14 +101,34 @@ export function EnergyYieldCard({ result, className }: EnergyYieldCardProps): Re
     React.createElement(
       'details',
       { style: { marginTop: '16px', fontSize: '13px' } },
-      React.createElement('summary', { style: { cursor: 'pointer', fontWeight: 600 } }, 'Assumptions'),
+      React.createElement(
+        'summary',
+        { style: { cursor: 'pointer', fontWeight: 600 } },
+        'Assumptions',
+      ),
       React.createElement(
         'div',
         { style: { marginTop: '8px', color: '#475569', lineHeight: 1.6 } },
-        React.createElement('div', null, `Wind data: ${result.assumptions.windDataYears} years at ${result.assumptions.referenceHeightM}m`),
-        React.createElement('div', null, `Extrapolation: ${result.assumptions.extrapolationMethod}`),
-        React.createElement('div', null, `Air density: ${result.assumptions.airDensityKgM3.toFixed(3)} kg/m\u00b3`),
-        React.createElement('div', null, `Weibull: k=${result.assumptions.weibullK.toFixed(2)}, c=${result.assumptions.weibullC.toFixed(1)} m/s`),
+        React.createElement(
+          'div',
+          null,
+          `Wind data: ${result.assumptions.windDataYears} years at ${result.assumptions.referenceHeightM}m`,
+        ),
+        React.createElement(
+          'div',
+          null,
+          `Extrapolation: ${result.assumptions.extrapolationMethod}`,
+        ),
+        React.createElement(
+          'div',
+          null,
+          `Air density: ${result.assumptions.airDensityKgM3.toFixed(3)} kg/m\u00b3`,
+        ),
+        React.createElement(
+          'div',
+          null,
+          `Weibull: k=${result.assumptions.weibullK.toFixed(2)}, c=${result.assumptions.weibullC.toFixed(1)} m/s`,
+        ),
         React.createElement('div', null, `Uncertainty: ${result.assumptions.uncertaintyMethod}`),
       ),
     ),
@@ -89,13 +147,21 @@ function renderMetric(label: string, value: string, subtitle: string): ReactNode
         textAlign: 'center',
       },
     },
-    React.createElement('div', { style: { fontSize: '12px', color: '#64748b', marginBottom: '4px' } }, label),
+    React.createElement(
+      'div',
+      { style: { fontSize: '12px', color: '#64748b', marginBottom: '4px' } },
+      label,
+    ),
     React.createElement('div', { style: { fontSize: '20px', fontWeight: 700 } }, value),
-    React.createElement('div', { style: { fontSize: '11px', color: '#94a3b8', marginTop: '2px' } }, subtitle),
+    React.createElement(
+      'div',
+      { style: { fontSize: '11px', color: '#94a3b8', marginTop: '2px' } },
+      subtitle,
+    ),
   );
 }
 
-function renderPScenario(scenario: PScenario): ReactNode {
+function renderSensitivity(scenario: SensitivityScenario): ReactNode {
   return React.createElement(
     'div',
     {
@@ -107,10 +173,26 @@ function renderPScenario(scenario: PScenario): ReactNode {
         textAlign: 'center',
       },
     },
-    React.createElement('div', { style: { fontSize: '14px', fontWeight: 700, color: '#2563eb' } }, scenario.label),
-    React.createElement('div', { style: { fontSize: '18px', fontWeight: 600, marginTop: '4px' } }, `${scenario.aepMwh.toFixed(0)} MWh`),
-    React.createElement('div', { style: { fontSize: '11px', color: '#64748b', marginTop: '4px' } }, `CF ${(scenario.capacityFactor * 100).toFixed(1)}%`),
-    React.createElement('div', { style: { fontSize: '11px', color: '#94a3b8', marginTop: '2px' } }, scenario.description),
+    React.createElement(
+      'div',
+      { style: { fontSize: '14px', fontWeight: 700, color: '#2563eb' } },
+      scenario.label,
+    ),
+    React.createElement(
+      'div',
+      { style: { fontSize: '18px', fontWeight: 600, marginTop: '4px' } },
+      `${scenario.aepMwh.toFixed(0)} MWh`,
+    ),
+    React.createElement(
+      'div',
+      { style: { fontSize: '11px', color: '#64748b', marginTop: '4px' } },
+      `CF ${(scenario.capacityFactor * 100).toFixed(1)}%`,
+    ),
+    React.createElement(
+      'div',
+      { style: { fontSize: '11px', color: '#94a3b8', marginTop: '2px' } },
+      scenario.description,
+    ),
   );
 }
 
@@ -118,7 +200,11 @@ function renderLossStack(losses: LossStack): ReactNode {
   return React.createElement(
     'div',
     { style: { marginTop: '4px' } },
-    React.createElement('h4', { style: { margin: '0 0 8px', fontSize: '14px', fontWeight: 600 } }, 'Loss Stack'),
+    React.createElement(
+      'h4',
+      { style: { margin: '0 0 8px', fontSize: '14px', fontWeight: 600 } },
+      'Loss Stack',
+    ),
     ...losses.items.map((item, i) =>
       React.createElement(
         'div',
@@ -137,18 +223,19 @@ function renderLossStack(losses: LossStack): ReactNode {
         React.createElement(
           'div',
           { style: { display: 'flex', alignItems: 'center', gap: '8px' } },
-          React.createElement(
-            'div',
-            {
-              style: {
-                width: `${Math.max(4, item.percent * 10)}px`,
-                height: '12px',
-                backgroundColor: '#f59e0b',
-                borderRadius: '2px',
-              },
+          React.createElement('div', {
+            style: {
+              width: `${Math.max(4, item.percent * 10)}px`,
+              height: '12px',
+              backgroundColor: '#f59e0b',
+              borderRadius: '2px',
             },
+          }),
+          React.createElement(
+            'span',
+            { style: { fontWeight: 500, minWidth: '40px', textAlign: 'right' } },
+            `${item.percent.toFixed(1)}%`,
           ),
-          React.createElement('span', { style: { fontWeight: 500, minWidth: '40px', textAlign: 'right' } }, `${item.percent.toFixed(1)}%`),
         ),
       ),
     ),
@@ -171,17 +258,39 @@ function renderLossStack(losses: LossStack): ReactNode {
 
 function renderMonthlyChart(monthlyMwh: number[]): ReactNode {
   const maxVal = Math.max(...monthlyMwh, 1);
-  const labels = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  const labels = [
+    'Jan',
+    'Feb',
+    'Mar',
+    'Apr',
+    'May',
+    'Jun',
+    'Jul',
+    'Aug',
+    'Sep',
+    'Oct',
+    'Nov',
+    'Dec',
+  ];
   const barMaxHeight = 80;
 
   return React.createElement(
     'div',
     { style: { marginTop: '16px' } },
-    React.createElement('h4', { style: { margin: '0 0 8px', fontSize: '14px', fontWeight: 600 } }, 'Monthly Production'),
+    React.createElement(
+      'h4',
+      { style: { margin: '0 0 8px', fontSize: '14px', fontWeight: 600 } },
+      'Monthly Production',
+    ),
     React.createElement(
       'div',
       {
-        style: { display: 'flex', gap: '2px', alignItems: 'flex-end', height: `${barMaxHeight + 20}px` },
+        style: {
+          display: 'flex',
+          gap: '2px',
+          alignItems: 'flex-end',
+          height: `${barMaxHeight + 20}px`,
+        },
         role: 'figure',
         'aria-label': 'Monthly energy production chart',
       },

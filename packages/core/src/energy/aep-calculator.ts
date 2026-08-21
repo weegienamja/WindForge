@@ -3,7 +3,7 @@ import type {
   EnergyYieldResult,
   LossStack,
   LossItem,
-  PScenario,
+  SensitivityScenario,
   AepAssumptions,
   AepOptions,
   LossOverrides,
@@ -41,7 +41,7 @@ const DEFAULT_LOSSES: LossOverrides = {
  * 3. Integrate power curve against Weibull PDF to get gross AEP
  * 4. Apply air density correction
  * 5. Apply loss stack to get net AEP
- * 6. Compute P50/P75/P90 scenarios using interannual variability
+ * 6. Compute explicitly labelled deterministic sensitivity cases
  * 7. Compute monthly production breakdown
  */
 export function calculateAep(
@@ -55,11 +55,15 @@ export function calculateAep(
   const roughnessAlpha = options.windShearAlpha ?? 0.14;
 
   if (windData.annualAverageSpeedMs <= 0) {
-    return err(scoringError(ScoringErrorCode.DataFetchFailed, 'No valid wind speed data available'));
+    return err(
+      scoringError(ScoringErrorCode.DataFetchFailed, 'No valid wind speed data available'),
+    );
   }
 
   if (turbine.powerCurve.length < 3) {
-    return err(scoringError(ScoringErrorCode.Unknown, 'Turbine power curve has insufficient data points'));
+    return err(
+      scoringError(ScoringErrorCode.Unknown, 'Turbine power curve has insufficient data points'),
+    );
   }
 
   // 1. Extrapolate wind speed to hub height
@@ -90,11 +94,7 @@ export function calculateAep(
   let directionalWakeLossPct: number | undefined;
 
   if (wakeModel !== 'parametric' && options.layoutPositions && options.layoutPositions.length > 1) {
-    const turbinePositions = layoutToTurbinePositions(
-      options.layoutPositions,
-      turbine,
-      hubHeightM,
-    );
+    const turbinePositions = layoutToTurbinePositions(options.layoutPositions, turbine, hubHeightM);
     const wakeLossResult = calculateDirectionalWakeLoss(
       turbinePositions,
       turbine,
@@ -121,15 +121,29 @@ export function calculateAep(
   const grossCapacityFactor = densityCorrectedAepMwh / ratedCapacityMwh;
   const netCapacityFactor = netAepPerTurbineMwh / ratedCapacityMwh;
 
-  // 7. P-scenarios using interannual wind variability
-  const interannualStdDev = windData.speedStdDevMs ?? hubSpeedMs * 0.06;
-  const windCov = interannualStdDev / hubSpeedMs;
-  // Energy COV is approximately 2x wind speed COV (cubic relationship)
-  const energyCov = Math.min(windCov * 2, 0.3);
-
-  const p50 = buildPScenario('P50', netAepPerTurbineMwh, turbineCount, ratedCapacityMwh, 0, energyCov);
-  const p75 = buildPScenario('P75', netAepPerTurbineMwh, turbineCount, ratedCapacityMwh, 0.674, energyCov);
-  const p90 = buildPScenario('P90', netAepPerTurbineMwh, turbineCount, ratedCapacityMwh, 1.282, energyCov);
+  // These are illustrative sensitivities, not statistically derived
+  // probability-of-exceedance estimates.
+  const centralEstimate = buildSensitivityScenario(
+    'Central',
+    netAepPerTurbineMwh,
+    turbineCount,
+    ratedCapacityMwh,
+    1,
+  );
+  const downside10 = buildSensitivityScenario(
+    '10% downside',
+    netAepPerTurbineMwh,
+    turbineCount,
+    ratedCapacityMwh,
+    0.9,
+  );
+  const downside20 = buildSensitivityScenario(
+    '20% downside',
+    netAepPerTurbineMwh,
+    turbineCount,
+    ratedCapacityMwh,
+    0.8,
+  );
 
   // 8. Monthly production breakdown (using monthly wind speed variation)
   const monthlyProductionMwh = computeMonthlyProduction(
@@ -150,15 +164,18 @@ export function calculateAep(
     `${turbine.manufacturer} ${turbine.model} at ${hubHeightM}m hub height.`,
     `Hub-height mean wind speed: ${hubSpeedMs.toFixed(1)} m/s (Weibull k=${k.toFixed(2)}, c=${c.toFixed(1)}).`,
     `Gross AEP: ${densityCorrectedAepMwh.toFixed(0)} MWh/turbine (CF ${(grossCapacityFactor * 100).toFixed(1)}%).`,
-    `Net AEP (P50): ${netAepPerTurbineMwh.toFixed(0)} MWh/turbine after ${losses.totalLossPct.toFixed(1)}% losses.`,
-    turbineCount > 1 ? `Total for ${turbineCount} turbines: ${netTotalAepMwh.toFixed(0)} MWh/year.` : '',
+    `Central net AEP: ${netAepPerTurbineMwh.toFixed(0)} MWh/turbine after ${losses.totalLossPct.toFixed(1)}% assumed losses.`,
+    turbineCount > 1
+      ? `Total for ${turbineCount} turbines: ${netTotalAepMwh.toFixed(0)} MWh/year.`
+      : '',
   ]
     .filter(Boolean)
     .join(' ');
 
-  const wakeMethodDesc = directionalWakeLossPct !== undefined
-    ? `Directional ${wakeModel === 'bastankhah' ? 'Bastankhah Gaussian' : 'Jensen/Park'} wake model (${directionalWakeLossPct.toFixed(1)}% loss)`
-    : 'Parametric wake loss assumption';
+  const wakeMethodDesc =
+    directionalWakeLossPct !== undefined
+      ? `Directional ${wakeModel === 'bastankhah' ? 'Bastankhah Gaussian' : 'Jensen/Park'} wake model (${directionalWakeLossPct.toFixed(1)}% loss)`
+      : 'Parametric wake loss assumption';
 
   const assumptions: AepAssumptions = {
     windDataYears: dataYears,
@@ -168,7 +185,8 @@ export function calculateAep(
     weibullK: k,
     weibullC: c,
     lossAssumptions: wakeMethodDesc,
-    uncertaintyMethod: 'Interannual wind speed variability (COV-based)',
+    uncertaintyMethod:
+      'Illustrative 10% and 20% deterministic downside sensitivities; not P50/P75/P90 exceedance probabilities',
   };
 
   return ok({
@@ -188,9 +206,9 @@ export function calculateAep(
     netAepMwh: round2(netAepPerTurbineMwh),
     netTotalAepMwh: round2(netTotalAepMwh),
     netCapacityFactor: round4(netCapacityFactor),
-    p50,
-    p75,
-    p90,
+    centralEstimate,
+    downside10,
+    downside20,
     monthlyProductionMwh: monthlyProductionMwh.map(round2),
     assumptions,
     confidence,
@@ -240,9 +258,9 @@ function gammaApprox(n: number): number {
   }
   const g = 7;
   const coef = [
-    0.99999999999980993, 676.5203681218851, -1259.1392167224028,
-    771.32342877765313, -176.61502916214059, 12.507343278686905,
-    -0.13857109526572012, 9.9843695780195716e-6, 1.5056327351493116e-7,
+    0.99999999999980993, 676.5203681218851, -1259.1392167224028, 771.32342877765313,
+    -176.61502916214059, 12.507343278686905, -0.13857109526572012, 9.9843695780195716e-6,
+    1.5056327351493116e-7,
   ];
 
   const x = n - 1;
@@ -295,18 +313,51 @@ function computeAirDensity(elevationM: number): number {
 
 function buildLossStack(overrides: LossOverrides, turbineCount: number): LossStack {
   // Adjust wake loss for larger arrays
-  const wakeLoss = turbineCount > 1
-    ? overrides.wakeLossPct
-    : Math.min(overrides.wakeLossPct, 2); // Single turbine has minimal wake
+  const wakeLoss = turbineCount > 1 ? overrides.wakeLossPct : Math.min(overrides.wakeLossPct, 2); // Single turbine has minimal wake
 
   const items: LossItem[] = [
-    { name: 'Wake losses', percent: wakeLoss, description: 'Turbine-to-turbine wake interaction', isUserOverridable: true },
-    { name: 'Electrical losses', percent: overrides.electricalLossPct, description: 'Cable, transformer, and grid connection losses', isUserOverridable: true },
-    { name: 'Availability', percent: overrides.availabilityLossPct, description: 'Downtime for maintenance and repair', isUserOverridable: true },
-    { name: 'Environmental', percent: overrides.environmentalLossPct, description: 'Bat/bird curtailment and other environmental restrictions', isUserOverridable: true },
-    { name: 'Icing', percent: overrides.icingLossPct, description: 'Blade icing and cold climate shutdowns', isUserOverridable: true },
-    { name: 'Hysteresis', percent: overrides.hysteresisLossPct, description: 'Start/stop hysteresis around cut-in/cut-out', isUserOverridable: true },
-    { name: 'Grid curtailment', percent: overrides.gridCurtailmentPct, description: 'Grid operator dispatch curtailment', isUserOverridable: true },
+    {
+      name: 'Wake losses',
+      percent: wakeLoss,
+      description: 'Turbine-to-turbine wake interaction',
+      isUserOverridable: true,
+    },
+    {
+      name: 'Electrical losses',
+      percent: overrides.electricalLossPct,
+      description: 'Cable, transformer, and grid connection losses',
+      isUserOverridable: true,
+    },
+    {
+      name: 'Availability',
+      percent: overrides.availabilityLossPct,
+      description: 'Downtime for maintenance and repair',
+      isUserOverridable: true,
+    },
+    {
+      name: 'Environmental',
+      percent: overrides.environmentalLossPct,
+      description: 'Bat/bird curtailment and other environmental restrictions',
+      isUserOverridable: true,
+    },
+    {
+      name: 'Icing',
+      percent: overrides.icingLossPct,
+      description: 'Blade icing and cold climate shutdowns',
+      isUserOverridable: true,
+    },
+    {
+      name: 'Hysteresis',
+      percent: overrides.hysteresisLossPct,
+      description: 'Start/stop hysteresis around cut-in/cut-out',
+      isUserOverridable: true,
+    },
+    {
+      name: 'Grid curtailment',
+      percent: overrides.gridCurtailmentPct,
+      description: 'Grid operator dispatch curtailment',
+      isUserOverridable: true,
+    },
   ];
 
   // Compound multiplicatively: total = 1 - product(1 - loss_i/100)
@@ -329,34 +380,28 @@ function buildLossStack(overrides: LossOverrides, turbineCount: number): LossSta
   };
 }
 
-// --- P-scenarios ---
+// --- Illustrative sensitivity scenarios ---
 
-function buildPScenario(
+function buildSensitivityScenario(
   label: string,
   netAepPerTurbineMwh: number,
   turbineCount: number,
   ratedCapacityMwh: number,
-  zScore: number,
-  energyCov: number,
-): PScenario {
-  // P50 = median (zScore=0), P75 exceedance (zScore=0.674), P90 (zScore=1.282)
-  const exceedanceFactor = 1 - zScore * energyCov;
-  const aepMwh = round2(netAepPerTurbineMwh * exceedanceFactor);
+  multiplier: number,
+): SensitivityScenario {
+  const aepMwh = round2(netAepPerTurbineMwh * multiplier);
   const totalAepMwh = round2(aepMwh * turbineCount);
   const capacityFactor = round4(aepMwh / ratedCapacityMwh);
-
-  const descriptions: Record<string, string> = {
-    P50: 'Median annual energy - 50% probability of exceedance',
-    P75: 'Conservative estimate - 75% probability of exceedance',
-    P90: 'Bankable estimate - 90% probability of exceedance (used for financing)',
-  };
 
   return {
     label,
     aepMwh,
     totalAepMwh,
     capacityFactor,
-    description: descriptions[label] ?? label,
+    description:
+      multiplier === 1
+        ? 'Central screening estimate from the stated wind and loss assumptions'
+        : `Illustrative ${(100 - multiplier * 100).toFixed(0)}% reduction from the central estimate; not a probability of exceedance`,
   };
 }
 
@@ -380,7 +425,12 @@ function computeMonthlyProduction(
       continue;
     }
 
-    const monthSpeedHub = extrapolateWindSpeed(monthlyAvg.averageSpeedMs, refHeightM, hubHeightM, alpha);
+    const monthSpeedHub = extrapolateWindSpeed(
+      monthlyAvg.averageSpeedMs,
+      refHeightM,
+      hubHeightM,
+      alpha,
+    );
     const stdDev = monthSpeedHub * 0.5; // Approximate monthly std dev
     const { k, c } = fitWeibullFromStats(monthSpeedHub, stdDev);
     const grossMonthlyKwh = integrateWeibullPowerCurve(k, c, turbine.powerCurve);

@@ -10,11 +10,10 @@ export {
 } from './noise-propagation.js';
 
 export {
+  assessNoiseScreening,
   assessNoiseCompliance,
   daytimeNoiseLimit,
   nightTimeNoiseLimit,
 } from './etsu-assessment.js';
 
-export {
-  computeNoiseContours,
-} from './noise-contours.js';
+export { computeNoiseContours } from './noise-contours.js';

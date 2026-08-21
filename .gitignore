@@ -6,6 +6,15 @@ dist
 out
 build
 coverage
+*.db
+*.db-journal
+*.sqlite
+*.sqlite3
+*.sqlite-wal
+*.sqlite-shm
+*.cache
+tmp/
+temp/
 
 # Environment files. Real keys never get committed. .env.example IS tracked.
 .env

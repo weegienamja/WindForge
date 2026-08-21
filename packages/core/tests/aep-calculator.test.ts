@@ -67,18 +67,12 @@ describe('calculateAep', () => {
 
   describe('error handling', () => {
     it('returns error for zero wind speed', () => {
-      const result = calculateAep(
-        makeWindData({ annualAverageSpeedMs: 0 }),
-        getTestTurbine(),
-      );
+      const result = calculateAep(makeWindData({ annualAverageSpeedMs: 0 }), getTestTurbine());
       expect(result.ok).toBe(false);
     });
 
     it('returns error for negative wind speed', () => {
-      const result = calculateAep(
-        makeWindData({ annualAverageSpeedMs: -1 }),
-        getTestTurbine(),
-      );
+      const result = calculateAep(makeWindData({ annualAverageSpeedMs: -1 }), getTestTurbine());
       expect(result.ok).toBe(false);
     });
 
@@ -116,27 +110,28 @@ describe('calculateAep', () => {
     });
   });
 
-  describe('P-scenarios', () => {
-    it('P50 >= P75 >= P90', () => {
+  describe('illustrative sensitivities', () => {
+    it('central >= 10% downside >= 20% downside', () => {
       const result = calculateAep(makeWindData(), getTestTurbine());
       if (!result.ok) throw new Error('Expected ok');
-      expect(result.value.p50.aepMwh).toBeGreaterThanOrEqual(result.value.p75.aepMwh);
-      expect(result.value.p75.aepMwh).toBeGreaterThanOrEqual(result.value.p90.aepMwh);
+      expect(result.value.centralEstimate.aepMwh).toBeGreaterThanOrEqual(
+        result.value.downside10.aepMwh,
+      );
+      expect(result.value.downside10.aepMwh).toBeGreaterThanOrEqual(result.value.downside20.aepMwh);
     });
 
-    it('P50 matches net AEP', () => {
+    it('central estimate matches net AEP', () => {
       const result = calculateAep(makeWindData(), getTestTurbine());
       if (!result.ok) throw new Error('Expected ok');
-      // P50 is median (z=0), so it should match net AEP per turbine
-      expect(result.value.p50.aepMwh).toBeCloseTo(result.value.netAepMwh, 0);
+      expect(result.value.centralEstimate.aepMwh).toBeCloseTo(result.value.netAepMwh, 0);
     });
 
     it('each scenario has a description', () => {
       const result = calculateAep(makeWindData(), getTestTurbine());
       if (!result.ok) throw new Error('Expected ok');
-      expect(result.value.p50.description).toBeTruthy();
-      expect(result.value.p75.description).toBeTruthy();
-      expect(result.value.p90.description).toBeTruthy();
+      expect(result.value.centralEstimate.description).toBeTruthy();
+      expect(result.value.downside10.description).toContain('not a probability');
+      expect(result.value.downside20.description).toContain('not a probability');
     });
   });
 

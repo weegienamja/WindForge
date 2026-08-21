@@ -103,11 +103,8 @@ export async function fetchElevationData(
 }
 
 function estimateRoughnessClass(elevationM: number, slopePercent: number): number {
-  // Rough estimation based on terrain characteristics
-  // Class 0: Water (very flat, near sea level)
-  // Class 1: Open terrain (flat, low elevation)
-  // Class 2: Agricultural land (moderate)
-  // Class 3: Urban/forest (complex terrain)
+  // Legacy terrain-variation band retained for API compatibility only. It is
+  // not aerodynamic roughness, land cover, or evidence that a point is water.
   if (slopePercent < 1 && elevationM < 10) return 0;
   if (slopePercent < 5 && elevationM < 200) return 1;
   if (slopePercent < 15) return 2;

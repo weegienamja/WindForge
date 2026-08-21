@@ -1,9 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import {
-  normaliseWeights,
-  computeCompositeScore,
-  DEFAULT_WEIGHTS,
-} from '../src/scoring/engine.js';
+import { normaliseWeights, computeCompositeScore, DEFAULT_WEIGHTS } from '../src/scoring/engine.js';
 import { ScoringFactor } from '../src/types/analysis.js';
 import type { FactorScore } from '../src/types/analysis.js';
 
@@ -77,6 +73,12 @@ describe('normaliseWeights', () => {
     expect(result.ok).toBe(false);
   });
 
+  it('rejects negative and non-finite weights', () => {
+    expect(normaliseWeights({ windResource: -0.1 }).ok).toBe(false);
+    expect(normaliseWeights({ windResource: Number.NaN }).ok).toBe(false);
+    expect(normaliseWeights({ windResource: Number.POSITIVE_INFINITY }).ok).toBe(false);
+  });
+
   it('merges partial weights with defaults', () => {
     const result = normaliseWeights({ windResource: 0.5 });
     expect(result.ok).toBe(true);
@@ -96,14 +98,12 @@ describe('computeCompositeScore', () => {
     expect(computeCompositeScore(factors)).toBe(70);
   });
 
-  it('returns 0 for empty factors', () => {
-    expect(computeCompositeScore([])).toBe(0);
+  it('returns null for empty factors', () => {
+    expect(computeCompositeScore([])).toBeNull();
   });
 
   it('handles single factor', () => {
-    const factors: FactorScore[] = [
-      makeFactor(ScoringFactor.WindResource, 85, 1.0),
-    ];
+    const factors: FactorScore[] = [makeFactor(ScoringFactor.WindResource, 85, 1.0)];
     expect(computeCompositeScore(factors)).toBe(85);
   });
 

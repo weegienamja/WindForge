@@ -1,2 +1,2 @@
-export { generateIecSiteReport } from './iec-report.js';
-export type { IecSiteReport } from './iec-report.js';
+export { generateScreeningSiteReport, generateIecSiteReport } from './iec-report.js';
+export type { ScreeningSiteReport, IecSiteReport } from './iec-report.js';

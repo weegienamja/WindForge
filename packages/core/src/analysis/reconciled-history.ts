@@ -1,5 +1,5 @@
-// Thin orchestrator: fetch NASA POWER monthly history plus optional ERA5 /
-// CERRA history, run the bias-correction pipeline, and return both the raw
+// Thin orchestrator: fetch NASA POWER monthly history plus optional ERA5
+// history, run the bias-correction pipeline, and return both the raw
 // and corrected monthly histories ready for charting.
 //
 // All bias-correction maths lives in `reanalysis-reconciliation.ts`. This
@@ -15,11 +15,10 @@ import { ok, err } from '../types/result.js';
 import type { ReconciledWindData } from '../types/reconciliation.js';
 import { fetchMonthlyWindHistory, fetchWindData } from '../datasources/nasa-power.js';
 import { fetchEra5MonthlyHistory } from '../datasources/era5.js';
-import { fetchCerraMonthlyHistory, isInCerraDomain } from '../datasources/cerra.js';
 import { reconcileWindData } from './reanalysis-reconciliation.js';
 
 export interface FetchReconciledWindHistoryOptions {
-  /** Optional CDS API key for ERA5 / CERRA. Falls back to `CDS_API_KEY` env. */
+  /** Optional server-side CDS API key for ERA5. Falls back to `CDS_API_KEY`. */
   readonly cdsApiKey?: string;
   /** Override years of NASA POWER history to fetch (default 10). */
   readonly yearsBack?: number;
@@ -34,7 +33,7 @@ export interface ReconciledWindHistory {
 
 /**
  * Fetch NASA POWER monthly history and, when a CDS API key is available,
- * also fetch CERRA / ERA5 reanalysis history. Run the same bias-correction
+ * also fetch ERA5 monthly-mean reanalysis history. Run the same bias-correction
  * pipeline used by `analyseSite` and return both the raw and corrected
  * monthly histories.
  *
@@ -64,39 +63,33 @@ export async function fetchReconciledWindHistory(
     return ok({ raw: nasaHistory, corrected: null, reconciliation: null });
   }
 
-  const refFetches: Array<Promise<{ source: 'era5' | 'cerra'; result: Awaited<ReturnType<typeof fetchEra5MonthlyHistory>> }>> = [];
+  const refFetches: Array<
+    Promise<{ source: 'era5'; result: Awaited<ReturnType<typeof fetchEra5MonthlyHistory>> }>
+  > = [];
   refFetches.push(
-    fetchEra5MonthlyHistory(coordinate, { cdsApiKey, ...(signal ? { signal } : {}) }).then((result) => ({
-      source: 'era5' as const,
-      result,
-    })),
-  );
-  if (isInCerraDomain(coordinate)) {
-    refFetches.push(
-      fetchCerraMonthlyHistory(coordinate, { cdsApiKey, ...(signal ? { signal } : {}) }).then((result) => ({
-        source: 'cerra' as const,
+    fetchEra5MonthlyHistory(coordinate, { cdsApiKey, ...(signal ? { signal } : {}) }).then(
+      (result) => ({
+        source: 'era5' as const,
         result,
-      })),
-    );
-  }
+      }),
+    ),
+  );
 
   const settled = await Promise.allSettled(refFetches);
   let era5: { summary: typeof nasaSummaryResult.value; history: MonthlyWindHistory } | null = null;
-  let cerra: { summary: typeof nasaSummaryResult.value; history: MonthlyWindHistory } | null = null;
   for (const s of settled) {
     if (s.status !== 'fulfilled' || !s.value.result.ok) continue;
-    if (s.value.source === 'era5') era5 = s.value.result.value;
-    else cerra = s.value.result.value;
+    era5 = s.value.result.value;
   }
 
-  if (!era5 && !cerra) {
+  if (!era5) {
     return ok({ raw: nasaHistory, corrected: null, reconciliation: null });
   }
 
   const reconciled = reconcileWindData({
     nasa: { summary: nasaSummaryResult.value, history: nasaHistory },
     era5: era5 ? { summary: era5.summary, history: era5.history } : null,
-    cerra: cerra ? { summary: cerra.summary, history: cerra.history } : null,
+    cerra: null,
   });
 
   if (!reconciled.ok) {

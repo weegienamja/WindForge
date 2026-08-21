@@ -17,7 +17,7 @@ export interface LossStack {
   items: LossItem[];
 }
 
-export interface PScenario {
+export interface SensitivityScenario {
   label: string;
   aepMwh: number;
   totalAepMwh: number;
@@ -53,9 +53,9 @@ export interface EnergyYieldResult {
   netAepMwh: number;
   netTotalAepMwh: number;
   netCapacityFactor: number;
-  p50: PScenario;
-  p75: PScenario;
-  p90: PScenario;
+  centralEstimate: SensitivityScenario;
+  downside10: SensitivityScenario;
+  downside20: SensitivityScenario;
   monthlyProductionMwh: number[];
   assumptions: AepAssumptions;
   confidence: 'high' | 'medium' | 'low';

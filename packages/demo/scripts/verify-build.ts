@@ -21,12 +21,18 @@ const ALLOWED_PATTERNS: Array<{ pattern: RegExp; reason: string }> = [
   // Next.js sometimes prints a generic "warning" line under the route table
   // that is informational, e.g. "Configured `transpilePackages` may slow
   // builds." This is deliberate config and not actionable.
-  { pattern: /transpilePackages.*may slow/i, reason: 'deliberate transpile config for our workspace packages' },
+  {
+    pattern: /transpilePackages.*may slow/i,
+    reason: 'deliberate transpile config for our workspace packages',
+  },
   // npm/pnpm peer warnings get echoed during install steps that some
   // CI hosts run before build; they belong to install, not build.
   { pattern: /peer dep/i, reason: 'install-time peer warnings, not a build issue' },
   // Edge-runtime printout from next/og; informational only.
-  { pattern: /A Node\.js API is used.*ImageResponse/i, reason: 'OG route is nodejs runtime by design' },
+  {
+    pattern: /A Node\.js API is used.*ImageResponse/i,
+    reason: 'OG route is nodejs runtime by design',
+  },
 ];
 
 const BLOCKING_PATTERNS: RegExp[] = [
@@ -39,11 +45,7 @@ const BLOCKING_PATTERNS: RegExp[] = [
   /UnhandledPromiseRejection/i,
 ];
 
-const WARNING_PATTERNS: RegExp[] = [
-  /^Warning:/m,
-  /deprecat/i,
-  /invalid (metadata|configuration)/i,
-];
+const WARNING_PATTERNS: RegExp[] = [/^Warning:/m, /deprecat/i, /invalid (metadata|configuration)/i];
 
 interface BuildResult {
   exitCode: number;

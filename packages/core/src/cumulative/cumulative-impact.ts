@@ -124,12 +124,10 @@ export function assessCumulativeImpact(
   }
 
   // --- Summary ---
-  const worstCumulativeNoise = cumulativeNoise.length > 0
-    ? Math.max(...cumulativeNoise.map((n) => n.predictedLevelDba))
-    : 0;
-  const worstProposedNoise = proposedNoise.length > 0
-    ? Math.max(...proposedNoise.map((n) => n.predictedLevelDba))
-    : 0;
+  const worstCumulativeNoise =
+    cumulativeNoise.length > 0 ? Math.max(...cumulativeNoise.map((n) => n.predictedLevelDba)) : 0;
+  const worstProposedNoise =
+    proposedNoise.length > 0 ? Math.max(...proposedNoise.map((n) => n.predictedLevelDba)) : 0;
   const noiseIncrease = worstCumulativeNoise - worstProposedNoise;
 
   const summaryParts: string[] = [

@@ -6,6 +6,10 @@ export type {
   Constraint,
   Warning,
   AnalysisMetadata,
+  AnalysisCompleteness,
+  AnalysisCompletenessStatus,
+  EvidenceStatus,
+  WindResourceResult,
   ReconciliationMetadata,
   SiteAnalysis,
   AnalysisOptions,
@@ -85,7 +89,7 @@ export type {
 export type {
   LossItem,
   LossStack,
-  PScenario,
+  SensitivityScenario,
   AepAssumptions,
   EnergyYieldResult,
   AepOptions,
@@ -127,6 +131,8 @@ export type {
   ShadowFlickerResult,
   ShadowComplianceOptions,
   ShadowComplianceAssessment,
+  ShadowThresholdOptions,
+  ShadowThresholdAssessment,
   ShadowCalendarEntry,
   ShadowCalendar,
 } from './shadow.js';
@@ -143,7 +149,7 @@ export type {
 // --- Wind assessment types ---
 export type {
   TurbulenceBin,
-  IecTurbulenceClass,
+  TurbulenceReferenceCategory,
   TurbulenceResult,
   ExtremeWindResult,
 } from './wind-assessment.js';

@@ -35,7 +35,12 @@ function siteLabel(analysis: SiteAnalysis, index: number): string {
   return `Site ${index + 1} (${analysis.coordinate.lat.toFixed(2)}, ${analysis.coordinate.lng.toFixed(2)})`;
 }
 
-export function ScenarioCompare({ sites, className, theme: _theme, histories }: ScenarioCompareProps): ReactNode {
+export function ScenarioCompare({
+  sites,
+  className,
+  theme: _theme,
+  histories,
+}: ScenarioCompareProps): ReactNode {
   if (sites.length < 2) {
     return React.createElement(
       'div',
@@ -61,7 +66,10 @@ export function ScenarioCompare({ sites, className, theme: _theme, histories }: 
     factorBest[name] = best;
   }
 
-  const compositeBest = Math.max(...capped.map((s) => s.compositeScore));
+  const eligibleScores = capped.flatMap((s) =>
+    s.compositeScore === null ? [] : [s.compositeScore],
+  );
+  const compositeBest = eligibleScores.length > 0 ? Math.max(...eligibleScores) : null;
 
   return React.createElement(
     'div',
@@ -109,23 +117,30 @@ export function ScenarioCompare({ sites, className, theme: _theme, histories }: 
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                backgroundColor: site.compositeScore === compositeBest ? getScoreColor(site.compositeScore) : '#94a3b8',
+                backgroundColor:
+                  site.compositeScore !== null && site.compositeScore === compositeBest
+                    ? getScoreColor(site.compositeScore)
+                    : '#94a3b8',
                 color: '#fff',
                 fontSize: 22,
                 fontWeight: 'bold',
                 margin: '0 auto 8px',
-                border: site.compositeScore === compositeBest ? '3px solid #fbbf24' : '3px solid transparent',
+                border:
+                  site.compositeScore !== null && site.compositeScore === compositeBest
+                    ? '3px solid #fbbf24'
+                    : '3px solid transparent',
               },
               'aria-label': `${siteLabel(site, i)} composite score: ${site.compositeScore}`,
             },
-            String(site.compositeScore),
+            site.compositeScore === null ? '—' : String(site.compositeScore),
           ),
           React.createElement(
             'div',
             { style: { fontSize: 13, fontWeight: 600, color: SITE_COLORS[i] } },
             siteLabel(site, i),
           ),
-          site.compositeScore === compositeBest &&
+          site.compositeScore !== null &&
+            site.compositeScore === compositeBest &&
             React.createElement(
               'div',
               { style: { fontSize: 11, color: '#22c55e', fontWeight: 600, marginTop: 2 } },
@@ -149,14 +164,31 @@ export function ScenarioCompare({ sites, className, theme: _theme, histories }: 
       React.createElement(
         'div',
         {
-          style: { marginTop: 20, padding: 12, borderRadius: 6, border: '1px solid var(--wsi-border, #e2e8f0)' },
+          style: {
+            marginTop: 20,
+            padding: 12,
+            borderRadius: 6,
+            border: '1px solid var(--wsi-border, #e2e8f0)',
+          },
           role: 'img',
           'aria-label': 'Overlaid wind speed history for compared sites',
         },
-        React.createElement('h3', { style: { margin: '0 0 8px', fontSize: 14 } }, 'Wind Speed Trend Comparison'),
+        React.createElement(
+          'h3',
+          { style: { margin: '0 0 8px', fontSize: 14 } },
+          'Wind Speed Trend Comparison',
+        ),
         React.createElement(
           'div',
-          { style: { display: 'flex', flexWrap: 'wrap' as const, gap: 12, fontSize: 12, marginBottom: 8 } },
+          {
+            style: {
+              display: 'flex',
+              flexWrap: 'wrap' as const,
+              gap: 12,
+              fontSize: 12,
+              marginBottom: 8,
+            },
+          },
           ...histories.slice(0, 4).map((h, i) =>
             React.createElement(
               'span',
@@ -176,7 +208,7 @@ export function ScenarioCompare({ sites, className, theme: _theme, histories }: 
         ),
         React.createElement(OverlaidTrendSvg, { histories: histories.slice(0, 4) }),
       ),
-    // Hard constraints summary
+    // Configured screening exclusions (legacy schema field: hardConstraints)
     capped.some((s) => s.hardConstraints.length > 0) &&
       React.createElement(
         'div',
@@ -191,7 +223,7 @@ export function ScenarioCompare({ sites, className, theme: _theme, histories }: 
           },
           role: 'alert',
         },
-        React.createElement('strong', null, 'Hard Constraints'),
+        React.createElement('strong', null, 'Potential Screening Exclusions'),
         React.createElement(
           'ul',
           { style: { margin: '8px 0 0', paddingLeft: 20 } },
@@ -238,7 +270,11 @@ function FactorComparisonRow({
     ...sites.map((site, i) => {
       const factor: FactorScore | undefined = site.factors.find((f) => f.factor === factorName);
       if (!factor) {
-        return React.createElement('div', { key: `f-${i}`, style: { fontSize: 12, color: '#999' } }, 'N/A');
+        return React.createElement(
+          'div',
+          { key: `f-${i}`, style: { fontSize: 12, color: '#999' } },
+          'N/A',
+        );
       }
       const isBest = factor.score === bestScore && sites.length > 1;
 
@@ -313,8 +349,10 @@ function OverlaidTrendSvg({ histories }: { histories: MonthlyWindHistory[] }): R
   const siteAnnuals = histories.map((h) => {
     const byYear = new Map<number, number[]>();
     for (const r of h.records) {
+      const speed = r.ws50m ?? r.ws10m ?? r.ws2m;
+      if (speed === null) continue;
       const arr = byYear.get(r.year) ?? [];
-      arr.push(r.ws50m || r.ws10m || r.ws2m);
+      arr.push(speed);
       byYear.set(r.year, arr);
     }
     return [...byYear.entries()]
@@ -334,17 +372,34 @@ function OverlaidTrendSvg({ histories }: { histories: MonthlyWindHistory[] }): R
   const xScale = (year: number) =>
     pad.left + ((year - minYear) / Math.max(maxYear - minYear, 1)) * (width - pad.left - pad.right);
   const yScale = (speed: number) =>
-    pad.top + (1 - (speed - minSpeed) / Math.max(maxSpeed - minSpeed, 0.1)) * (height - pad.top - pad.bottom);
+    pad.top +
+    (1 - (speed - minSpeed) / Math.max(maxSpeed - minSpeed, 0.1)) * (height - pad.top - pad.bottom);
 
   return React.createElement(
     'svg',
     { width: '100%', viewBox: `0 0 ${width} ${height}`, style: { display: 'block' } },
     // Y axis labels
-    React.createElement('text', { x: 2, y: pad.top + 4, fontSize: 9, fill: '#64748b' }, `${maxSpeed.toFixed(1)}`),
-    React.createElement('text', { x: 2, y: height - pad.bottom, fontSize: 9, fill: '#64748b' }, `${minSpeed.toFixed(1)}`),
+    React.createElement(
+      'text',
+      { x: 2, y: pad.top + 4, fontSize: 9, fill: '#64748b' },
+      `${maxSpeed.toFixed(1)}`,
+    ),
+    React.createElement(
+      'text',
+      { x: 2, y: height - pad.bottom, fontSize: 9, fill: '#64748b' },
+      `${minSpeed.toFixed(1)}`,
+    ),
     // X axis labels
-    React.createElement('text', { x: pad.left, y: height - 4, fontSize: 9, fill: '#64748b', textAnchor: 'start' }, String(minYear)),
-    React.createElement('text', { x: width - pad.right, y: height - 4, fontSize: 9, fill: '#64748b', textAnchor: 'end' }, String(maxYear)),
+    React.createElement(
+      'text',
+      { x: pad.left, y: height - 4, fontSize: 9, fill: '#64748b', textAnchor: 'start' },
+      String(minYear),
+    ),
+    React.createElement(
+      'text',
+      { x: width - pad.right, y: height - 4, fontSize: 9, fill: '#64748b', textAnchor: 'end' },
+      String(maxYear),
+    ),
     // Lines
     ...siteAnnuals.map((annuals, i) => {
       const points = annuals.map((d) => `${xScale(d.year)},${yScale(d.avg)}`).join(' ');

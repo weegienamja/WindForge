@@ -8,21 +8,23 @@ export interface TurbulenceBin {
   count: number;
 }
 
-/** IEC 61400-1 turbulence class */
-export type IecTurbulenceClass = 'A' | 'B' | 'C' | 'exceeds_A';
+/** IEC 61400-1 reference threshold category. Not a turbine-class determination. */
+export type TurbulenceReferenceCategory = 'A' | 'B' | 'C' | 'exceeds_A';
 
-/** Full turbulence intensity analysis result */
+/** Screening variability result. Coarse provider data cannot establish IEC turbulence intensity. */
 export interface TurbulenceResult {
-  /** Mean turbulence intensity across all bins */
-  meanTi: number;
+  /** Mean hourly-variability proxy across all bins, or null when unsupported */
+  meanTi: number | null;
   /** TI per wind speed bin */
   tiBins: TurbulenceBin[];
-  /** IEC 61400-1 turbulence class */
-  iecClass: IecTurbulenceClass;
-  /** Representative TI at 15 m/s (standard reference speed) */
-  representativeTi: number;
+  /** Optional reference threshold; null for provider-derived proxy results */
+  referenceCategory: TurbulenceReferenceCategory | null;
+  /** Hourly-variability proxy at 15 m/s, or null when unsupported */
+  representativeTi: number | null;
   /** Data source used */
-  dataSource: 'hourly' | 'daily_estimated';
+  dataSource: 'hourly' | 'daily_unsupported';
+  assessmentLevel: 'variability_proxy' | 'unsupported';
+  limitation: string;
   /** Human-readable summary */
   summary: string;
 }
@@ -35,16 +37,18 @@ export interface ExtremeWindResult {
   gumbelMu: number;
   /** Gumbel Type I scale parameter */
   gumbelSigma: number;
-  /** 50-year return period wind speed (m/s) at reference height */
-  v50YearMs: number;
-  /** 1-year return period wind speed (m/s) */
-  v1YearMs: number;
-  /** IEC 61400-1 wind class based on V50 at hub height */
-  iecWindClass: 'I' | 'II' | 'III' | 'S';
+  /** 50-year return level for the input series, or null when unavailable */
+  v50YearMs: number | null;
+  /** Reserved legacy field; null because a one-year Gumbel return level is undefined */
+  v1YearMs: null;
+  /** No IEC class is inferred from coarse provider data */
+  referenceCategory: null;
   /** Confidence in the estimate */
   confidence: 'high' | 'medium' | 'low';
   /** Height at which values are reported (m) */
   referenceHeightM: number;
+  assessmentLevel: 'coarse_return_level' | 'unsupported';
+  limitation: string;
   /** Human-readable summary */
   summary: string;
 }

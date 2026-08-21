@@ -53,7 +53,11 @@ export function DataCard({
           : undefined
       }
     >
-      {eyebrow ? <div className="t-eyebrow" style={{ marginBottom: 'var(--space-2)' }}>{eyebrow}</div> : null}
+      {eyebrow ? (
+        <div className="t-eyebrow" style={{ marginBottom: 'var(--space-2)' }}>
+          {eyebrow}
+        </div>
+      ) : null}
       {title ? (
         <div className="t-h3" style={{ marginBottom: children ? 'var(--space-3)' : 0 }}>
           {title}

@@ -47,7 +47,9 @@ export interface RegisteredTool {
   handler: (input: unknown) => Promise<ToolPayload>;
 }
 
-export function registerTool<Schema extends ZodTypeAny>(tool: ToolDefinition<Schema>): RegisteredTool {
+export function registerTool<Schema extends ZodTypeAny>(
+  tool: ToolDefinition<Schema>,
+): RegisteredTool {
   return {
     name: tool.name,
     description: tool.description,
@@ -61,7 +63,5 @@ export function toolSuccess<T>(data: T): ToolSuccessPayload<T> {
 }
 
 export function toolError(code: string, message: string, cause?: unknown): ToolErrorPayload {
-  return cause === undefined
-    ? { error: { code, message } }
-    : { error: { code, message, cause } };
+  return cause === undefined ? { error: { code, message } } : { error: { code, message, cause } };
 }

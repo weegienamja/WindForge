@@ -31,7 +31,9 @@ const inputSchema = z
       .min(0.05)
       .max(20)
       .optional()
-      .describe('Sample grid spacing in km. Smaller = more accurate, slower. Default chosen from boundary area.'),
+      .describe(
+        'Sample grid spacing in km. Smaller = denser and slower, but cannot exceed source-data resolution. Default chosen from boundary area.',
+      ),
     weights: weightsSchema.optional(),
   })
   .strict();
@@ -39,16 +41,16 @@ const inputSchema = z
 export const assessSitePolygonTool: ToolDefinition<typeof inputSchema> = {
   name: 'assess_site_polygon',
   description:
-    'Run a full polygon (parcel-level) site assessment for a closed boundary. The engine generates a sample ' +
+    'Run a screening-level polygon assessment for a closed boundary. The engine generates a sample ' +
     'grid inside the polygon, fetches OSM constraint data once for the bounding box, runs `analyseSite` on each ' +
     'sample point in batches, applies exclusion zones (residential buffers, protected areas, water, etc.), and ' +
     'aggregates a viable-area score plus best- and worst-point references. ' +
     'Use when the user has an actual land parcel (not a single point) and wants to know how much of it is ' +
-    'usable, where the best turbine positions are, and what constraints are present. ' +
+    'areas warrant deeper investigation and what supplementary OSM constraints are present. ' +
     'Inputs: `polygon` is an ordered array of `{lat, lng}` vertices, minimum 3; `name` labels the boundary; ' +
     '`hubHeightM` defaults to 80; `turbineId` (from `list_turbines`) optionally adds AEP and a layout estimate; ' +
     '`gridSpacingKm` overrides the auto-chosen sample spacing; `weights` is an optional partial weighting. ' +
-    'Output: a `SiteAssessment` with sample points, aggregated score, full constraint report, optional energy ' +
+    'Output: a `SiteAssessment` with sample points, aggregated score, screening constraint report, optional energy ' +
     'yield, and metadata. Latency: 30s-3min depending on polygon size and grid spacing.',
   inputSchema,
   handler: async (input) => {
@@ -57,7 +59,10 @@ export const assessSitePolygonTool: ToolDefinition<typeof inputSchema> = {
 
     const turbine = input.turbineId ? getTurbineById(input.turbineId) : undefined;
     if (input.turbineId && !turbine) {
-      return toolError('TURBINE_NOT_FOUND', `No turbine with id "${input.turbineId}" in the built-in library.`);
+      return toolError(
+        'TURBINE_NOT_FOUND',
+        `No turbine with id "${input.turbineId}" in the built-in library.`,
+      );
     }
 
     const result = await assessSite(boundary, {

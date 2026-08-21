@@ -41,7 +41,7 @@ export function ExportButton({
       // Header
       doc.setFontSize(18);
       doc.setFont('helvetica', 'bold');
-      doc.text('Wind Site Intelligence Report', margin, y);
+      doc.text('WindForge Screening Report', margin, y);
       y += 10;
 
       doc.setFontSize(10);
@@ -52,7 +52,11 @@ export function ExportButton({
         y,
       );
       y += 5;
-      doc.text(`Analysis date: ${new Date(analysis.metadata.analysedAt).toLocaleString()}`, margin, y);
+      doc.text(
+        `Analysis date: ${new Date(analysis.metadata.analysedAt).toLocaleString()}`,
+        margin,
+        y,
+      );
       y += 5;
       doc.text(`Hub height: ${analysis.metadata.hubHeightM}m`, margin, y);
       y += 5;
@@ -62,15 +66,21 @@ export function ExportButton({
       // Composite score
       doc.setFontSize(14);
       doc.setFont('helvetica', 'bold');
-      doc.text(`Composite Score: ${analysis.compositeScore}/100`, margin, y);
+      doc.text(
+        analysis.compositeScore === null
+          ? 'Composite screening score: unavailable'
+          : `Composite screening score: ${analysis.compositeScore}/100`,
+        margin,
+        y,
+      );
       y += 10;
 
-      // Hard constraints
+      // Configured screening exclusions (legacy schema field: hardConstraints)
       if (analysis.hardConstraints.length > 0) {
         doc.setFontSize(12);
         doc.setFont('helvetica', 'bold');
         doc.setTextColor(220, 38, 38);
-        doc.text('Hard Constraints Detected', margin, y);
+        doc.text('Potential Screening Exclusions', margin, y);
         y += 6;
         doc.setFontSize(9);
         doc.setFont('helvetica', 'normal');
@@ -236,15 +246,17 @@ export function ExportButton({
       doc.setFont('helvetica', 'italic');
       doc.setTextColor(100, 116, 139);
       const disclaimer =
-        'This analysis is for informational purposes only and does not constitute engineering advice. ' +
-        'On-site measurement campaigns are required for formal site assessment.';
+        'This screening analysis is not a statutory search, planning opinion, engineering design, or bankable energy assessment. ' +
+        'Confirm constraints with authoritative sources and use site measurements and qualified professional review.';
       const disclaimerLines = doc.splitTextToSize(disclaimer, contentWidth);
       for (const line of disclaimerLines) {
         doc.text(line as string, margin, y);
         y += 3;
       }
 
-      doc.save(`wind-site-report-${analysis.coordinate.lat.toFixed(2)}_${analysis.coordinate.lng.toFixed(2)}.pdf`);
+      doc.save(
+        `wind-site-report-${analysis.coordinate.lat.toFixed(2)}_${analysis.coordinate.lng.toFixed(2)}.pdf`,
+      );
     } catch (e) {
       console.error('PDF export failed:', e);
     } finally {
@@ -252,23 +264,27 @@ export function ExportButton({
     }
   }, [analysis, chartsContainerRef]);
 
-  return React.createElement('button', {
-    ref: buttonRef,
-    onClick: handleExport,
-    disabled: exporting,
-    className,
-    style: {
-      padding: '8px 20px',
-      backgroundColor: exporting ? '#94a3b8' : 'var(--wsi-primary, #0f172a)',
-      color: '#fff',
-      border: 'none',
-      borderRadius: 6,
-      fontSize: 14,
-      fontWeight: 600,
-      cursor: exporting ? 'wait' : 'pointer',
+  return React.createElement(
+    'button',
+    {
+      ref: buttonRef,
+      onClick: handleExport,
+      disabled: exporting,
+      className,
+      style: {
+        padding: '8px 20px',
+        backgroundColor: exporting ? '#94a3b8' : 'var(--wsi-primary, #0f172a)',
+        color: '#fff',
+        border: 'none',
+        borderRadius: 6,
+        fontSize: 14,
+        fontWeight: 600,
+        cursor: exporting ? 'wait' : 'pointer',
+      },
+      'aria-label': exporting ? 'Exporting PDF...' : 'Export analysis as PDF',
     },
-    'aria-label': exporting ? 'Exporting PDF...' : 'Export analysis as PDF',
-  }, exporting ? 'Exporting...' : label);
+    exporting ? 'Exporting...' : label,
+  );
 }
 
 function formatFactorName(factor: string): string {

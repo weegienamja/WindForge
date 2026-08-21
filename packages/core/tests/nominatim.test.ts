@@ -42,7 +42,10 @@ describe('reverseGeocode', () => {
 
   it('uppercases country code', async () => {
     mockFetch.mockResolvedValueOnce(
-      nominatimResponse({ country_code: 'de', country: 'Germany', state: 'Bavaria' }, 'Munich, Germany'),
+      nominatimResponse(
+        { country_code: 'de', country: 'Germany', state: 'Bavaria' },
+        'Munich, Germany',
+      ),
     );
 
     const result = await reverseGeocode({ lat: 48.14, lng: 11.58 });
@@ -117,9 +120,7 @@ describe('reverseGeocode', () => {
   });
 
   it('sends User-Agent header', async () => {
-    mockFetch.mockResolvedValueOnce(
-      nominatimResponse({ country_code: 'gb', country: 'UK' }, 'UK'),
-    );
+    mockFetch.mockResolvedValueOnce(nominatimResponse({ country_code: 'gb', country: 'UK' }, 'UK'));
 
     await reverseGeocode({ lat: 55.86, lng: -4.25 });
     const fetchCall = mockFetch.mock.calls[0]!;
@@ -130,9 +131,7 @@ describe('reverseGeocode', () => {
 
 describe('clearGeocodeCache', () => {
   it('clears cache so subsequent calls refetch', async () => {
-    mockFetch.mockResolvedValue(
-      nominatimResponse({ country_code: 'gb', country: 'UK' }, 'UK'),
-    );
+    mockFetch.mockResolvedValue(nominatimResponse({ country_code: 'gb', country: 'UK' }, 'UK'));
 
     const coord = { lat: 55.86, lng: -4.25 };
     await reverseGeocode({ lat: 55.86, lng: -4.25 });

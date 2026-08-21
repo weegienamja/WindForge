@@ -47,7 +47,7 @@ export function computeNoiseContours(
 
   // Convert buffer to degrees (approximate)
   const latBufferDeg = bufferM / 111320;
-  const cosLat = Math.cos(((minLat + maxLat) / 2 * Math.PI) / 180);
+  const cosLat = Math.cos((((minLat + maxLat) / 2) * Math.PI) / 180);
   const lngBufferDeg = bufferM / (111320 * cosLat);
 
   minLat -= latBufferDeg;
@@ -95,9 +95,7 @@ export function computeNoiseContours(
   }
 
   // Determine which standard contour levels are crossed
-  const contourLevelsDba = DEFAULT_CONTOUR_LEVELS.filter(
-    (l) => l >= minLevel && l <= maxLevel,
-  );
+  const contourLevelsDba = DEFAULT_CONTOUR_LEVELS.filter((l) => l >= minLevel && l <= maxLevel);
 
   return {
     cells,

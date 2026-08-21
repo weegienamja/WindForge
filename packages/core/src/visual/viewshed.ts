@@ -45,11 +45,7 @@ function lerp(a: number, b: number, fraction: number): number {
  * Get the elevation at a specific lat/lng by bilinear interpolation on the grid.
  * Returns undefined if the point falls outside the grid.
  */
-function getElevationAt(
-  grid: ElevationGrid,
-  lat: number,
-  lng: number,
-): number | undefined {
+function getElevationAt(grid: ElevationGrid, lat: number, lng: number): number | undefined {
   if (grid.rows === 0 || grid.cols === 0) return undefined;
 
   const firstRow = grid.points[0]!;
@@ -186,10 +182,7 @@ export function computeViewshed(
       // Check distance to nearest turbine - skip if beyond radius
       let withinRadius = false;
       for (const turbInfo of turbineInfo) {
-        const d = distanceKm(
-          { lat: cell.lat, lng: cell.lng },
-          turbInfo.location,
-        );
+        const d = distanceKm({ lat: cell.lat, lng: cell.lng }, turbInfo.location);
         if (d <= radiusKm) {
           withinRadius = true;
           break;
@@ -202,10 +195,7 @@ export function computeViewshed(
       let turbinesVisible = 0;
 
       for (const turbInfo of turbineInfo) {
-        const dKm = distanceKm(
-          { lat: cell.lat, lng: cell.lng },
-          turbInfo.location,
-        );
+        const dKm = distanceKm({ lat: cell.lat, lng: cell.lng }, turbInfo.location);
         if (dKm > radiusKm) continue;
 
         const dM = dKm * 1000;
@@ -238,22 +228,20 @@ export function computeViewshed(
         visibleCells.push({
           lat: cell.lat,
           lng: cell.lng,
-          distanceKm: Math.round(
-            Math.min(
-              ...turbineInfo.map((t) =>
-                distanceKm({ lat: cell.lat, lng: cell.lng }, t.location),
-              ),
-            ) * 100,
-          ) / 100,
+          distanceKm:
+            Math.round(
+              Math.min(
+                ...turbineInfo.map((t) => distanceKm({ lat: cell.lat, lng: cell.lng }, t.location)),
+              ) * 100,
+            ) / 100,
           turbinesVisible,
         });
       }
     }
   }
 
-  const visiblePercent = totalCells > 0
-    ? Math.round((visibleCells.length / totalCells) * 10000) / 100
-    : 0;
+  const visiblePercent =
+    totalCells > 0 ? Math.round((visibleCells.length / totalCells) * 10000) / 100 : 0;
 
   return {
     visibleCells,

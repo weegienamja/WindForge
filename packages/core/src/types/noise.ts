@@ -55,6 +55,8 @@ export interface NoiseResult {
   contributions: TurbineNoiseContribution[];
   /** Number of turbines included */
   turbineCount: number;
+  assessmentLevel: 'simplified-screening';
+  method: 'broadband-ISO-9613-informed';
 }
 
 /** Elevation profile point along a line */
@@ -83,7 +85,7 @@ export interface BackgroundNoise {
   nightTimeLevelDba: number;
 }
 
-/** ETSU-R-97 assessment options */
+/** ETSU-R-97-informed screening threshold options. */
 export interface EtsuOptions {
   /** Lower fixed limit for quiet daytime (dBA) (default: 35) */
   quietDaytimeLowerLimitDba?: number;
@@ -106,18 +108,20 @@ export interface ReceptorAssessment {
   daytimeLimitDba: number;
   /** Night-time noise limit applicable (dBA) */
   nightTimeLimitDba: number;
-  /** Margin below daytime limit (positive = compliant, negative = exceedance) */
+  /** Margin below daytime screening limit (positive = within, negative = exceedance). */
   daytimeMarginDba: number;
   /** Margin below night-time limit */
   nightTimeMarginDba: number;
-  daytimeCompliant: boolean;
-  nightTimeCompliant: boolean;
+  withinDaytimeScreeningLimit: boolean;
+  withinNightScreeningLimit: boolean;
 }
 
-/** Overall ETSU-R-97 assessment result */
+/** Overall ETSU-R-97-informed screening result. */
 export interface EtsuAssessment {
   receptors: ReceptorAssessment[];
-  overallCompliant: boolean;
+  withinAllScreeningLimits: boolean;
+  assessmentLevel: 'screening';
+  disclaimer: string;
   worstCaseMarginDba: number;
   worstCaseReceptorLabel: string;
   summary: string;

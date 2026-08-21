@@ -89,7 +89,13 @@ export function scoreLandUse(
       weightedScore: score * weight,
       detail: buildDetail(landUse, score),
       dataSource: 'OpenStreetMap Overpass API (land use designations)',
-      confidence: landUse.hardConstraints.length + landUse.softConstraints.length + landUse.positiveIndicators.length > 0 ? 'high' : 'medium',
+      confidence:
+        landUse.hardConstraints.length +
+          landUse.softConstraints.length +
+          landUse.positiveIndicators.length >
+        0
+          ? 'high'
+          : 'medium',
     },
     hardConstraints,
   });
@@ -108,7 +114,7 @@ function buildDetail(landUse: LandUseResult, score: number): string {
 
   if (landUse.hardConstraints.length > 0) {
     const types = landUse.hardConstraints.map((hc) => hc.type).join(', ');
-    parts.push(`BLOCKED: ${types}.`);
+    parts.push(`SCREENING EXCLUSION: ${types}; authoritative confirmation required.`);
   }
 
   if (landUse.positiveIndicators.length > 0) {
@@ -132,7 +138,11 @@ function buildDetail(landUse: LandUseResult, score: number): string {
     parts.push(summaries.join('. ') + '.');
   }
 
-  if (landUse.hardConstraints.length === 0 && landUse.softConstraints.length === 0 && landUse.positiveIndicators.length === 0) {
+  if (
+    landUse.hardConstraints.length === 0 &&
+    landUse.softConstraints.length === 0 &&
+    landUse.positiveIndicators.length === 0
+  ) {
     parts.push('No significant land use data found in area.');
   }
 

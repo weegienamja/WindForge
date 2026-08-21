@@ -20,23 +20,25 @@ export function alignByYearMonth(
 } {
   const refKey = new Map<string, number>();
   for (const r of reference.records) {
-    refKey.set(`${r.year}-${r.month}`, bestSpeedMs(r.ws50m, r.ws10m, r.ws2m));
+    const speed = bestSpeedMs(r.ws50m, r.ws10m, r.ws2m);
+    if (speed !== null) refKey.set(`${r.year}-${r.month}`, speed);
   }
 
   const out: { year: number; month: number; nasa: number; reference: number }[] = [];
   for (const r of nasa.records) {
     const key = `${r.year}-${r.month}`;
     const refSpeed = refKey.get(key);
-    if (refSpeed === undefined) continue;
+    const nasaSpeed = bestSpeedMs(r.ws50m, r.ws10m, r.ws2m);
+    if (refSpeed === undefined || nasaSpeed === null) continue;
     out.push({
       year: r.year,
       month: r.month,
-      nasa: bestSpeedMs(r.ws50m, r.ws10m, r.ws2m),
+      nasa: nasaSpeed,
       reference: refSpeed,
     });
   }
 
-  out.sort((a, b) => (a.year - b.year) || (a.month - b.month));
+  out.sort((a, b) => a.year - b.year || a.month - b.month);
 
   return {
     nasa: out.map((o) => o.nasa),
@@ -45,10 +47,10 @@ export function alignByYearMonth(
   };
 }
 
-function bestSpeedMs(ws50: number, ws10: number, ws2: number): number {
-  if (ws50 > 0) return ws50;
-  if (ws10 > 0) return ws10;
-  return ws2;
+function bestSpeedMs(ws50: number | null, ws10: number | null, ws2: number | null): number | null {
+  if (ws50 !== null && ws50 > 0) return ws50;
+  if (ws10 !== null && ws10 > 0) return ws10;
+  return ws2 !== null && ws2 > 0 ? ws2 : null;
 }
 
 /** Mean of `nasa[i] - reference[i]`. Returns 0 when arrays are empty. */
@@ -207,7 +209,7 @@ function empiricalQuantileOf(sorted: number[], v: number): number {
   const xHi = sorted[i] as number;
   if (xHi === xLo) return (i - 0.5) / sorted.length;
   const frac = (v - xLo) / (xHi - xLo);
-  return ((i - 1) + frac) / (sorted.length - 1);
+  return (i - 1 + frac) / (sorted.length - 1);
 }
 
 /** Linearly interpolated value at empirical quantile `q` (in [0, 1]). */

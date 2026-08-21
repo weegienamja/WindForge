@@ -11,15 +11,16 @@ export interface ValidationResult<T> {
   valid: boolean;
   warnings: string[];
   errors: string[];
-  cleanedData: T;
+  /** Sanitised value when validation succeeds; never a zero-filled substitute. */
+  cleanedData: T | null;
 }
 
 /**
  * Validate wind data at system boundary.
  *
  * Checks: speed range (0-100 m/s), direction range (0-360), NaN/null
- * detection, completeness percentage. Cleans data by clamping values
- * and replacing NaN.
+ * detection and completeness. Invalid scientific values are rejected rather
+ * than replaced with plausible zeros.
  */
 export function validateWindData(data: unknown): ValidationResult<WindDataSummary> {
   const warnings: string[] = [];
@@ -30,7 +31,7 @@ export function validateWindData(data: unknown): ValidationResult<WindDataSummar
       valid: false,
       errors: ['Wind data is null, undefined, or not an object'],
       warnings: [],
-      cleanedData: emptyWindData(),
+      cleanedData: null,
     };
   }
 
@@ -47,7 +48,7 @@ export function validateWindData(data: unknown): ValidationResult<WindDataSummar
   if (annualSpeed === null) {
     errors.push('annualAverageSpeedMs is missing or NaN');
   } else if (annualSpeed < 0 || annualSpeed > 100) {
-    warnings.push(`annualAverageSpeedMs (${annualSpeed}) outside expected range 0-100 m/s`);
+    errors.push(`annualAverageSpeedMs (${annualSpeed}) outside expected range 0-100 m/s`);
   }
 
   // Validate monthly averages
@@ -63,50 +64,88 @@ export function validateWindData(data: unknown): ValidationResult<WindDataSummar
       const dir = toFiniteNumber(m['averageDirectionDeg']);
 
       if (speed === null) {
-        warnings.push(`Month ${i + 1}: averageSpeedMs is NaN or missing, using 0`);
+        errors.push(`Month ${i + 1}: averageSpeedMs is NaN or missing`);
       } else if (speed < 0 || speed > 100) {
-        warnings.push(`Month ${i + 1}: speed ${speed} m/s outside 0-100 range, clamping`);
+        errors.push(`Month ${i + 1}: speed ${speed} m/s outside 0-100 range`);
       }
 
       if (dir === null) {
-        warnings.push(`Month ${i + 1}: averageDirectionDeg is NaN or missing, using 0`);
+        errors.push(`Month ${i + 1}: averageDirectionDeg is NaN or missing`);
       } else if (dir < 0 || dir > 360) {
         warnings.push(`Month ${i + 1}: direction ${dir} outside 0-360 range, wrapping`);
       }
 
-      cleanedMonthly.push({
-        month: toFiniteNumber(m['month']) ?? (i + 1),
-        averageSpeedMs: clamp(speed ?? 0, 0, 100),
-        averageDirectionDeg: wrapDirection(dir ?? 0),
-      });
+      const month = toFiniteNumber(m['month']);
+      if (month === null || !Number.isInteger(month) || month < 1 || month > 12) {
+        errors.push(`Month ${i + 1}: month index is invalid`);
+      }
+      if (speed !== null && speed >= 0 && speed <= 100 && dir !== null && month !== null) {
+        cleanedMonthly.push({
+          month,
+          averageSpeedMs: speed,
+          averageDirectionDeg: wrapDirection(dir),
+        });
+      }
     }
 
     // Check completeness
     const expectedMonths = 12;
     const actualMonths = cleanedMonthly.length;
     const completeness = actualMonths / expectedMonths;
-    if (completeness < 1) {
-      warnings.push(`Data completeness: ${(completeness * 100).toFixed(0)}% (${actualMonths}/${expectedMonths} months)`);
+    const uniqueMonths = new Set(cleanedMonthly.map((month) => month.month));
+    if (completeness < 1 || uniqueMonths.size !== expectedMonths) {
+      errors.push(
+        `Data completeness: ${(completeness * 100).toFixed(0)}% (${actualMonths}/${expectedMonths} valid months)`,
+      );
     }
   }
 
   // Validate prevailing direction
   const prevDir = toFiniteNumber(raw['prevailingDirectionDeg']);
-  if (prevDir !== null && (prevDir < 0 || prevDir > 360)) {
+  if (prevDir === null) {
+    errors.push('prevailingDirectionDeg is missing or NaN');
+  } else if (prevDir < 0 || prevDir > 360) {
     warnings.push(`prevailingDirectionDeg (${prevDir}) outside 0-360, wrapping`);
   }
 
-  const cleaned: WindDataSummary = {
-    coordinate: coord.valid
-      ? { lat: (raw['coordinate'] as { lat: number }).lat, lng: (raw['coordinate'] as { lng: number }).lng }
-      : { lat: 0, lng: 0 },
-    monthlyAverages: cleanedMonthly,
-    annualAverageSpeedMs: clamp(annualSpeed ?? 0, 0, 100),
-    speedStdDevMs: clamp(toFiniteNumber(raw['speedStdDevMs']) ?? 0, 0, 50),
-    prevailingDirectionDeg: wrapDirection(prevDir ?? 0),
-    directionalConsistency: clamp(toFiniteNumber(raw['directionalConsistency']) ?? 0, 0, 1),
-    dataYears: Math.max(0, toFiniteNumber(raw['dataYears']) ?? 0),
-  };
+  const speedStdDev = toFiniteNumber(raw['speedStdDevMs']);
+  if (speedStdDev === null || speedStdDev < 0 || speedStdDev > 50) {
+    errors.push('speedStdDevMs is missing or outside 0-50 m/s');
+  }
+  const directionalConsistency = toFiniteNumber(raw['directionalConsistency']);
+  if (directionalConsistency === null || directionalConsistency < 0 || directionalConsistency > 1) {
+    errors.push('directionalConsistency is missing or outside 0-1');
+  }
+  const dataYears = toFiniteNumber(raw['dataYears']);
+  if (dataYears === null || dataYears <= 0) errors.push('dataYears is missing or not positive');
+  const referenceHeight =
+    raw['referenceHeightM'] === undefined ? undefined : toFiniteNumber(raw['referenceHeightM']);
+  if (
+    raw['referenceHeightM'] !== undefined &&
+    (referenceHeight === null ||
+      referenceHeight === undefined ||
+      referenceHeight <= 0 ||
+      referenceHeight > 300)
+  ) {
+    errors.push('referenceHeightM must be a finite value between 0 and 300 m when provided');
+  }
+
+  const cleaned: WindDataSummary | null =
+    errors.length === 0
+      ? {
+          coordinate: {
+            lat: (raw['coordinate'] as { lat: number }).lat,
+            lng: (raw['coordinate'] as { lng: number }).lng,
+          },
+          monthlyAverages: cleanedMonthly,
+          annualAverageSpeedMs: annualSpeed!,
+          speedStdDevMs: speedStdDev!,
+          prevailingDirectionDeg: wrapDirection(prevDir!),
+          directionalConsistency: directionalConsistency!,
+          dataYears: dataYears!,
+          referenceHeightM: referenceHeight ?? undefined,
+        }
+      : null;
 
   return {
     valid: errors.length === 0,
@@ -131,7 +170,7 @@ export function validateElevationData(data: unknown): ValidationResult<Elevation
       valid: false,
       errors: ['Elevation data is null, undefined, or not an object'],
       warnings: [],
-      cleanedData: emptyElevationData(),
+      cleanedData: null,
     };
   }
 
@@ -144,33 +183,39 @@ export function validateElevationData(data: unknown): ValidationResult<Elevation
   if (elev === null) {
     errors.push('elevationM is missing or NaN');
   } else if (elev < -500 || elev > 9000) {
-    warnings.push(`elevationM (${elev}) outside expected range -500 to 9000m`);
+    errors.push(`elevationM (${elev}) outside expected range -500 to 9000m`);
   }
 
   const slope = toFiniteNumber(raw['slopePercent']);
-  if (slope !== null && (slope < 0 || slope > 100)) {
-    warnings.push(`slopePercent (${slope}) outside expected range 0-100%`);
+  if (slope === null || slope < 0 || slope > 100) {
+    errors.push('slopePercent is missing or outside 0-100%');
   }
 
   const aspect = toFiniteNumber(raw['aspectDeg']);
-  if (aspect !== null && (aspect < 0 || aspect > 360)) {
+  if (aspect === null) {
+    errors.push('aspectDeg is missing or NaN');
+  } else if (aspect < 0 || aspect > 360) {
     warnings.push(`aspectDeg (${aspect}) outside 0-360, wrapping`);
   }
 
   const roughness = toFiniteNumber(raw['roughnessClass']);
-  if (roughness !== null && (roughness < 0 || roughness > 3)) {
-    warnings.push(`roughnessClass (${roughness}) outside expected range 0-3`);
+  if (roughness === null || roughness < 0 || roughness > 3) {
+    errors.push('roughnessClass is missing or outside legacy range 0-3');
   }
 
-  const cleaned: ElevationData = {
-    coordinate: coord.valid
-      ? { lat: (raw['coordinate'] as { lat: number }).lat, lng: (raw['coordinate'] as { lng: number }).lng }
-      : { lat: 0, lng: 0 },
-    elevationM: clamp(elev ?? 0, -500, 9000),
-    slopePercent: clamp(slope ?? 0, 0, 100),
-    aspectDeg: wrapDirection(aspect ?? 0),
-    roughnessClass: clamp(roughness ?? 1, 0, 3),
-  };
+  const cleaned: ElevationData | null =
+    errors.length === 0
+      ? {
+          coordinate: {
+            lat: (raw['coordinate'] as { lat: number }).lat,
+            lng: (raw['coordinate'] as { lng: number }).lng,
+          },
+          elevationM: elev!,
+          slopePercent: slope!,
+          aspectDeg: wrapDirection(aspect!),
+          roughnessClass: roughness!,
+        }
+      : null;
 
   return {
     valid: errors.length === 0,
@@ -238,32 +283,6 @@ function toFiniteNumber(value: unknown): number | null {
   return value;
 }
 
-function clamp(value: number, min: number, max: number): number {
-  return Math.max(min, Math.min(max, value));
-}
-
 function wrapDirection(deg: number): number {
   return ((deg % 360) + 360) % 360;
-}
-
-function emptyWindData(): WindDataSummary {
-  return {
-    coordinate: { lat: 0, lng: 0 },
-    monthlyAverages: [],
-    annualAverageSpeedMs: 0,
-    speedStdDevMs: 0,
-    prevailingDirectionDeg: 0,
-    directionalConsistency: 0,
-    dataYears: 0,
-  };
-}
-
-function emptyElevationData(): ElevationData {
-  return {
-    coordinate: { lat: 0, lng: 0 },
-    elevationM: 0,
-    slopePercent: 0,
-    aspectDeg: 0,
-    roughnessClass: 1,
-  };
 }

@@ -7,9 +7,8 @@ export type BiasCorrectionBadgeProps = {
 };
 
 /**
- * Headline product differentiator: a thin pill calling out the ERA5 / CERRA
- * bias correction. Distinct accent-cool border + tinted background so it
- * dominates the wind card visually when present.
+ * Shows correction provenance and overlap diagnostics when an advanced caller
+ * supplied a reviewed reanalysis series.
  */
 export function BiasCorrectionBadge({ reconciliation }: BiasCorrectionBadgeProps) {
   const { reference, diagnostics } = reconciliation;

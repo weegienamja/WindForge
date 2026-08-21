@@ -147,8 +147,7 @@ export function parseMetMastCSV(
   const totalHours = (endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60);
   const expectedRecords = totalHours; // assuming hourly data
   const dataRecovery = expectedRecords > 0 ? Math.min(records.length / expectedRecords, 1) : 0;
-  const meanSpeedMs =
-    records.reduce((sum, r) => sum + r.windSpeedMs, 0) / records.length;
+  const meanSpeedMs = records.reduce((sum, r) => sum + r.windSpeedMs, 0) / records.length;
 
   return ok({
     records,
@@ -213,13 +212,15 @@ function parseTimestamp(value: string, format?: string): Date | undefined {
     const match = value.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})\s+(\d{1,2}):(\d{2})/);
     if (match) {
       const [, day, month, year, hour, minute] = match;
-      return new Date(Date.UTC(
-        parseInt(year!, 10),
-        parseInt(month!, 10) - 1,
-        parseInt(day!, 10),
-        parseInt(hour!, 10),
-        parseInt(minute!, 10),
-      ));
+      return new Date(
+        Date.UTC(
+          parseInt(year!, 10),
+          parseInt(month!, 10) - 1,
+          parseInt(day!, 10),
+          parseInt(hour!, 10),
+          parseInt(minute!, 10),
+        ),
+      );
     }
   }
 
@@ -227,13 +228,15 @@ function parseTimestamp(value: string, format?: string): Date | undefined {
     const match = value.match(/^(\d{4})-(\d{1,2})-(\d{1,2})\s+(\d{1,2}):(\d{2})/);
     if (match) {
       const [, year, month, day, hour, minute] = match;
-      return new Date(Date.UTC(
-        parseInt(year!, 10),
-        parseInt(month!, 10) - 1,
-        parseInt(day!, 10),
-        parseInt(hour!, 10),
-        parseInt(minute!, 10),
-      ));
+      return new Date(
+        Date.UTC(
+          parseInt(year!, 10),
+          parseInt(month!, 10) - 1,
+          parseInt(day!, 10),
+          parseInt(hour!, 10),
+          parseInt(minute!, 10),
+        ),
+      );
     }
   }
 
@@ -290,11 +293,7 @@ function detectIcing(records: MetMastRecord[], flagged: FlaggedRecord[]): void {
   // Icing: zero or near-zero speed with temperature below 0
   for (let i = 0; i < records.length; i++) {
     const rec = records[i]!;
-    if (
-      rec.windSpeedMs < 0.5 &&
-      rec.temperatureC !== undefined &&
-      rec.temperatureC < 0
-    ) {
+    if (rec.windSpeedMs < 0.5 && rec.temperatureC !== undefined && rec.temperatureC < 0) {
       flagged.push({
         index: i,
         timestamp: rec.timestamp,

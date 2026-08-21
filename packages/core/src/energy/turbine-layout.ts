@@ -3,11 +3,8 @@ import type { SiteBoundary } from '../types/site.js';
 import type { TurbineModel, TurbineLayoutEstimate } from '../types/turbines.js';
 import type { ExclusionZone } from '../types/constraints.js';
 import type { WindDataSummary } from '../types/datasources.js';
-import {
-  rotateGrid,
-  isPointInPolygon,
-  polygonCentroid,
-} from '../utils/geometry.js';
+import { rotateGrid, isPointInPolygon, polygonCentroid } from '../utils/geometry.js';
+import { pointInPolygonWithHoles } from '../utils/feature-geometry.js';
 
 /**
  * Estimate how many turbines can fit within a site boundary.
@@ -51,7 +48,7 @@ export function estimateTurbineCapacity(
     if (!isPointInPolygon(pos, boundary.polygon)) return false;
 
     for (const zone of exclusionZones) {
-      if (isPointInPolygon(pos, zone.polygon)) return false;
+      if (pointInPolygonWithHoles(pos, zone.polygon, zone.holes)) return false;
     }
 
     return true;

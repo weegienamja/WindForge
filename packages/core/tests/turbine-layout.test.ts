@@ -71,7 +71,11 @@ describe('estimateTurbineCapacity', () => {
   it('reports prevailing wind direction', () => {
     const boundary = createBoundary(SQUARE, 'Test');
     const turbine = getTurbineById('vestas-v90-2000')!;
-    const layout = estimateTurbineCapacity(boundary, turbine, makeWindData({ prevailingDirectionDeg: 270 }));
+    const layout = estimateTurbineCapacity(
+      boundary,
+      turbine,
+      makeWindData({ prevailingDirectionDeg: 270 }),
+    );
     expect(layout.prevailingWindDeg).toBe(270);
   });
 
@@ -121,10 +125,10 @@ describe('estimateTurbineCapacity', () => {
   it('returns empty layout for very small site', () => {
     // Tiny 50m x 50m area
     const tiny: LatLng[] = [
-      { lat: 55.8600, lng: -4.2600 },
-      { lat: 55.8600, lng: -4.2595 },
+      { lat: 55.86, lng: -4.26 },
+      { lat: 55.86, lng: -4.2595 },
       { lat: 55.8605, lng: -4.2595 },
-      { lat: 55.8605, lng: -4.2600 },
+      { lat: 55.8605, lng: -4.26 },
     ];
     const boundary = createBoundary(tiny, 'Tiny');
     const turbine = getTurbineById('vestas-v172-7200')!;

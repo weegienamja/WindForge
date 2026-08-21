@@ -25,18 +25,44 @@ const record = (over: Partial<CellRecord> = {}): CellRecord => ({
     netCapacityFactor: 0.37,
     grossAepMwh: 7800,
     netAepMwh: 6552,
-    p50Mwh: 6552,
-    p75Mwh: 6010,
-    p90Mwh: 5500,
+    centralEstimateMwh: 6552,
+    downside10Mwh: 5897,
+    downside20Mwh: 5242,
     totalLossPct: 16,
     wakeLossPct: 8,
   },
-  economics: { lcoePerMwh: 58, irrPct: 9.2, simplePaybackYears: 11.4, capexGbp: 2_600_000, energyPricePerMwh: 60, subsidyFree: true },
+  economics: {
+    lcoePerMwh: 58,
+    irrPct: 9.2,
+    simplePaybackYears: 11.4,
+    capexGbp: 2_600_000,
+    energyPricePerMwh: 60,
+    subsidyFree: true,
+  },
   factors: [
-    { factor: 'windResource', score: 78, weight: 0.3, confidence: 'high', detail: '8.6 m/s at 100m' },
-    { factor: 'terrainSuitability', score: 65, weight: 0.15, confidence: 'medium', detail: 'open grassland' },
+    {
+      factor: 'windResource',
+      score: 78,
+      weight: 0.3,
+      confidence: 'high',
+      detail: '8.6 m/s at 100m',
+    },
+    {
+      factor: 'terrainSuitability',
+      score: 65,
+      weight: 0.15,
+      confidence: 'medium',
+      detail: 'open grassland',
+    },
   ],
-  constraints: [{ kind: 'warning', factor: 'landUseCompatibility', severity: null, description: 'residential 480 m south' }],
+  constraints: [
+    {
+      kind: 'warning',
+      factor: 'landUseCompatibility',
+      severity: null,
+      description: 'residential 480 m south',
+    },
+  ],
   compositeScore: 72,
   overallConfidence: 'medium',
   hardConstraintCount: 0,
@@ -75,10 +101,35 @@ describe('WindForgeDB', () => {
 
   it('handles error cells and missing sub-data without throwing', () => {
     const db = new WindForgeDB(':memory:');
-    db.upsertCell({ id: 'x', lat: 50, lng: 0, offshore: true, error: 'DATA_FETCH_FAILED', compositeScore: null });
+    db.upsertCell({
+      id: 'x',
+      lat: 50,
+      lng: 0,
+      offshore: true,
+      error: 'DATA_FETCH_FAILED',
+      compositeScore: null,
+    });
     expect(db.count()).toBe(1);
     expect(db.countWithLcoe()).toBe(0);
+    expect(db.has('x')).toBe(false);
+    expect(db.isFailed('x')).toBe(true);
+    expect(db.countSuccessful()).toBe(0);
+    expect(db.countFailed()).toBe(1);
     expect(db.sample(10)[0]?.offshore).toBe(true);
+    db.close();
+  });
+
+  it('retries failed cells and marks a later successful result complete', () => {
+    const db = new WindForgeDB(':memory:');
+    db.upsertCell({ id: 'x', lat: 50, lng: 0, offshore: false, error: 'timeout' });
+    expect(db.has('x')).toBe(false);
+
+    db.upsertCell(record({ id: 'x', lat: 50, lng: 0 }));
+
+    expect(db.has('x')).toBe(true);
+    expect(db.isFailed('x')).toBe(false);
+    expect(db.countSuccessful()).toBe(1);
+    expect(db.countFailed()).toBe(0);
     db.close();
   });
 

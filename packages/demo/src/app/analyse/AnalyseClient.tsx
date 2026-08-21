@@ -41,9 +41,11 @@ import {
   PowerCurveSkeleton,
 } from '../../components/charts/PowerCurveChart';
 import { Footer } from '../../components/Footer';
-import { useAnalyse } from '../../hooks/useAnalyse';
-import { useWindHistory } from '../../hooks/useWindHistory';
-import { useAep } from '../../hooks/useAep';
+import {
+  useAnalyse,
+  type AnalysisAuxiliaryState,
+  type AepAuxiliaryState,
+} from '../../hooks/useAnalyse';
 import { useMediaQuery } from '../../hooks/useMediaQuery';
 import {
   useGeocodeSearch,
@@ -70,9 +72,7 @@ const EXAMPLE_SITES: ReadonlyArray<{ name: string; lat: number; lng: number }> =
 ];
 
 function pickDefaultTurbine(turbines: TurbineModel[]): TurbineModel | undefined {
-  return (
-    turbines.find((t) => Math.abs(t.ratedPowerKw - 2000) < 250) ?? turbines[0]
-  );
+  return turbines.find((t) => Math.abs(t.ratedPowerKw - 2000) < 250) ?? turbines[0];
 }
 
 function clampLat(v: number): boolean {
@@ -115,9 +115,7 @@ function AnalysePageInner() {
   });
   const [turbineId, setTurbineId] = useState<string>(defaultTurbine?.id ?? '');
 
-  const { status, data, error, run, cancel } = useAnalyse();
-  const history = useWindHistory();
-  const aep = useAep();
+  const { status, data, error, run, cancel, history, aep } = useAnalyse();
   const isMobile = useMediaQuery('(max-width: 767px)');
   const geocode = useGeocodeSearch();
   const compare = useCompare();
@@ -129,8 +127,7 @@ function AnalysePageInner() {
 
   const latNum = Number(lat);
   const lngNum = Number(lng);
-  const valid =
-    lat.trim() !== '' && lng.trim() !== '' && clampLat(latNum) && clampLng(lngNum);
+  const valid = lat.trim() !== '' && lng.trim() !== '' && clampLat(latNum) && clampLng(lngNum);
 
   // Single entry point for kicking off an analysis at a coordinate. Used by the
   // Run button, the location search, the example chips and map clicks alike, so
@@ -146,15 +143,14 @@ function AnalysePageInner() {
       params.set('lng', String(ln));
       params.set('hub', String(hh));
       router.replace(`/analyse?${params.toString()}`);
-      // Kick off the wind-history fetch in parallel so the chart starts
-      // loading the moment the analysis is requested.
-      history.run({ lat: la, lng: ln });
-      if (selectedTurbine) {
-        aep.run({ coordinate: { lat: la, lng: ln }, turbine: selectedTurbine, hubHeightM: hh });
-      }
-      void run({ coordinate: { lat: la, lng: ln }, hubHeightM: hh });
+      if (!selectedTurbine) return;
+      void run({
+        coordinate: { lat: la, lng: ln },
+        hubHeightM: hh,
+        turbineId: selectedTurbine.id,
+      });
     },
-    [router, run, history, aep, selectedTurbine],
+    [router, run, selectedTurbine],
   );
 
   const submit = useCallback(() => {
@@ -180,19 +176,18 @@ function AnalysePageInner() {
     const la = Number(qLat);
     const ln = Number(qLng);
     if (!clampLat(la) || !clampLng(ln)) return;
-    const hh: Hub = (HUB_OPTIONS as readonly number[]).includes(qHub)
-      ? (qHub as Hub)
-      : 100;
-    void run({ coordinate: { lat: la, lng: ln }, hubHeightM: hh });
-    history.run({ lat: la, lng: ln });
+    const hh: Hub = (HUB_OPTIONS as readonly number[]).includes(qHub) ? (qHub as Hub) : 100;
     if (selectedTurbine) {
-      aep.run({ coordinate: { lat: la, lng: ln }, turbine: selectedTurbine, hubHeightM: hh });
+      void run({
+        coordinate: { lat: la, lng: ln },
+        hubHeightM: hh,
+        turbineId: selectedTurbine.id,
+      });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const coordinate =
-    data?.coordinate ?? (valid ? { lat: latNum, lng: lngNum } : null);
+  const coordinate = data?.coordinate ?? (valid ? { lat: latNum, lng: lngNum } : null);
 
   const placeName = useReverseGeocode(coordinate);
 
@@ -402,9 +397,7 @@ function AnalysePageInner() {
             gap: 'var(--space-4)',
           }}
         >
-          {coordinate ? (
-            <LocationBadge coordinate={coordinate} placeName={placeName} />
-          ) : null}
+          {coordinate ? <LocationBadge coordinate={coordinate} placeName={placeName} /> : null}
           {data ? (
             <ResultActions
               analysis={data}
@@ -463,13 +456,11 @@ function ResultPanels({ analysis }: { analysis: SiteAnalysis }) {
         score={analysis.compositeScore}
         factors={analysis.factors}
         confidence={inferOverallConfidence(analysis.factors)}
+        incompleteDetail={analysis.metadata.completeness.detail}
       />
       <WindCard factor={wind} reconciliation={reconciliation} />
       <FactorCard eyebrow="TERRAIN" factor={terrain} />
-      <ConstraintsCard
-        hardConstraints={analysis.hardConstraints}
-        warnings={analysis.warnings}
-      />
+      <ConstraintsCard hardConstraints={analysis.hardConstraints} warnings={analysis.warnings} />
       <GridCard gridFactor={grid} accessFactor={access} />
       <FactorCard eyebrow="LAND USE" factor={landUse} />
       <FactorCard eyebrow="PLANNING" factor={planning} />
@@ -513,12 +504,9 @@ function FactorCard({ eyebrow, factor }: { eyebrow: string; factor?: FactorScore
   );
 }
 
-function inferOverallConfidence(
-  factors: ReadonlyArray<FactorScore>,
-): 'high' | 'medium' | 'low' {
+function inferOverallConfidence(factors: ReadonlyArray<FactorScore>): 'high' | 'medium' | 'low' {
   const weights = { high: 3, medium: 2, low: 1 } as const;
-  const avg =
-    factors.reduce((acc, f) => acc + weights[f.confidence], 0) / factors.length;
+  const avg = factors.reduce((acc, f) => acc + weights[f.confidence], 0) / factors.length;
   if (avg >= 2.5) return 'high';
   if (avg >= 1.5) return 'medium';
   return 'low';
@@ -528,10 +516,12 @@ function CompositeCard({
   score,
   factors,
   confidence,
+  incompleteDetail,
 }: {
-  score: number;
+  score: number | null;
   factors: ReadonlyArray<FactorScore>;
   confidence: 'high' | 'medium' | 'low';
+  incompleteDetail: string;
 }) {
   return (
     <DataCard eyebrow="OVERALL">
@@ -544,13 +534,21 @@ function CompositeCard({
         }}
       >
         <span className="t-mono-large" data-testid="composite-score">
-          {score.toFixed(0)}
+          {score === null ? '—' : score.toFixed(0)}
         </span>
         <span className="t-caption" style={{ color: 'var(--text-secondary)' }}>
-          / 100
+          {score === null ? 'score withheld' : '/ 100'}
         </span>
-        <ConfidenceBadge confidence={confidence} />
+        {score === null ? null : <ConfidenceBadge confidence={confidence} />}
       </div>
+      {score === null ? (
+        <p
+          className="t-body"
+          style={{ color: 'var(--accent-warm)', margin: '0 0 var(--space-4)', fontSize: 13 }}
+        >
+          {incompleteDetail}
+        </p>
+      ) : null}
       <ScoreFactorBars factors={factors} />
     </DataCard>
   );
@@ -622,14 +620,11 @@ function ConstraintsCard({
             className="t-eyebrow"
             style={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.05em' }}
           >
-            {hardCount} hard constraint{hardCount === 1 ? '' : 's'} detected.
+            {hardCount} potential screening exclusion{hardCount === 1 ? '' : 's'} detected.
           </div>
-          <div
-            className="t-body"
-            style={{ marginTop: 4, fontSize: 12, color: '#0a0e1a' }}
-          >
-            This site is unlikely to be developable without resolving{' '}
-            {hardCount === 1 ? 'this' : 'these'}.
+          <div className="t-body" style={{ marginTop: 4, fontSize: 12, color: '#0a0e1a' }}>
+            Mapped evidence intersects a configured exclusion. Verify{' '}
+            {hardCount === 1 ? 'it' : 'these features'} against authoritative sources.
           </div>
         </div>
       ) : null}
@@ -637,10 +632,7 @@ function ConstraintsCard({
         <ul style={listStyle}>
           {hardConstraints.map((c, i) => (
             <li key={i} className="t-body" style={{ fontSize: 13 }}>
-              <span
-                className="t-eyebrow"
-                style={{ color: 'var(--accent-warm)', marginRight: 8 }}
-              >
+              <span className="t-eyebrow" style={{ color: 'var(--accent-warm)', marginRight: 8 }}>
                 {c.severity}
               </span>
               {c.description}
@@ -651,22 +643,16 @@ function ConstraintsCard({
       {warnings.length > 0 ? (
         <ul style={{ ...listStyle, marginTop: 'var(--space-3)' }}>
           {warnings.map((w, i) => (
-            <li
-              key={i}
-              className="t-body"
-              style={{ fontSize: 13, color: 'var(--text-secondary)' }}
-            >
+            <li key={i} className="t-body" style={{ fontSize: 13, color: 'var(--text-secondary)' }}>
               {w.description}
             </li>
           ))}
         </ul>
       ) : null}
       {hardCount === 0 && warnings.length === 0 ? (
-        <p
-          className="t-body"
-          style={{ color: 'var(--text-secondary)', margin: 0, fontSize: 13 }}
-        >
-          No hard constraints or warnings detected within the search radius.
+        <p className="t-body" style={{ color: 'var(--text-secondary)', margin: 0, fontSize: 13 }}>
+          No mapped screening exclusions or warnings were returned within the query area. This is
+          not proof that statutory constraints are absent.
         </p>
       ) : null}
     </DataCard>
@@ -682,10 +668,7 @@ function GridCard({
 }) {
   return (
     <DataCard eyebrow="GRID">
-      <p
-        className="t-body"
-        style={{ color: 'var(--text-secondary)', margin: 0, fontSize: 13 }}
-      >
+      <p className="t-body" style={{ color: 'var(--text-secondary)', margin: 0, fontSize: 13 }}>
         {gridFactor?.detail ?? 'No grid data available.'}
       </p>
       {accessFactor ? (
@@ -733,17 +716,13 @@ function DiagnosticsCard({ metadata }: { metadata: AnalysisMetadata }) {
             marginTop: 'var(--space-3)',
           }}
         >
-          <DiagRow
-            label="Sources used"
-            value={metadata.sourcesUsed.join(', ') || 'none'}
-          />
-          <DiagRow
-            label="Sources failed"
-            value={metadata.sourcesFailed.join(', ') || 'none'}
-          />
+          <DiagRow label="Sources used" value={metadata.sourcesUsed.join(', ') || 'none'} />
+          <DiagRow label="Sources failed" value={metadata.sourcesFailed.join(', ') || 'none'} />
+          <DiagRow label="Completeness" value={metadata.completeness.status} />
           <DiagRow label="Duration" value={`${metadata.durationMs} ms`} />
           <DiagRow label="Hub height" value={`${metadata.hubHeightM} m`} />
           <DiagRow label="Wind shear α" value={metadata.windShearAlpha.toFixed(2)} />
+          <DiagRow label="Shear basis" value={metadata.windShearBasis} />
         </div>
       ) : null}
     </DataCard>
@@ -770,14 +749,10 @@ function EmptyState({
 }) {
   return (
     <DataCard eyebrow="NO ANALYSIS" title="Search, click the map, or enter a coordinate">
-      <p
-        className="t-body"
-        style={{ color: 'var(--text-secondary)', margin: 0, fontSize: 13 }}
-      >
-        Run a six-factor wind site suitability analysis anywhere on Earth.
-        NASA POWER for wind resource. ERA5 and CERRA reanalysis for bias
-        correction. Open-Elevation for terrain. OpenStreetMap for grid
-        infrastructure and constraints.
+      <p className="t-body" style={{ color: 'var(--text-secondary)', margin: 0, fontSize: 13 }}>
+        Run a six-factor wind-site screen using NASA POWER, Open-Elevation, OpenStreetMap, and
+        Nominatim. Required provider failures suppress the composite score, and OpenStreetMap
+        constraints are supplementary rather than an authoritative planning search.
       </p>
       <div style={{ marginTop: 'var(--space-4)' }}>
         <div className="t-eyebrow" style={{ marginBottom: 'var(--space-2)' }}>
@@ -859,8 +834,8 @@ function Drilldown({
   hubHeightM,
   reconciliation,
 }: {
-  history: ReturnType<typeof useWindHistory>;
-  aep: ReturnType<typeof useAep>;
+  history: AnalysisAuxiliaryState;
+  aep: AepAuxiliaryState;
   turbine: TurbineModel | undefined;
   hubHeightM: number;
   reconciliation: ReconciliationMetadata | null;
@@ -882,11 +857,7 @@ function Drilldown({
         <SectionHeading eyebrow={historyEyebrow} align="left">
           Monthly wind history
         </SectionHeading>
-        <HistorySection
-          history={history}
-          hubHeightM={hubHeightM}
-          reconciliation={reconciliation}
-        />
+        <HistorySection history={history} hubHeightM={hubHeightM} reconciliation={reconciliation} />
       </div>
       <div>
         <SectionHeading eyebrow="Direction" align="left">
@@ -904,11 +875,7 @@ function Drilldown({
   );
 }
 
-function WindRoseSection({
-  history,
-}: {
-  history: ReturnType<typeof useWindHistory>;
-}) {
+function WindRoseSection({ history }: { history: AnalysisAuxiliaryState }) {
   if (history.status === 'running') return <WindRoseSkeleton />;
   if (history.status === 'error' || !history.data) return <WindRoseEmpty />;
   const source = history.data.corrected ?? history.data.raw;
@@ -919,7 +886,7 @@ function YieldSection({
   aep,
   turbine,
 }: {
-  aep: ReturnType<typeof useAep>;
+  aep: AepAuxiliaryState;
   turbine: TurbineModel | undefined;
 }) {
   if (!turbine) return <PowerCurveEmpty />;
@@ -938,7 +905,7 @@ function HistorySection({
   hubHeightM,
   reconciliation,
 }: {
-  history: ReturnType<typeof useWindHistory>;
+  history: AnalysisAuxiliaryState;
   hubHeightM: number;
   reconciliation: ReconciliationMetadata | null;
 }) {
@@ -949,8 +916,7 @@ function HistorySection({
     return <MonthlyHistoryEmpty />;
   }
   const reference = reconciliation?.reference ?? history.reconciliation?.reference ?? null;
-  const diagnostics =
-    reconciliation?.diagnostics ?? history.reconciliation?.diagnostics ?? null;
+  const diagnostics = reconciliation?.diagnostics ?? history.reconciliation?.diagnostics ?? null;
   return (
     <MonthlyHistoryChart
       raw={history.data.raw}
@@ -1090,7 +1056,10 @@ function LocationSearch({
           }}
         >
           {geocode.loading && geocode.results.length === 0 ? (
-            <li className="t-mono-data" style={{ padding: '8px 10px', fontSize: 12, color: 'var(--text-tertiary)' }}>
+            <li
+              className="t-mono-data"
+              style={{ padding: '8px 10px', fontSize: 12, color: 'var(--text-tertiary)' }}
+            >
               Searching…
             </li>
           ) : null}

@@ -30,10 +30,7 @@ const DEFAULT_BACKGROUND_DBA = 30; // Conservative rural assumption
  * @param options - ETSU configuration options
  * @returns Applicable daytime noise limit (dBA)
  */
-export function daytimeNoiseLimit(
-  backgroundDba: number,
-  options: EtsuOptions = {},
-): number {
+export function daytimeNoiseLimit(backgroundDba: number, options: EtsuOptions = {}): number {
   const margin = options.backgroundMarginDba ?? DEFAULT_BACKGROUND_MARGIN_DBA;
   const lowerLimit = options.quietDaytimeLowerLimitDba ?? DEFAULT_QUIET_DAYTIME_LOWER_DBA;
 
@@ -49,13 +46,13 @@ export function nightTimeNoiseLimit(options: EtsuOptions = {}): number {
 }
 
 /**
- * Assess ETSU-R-97 compliance for a set of receptors.
+ * Compare simplified predictions with illustrative ETSU-R-97 screening limits.
  *
  * @param noiseResults - Predicted noise levels at each receptor
  * @param backgroundLevels - Background noise measurements per receptor
  * @param options - ETSU configuration options
  */
-export function assessNoiseCompliance(
+export function assessNoiseScreening(
   noiseResults: NoiseResult[],
   backgroundLevels: BackgroundNoise[],
   options: EtsuOptions = {},
@@ -76,20 +73,22 @@ export function assessNoiseCompliance(
 
     assessments.push({
       location: result.receptor,
-      label: bg?.label ?? `Receptor (${result.receptor.lat.toFixed(4)}, ${result.receptor.lng.toFixed(4)})`,
+      label:
+        bg?.label ??
+        `Receptor (${result.receptor.lat.toFixed(4)}, ${result.receptor.lng.toFixed(4)})`,
       predictedLevelDba: result.predictedLevelDba,
       daytimeLimitDba: Math.round(dayLimit * 10) / 10,
       nightTimeLimitDba: nightLimit,
       daytimeMarginDba: Math.round(dayMargin * 10) / 10,
       nightTimeMarginDba: Math.round(nightMargin * 10) / 10,
-      daytimeCompliant: dayMargin >= 0,
-      nightTimeCompliant: nightMargin >= 0,
+      withinDaytimeScreeningLimit: dayMargin >= 0,
+      withinNightScreeningLimit: nightMargin >= 0,
     });
   }
 
-  // Overall compliance
-  const overallCompliant = assessments.every(
-    (a) => a.daytimeCompliant && a.nightTimeCompliant,
+  // Overall screening-threshold state
+  const withinAllScreeningLimits = assessments.every(
+    (a) => a.withinDaytimeScreeningLimit && a.withinNightScreeningLimit,
   );
 
   // Worst case margin (most negative = worst exceedance)
@@ -104,29 +103,35 @@ export function assessNoiseCompliance(
   }
 
   // Summary string
-  const compliantCount = assessments.filter(
-    (a) => a.daytimeCompliant && a.nightTimeCompliant,
+  const withinCount = assessments.filter(
+    (a) => a.withinDaytimeScreeningLimit && a.withinNightScreeningLimit,
   ).length;
 
   let summary: string;
   if (assessments.length === 0) {
     summary = 'No receptors assessed.';
     worstMargin = 0;
-  } else if (overallCompliant) {
-    summary = `ETSU-R-97 compliant at all ${assessments.length} receptors. Worst-case margin: ${worstMargin.toFixed(1)} dBA at ${worstLabel}.`;
+  } else if (withinAllScreeningLimits) {
+    summary = `Within the illustrative ETSU-R-97 screening limits at all ${assessments.length} receptors. Worst-case margin: ${worstMargin.toFixed(1)} dBA at ${worstLabel}.`;
   } else {
-    const exceedCount = assessments.length - compliantCount;
-    summary = `ETSU-R-97 EXCEEDANCE at ${exceedCount} of ${assessments.length} receptors. Worst-case margin: ${worstMargin.toFixed(1)} dBA at ${worstLabel}.`;
+    const exceedCount = assessments.length - withinCount;
+    summary = `Above the illustrative ETSU-R-97 screening limit at ${exceedCount} of ${assessments.length} receptors. Worst-case margin: ${worstMargin.toFixed(1)} dBA at ${worstLabel}.`;
   }
 
   return {
     receptors: assessments,
-    overallCompliant,
+    withinAllScreeningLimits,
+    assessmentLevel: 'screening',
+    disclaimer:
+      'Simplified broadband screening only; not an ETSU-R-97 compliance assessment or substitute for measured background noise and acoustic consultancy.',
     worstCaseMarginDba: assessments.length > 0 ? Math.round(worstMargin * 10) / 10 : 0,
     worstCaseReceptorLabel: worstLabel,
     summary,
   };
 }
+
+/** @deprecated Use assessNoiseScreening. */
+export const assessNoiseCompliance = assessNoiseScreening;
 
 /**
  * Find the closest background noise measurement to a receptor location.

@@ -4,7 +4,7 @@
  *
  * Asserts the about-to-ship tarball is the exact set of files we want, the
  * package.json carries the metadata an npm consumer expects, and the README
- * still contains the install command, the Claude Desktop config block, and
+ * still contains the install command, a generic MCP client config block, and
  * the tool reference table. Any failure here is a real publish blocker.
  */
 import { execSync, spawnSync } from 'node:child_process';
@@ -30,12 +30,7 @@ const REQUIRED_PKG_FIELDS = [
   'license',
   'author',
 ] as const;
-const ALLOWED_FILE_PATTERNS: RegExp[] = [
-  /^dist\//,
-  /^README\.md$/,
-  /^package\.json$/,
-  /^LICENSE$/,
-];
+const ALLOWED_FILE_PATTERNS: RegExp[] = [/^dist\//, /^README\.md$/, /^package\.json$/, /^LICENSE$/];
 const FORBIDDEN_FILE_PATTERNS: RegExp[] = [
   /^src\//,
   /^tests\//,
@@ -47,7 +42,7 @@ const FORBIDDEN_FILE_PATTERNS: RegExp[] = [
 
 const REQUIRED_README_PATTERNS: Array<{ name: string; pattern: RegExp }> = [
   { name: 'install command', pattern: /npx\s+-y\s+@jamieblair\/windforge-mcp/i },
-  { name: 'claude_desktop_config block', pattern: /claude_desktop_config/i },
+  { name: 'MCP client config block', pattern: /["']?mcpServers["']?/i },
   { name: 'tool reference table (analyse_site)', pattern: /\|\s*`analyse_site`\s*\|/ },
 ];
 
@@ -82,7 +77,8 @@ function runPackDryRun(): PackResult {
     cwd: PACKAGE_DIR,
     encoding: 'utf8',
   });
-  const parsed: Array<{ files: PackTarballEntry[]; size: number; unpackedSize: number }> = JSON.parse(raw);
+  const parsed: Array<{ files: PackTarballEntry[]; size: number; unpackedSize: number }> =
+    JSON.parse(raw);
   const entry = parsed[0];
   if (!entry) fail('npm pack returned no entries');
   return { files: entry.files, totalBytes: entry.size };
@@ -117,7 +113,10 @@ function assertTarballContents(files: PackTarballEntry[]): void {
 }
 
 function assertPackageFields(): void {
-  const pkg = JSON.parse(readFileSync(join(PACKAGE_DIR, 'package.json'), 'utf8')) as Record<string, unknown>;
+  const pkg = JSON.parse(readFileSync(join(PACKAGE_DIR, 'package.json'), 'utf8')) as Record<
+    string,
+    unknown
+  >;
   for (const field of REQUIRED_PKG_FIELDS) {
     if (pkg[field] === undefined || pkg[field] === null || pkg[field] === '') {
       fail(`package.json missing required field: ${field}`);

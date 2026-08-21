@@ -44,7 +44,6 @@ import {
   fetchElevationData,
   fetchGridInfrastructure,
   fetchRoadAccess,
-  fetchWindData,
   getAllTurbines,
   isPointInPolygon,
   pointToPolygonEdgeDistanceM,
@@ -105,7 +104,7 @@ const WINDOW = parseBbox();
 // Neighbouring coasts to exclude so their land isn't mistaken for UK sea.
 const NEIGHBOURS = ['Ireland', 'France', 'Belgium', 'Netherlands'];
 const NOMINATIM = 'https://nominatim.openstreetmap.org';
-const USER_AGENT = 'WindForge-Heatmap/0.1 (+https://wind.jamieblair.co.uk)';
+const USER_AGENT = 'WindForge-Heatmap/0.3 (+https://github.com/weegienamja/WindForge)';
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 // 5 decimals ≈ 1.1 m, fine enough to keep sub-100 m (e.g. 1-acre) cells distinct.
@@ -139,7 +138,8 @@ async function fetchCountryRings(country: string): Promise<LatLng[][]> {
   const geo = data[0]?.geojson;
   if (!geo) throw new Error(`No geojson for ${country}`);
   const rings: LatLng[][] = [];
-  const toRing = (coords: number[][]) => coords.map(([lng, lat]) => ({ lat: lat as number, lng: lng as number }));
+  const toRing = (coords: number[][]) =>
+    coords.map(([lng, lat]) => ({ lat: lat as number, lng: lng as number }));
   if (geo.type === 'Polygon') {
     rings.push(toRing((geo.coordinates as number[][][])[0] ?? []));
   } else if (geo.type === 'MultiPolygon') {
@@ -276,7 +276,9 @@ function estimateTotal(uk: LatLng[][], steps: { latStepDeg: number; lngStepDeg: 
 const store = new WindForgeDB(DB_PATH);
 let meta: HeatmapMeta;
 let doneCount = 0;
+let failedCount = 0;
 let scanComplete = false;
+let activeRunId: number | null = null;
 
 function snapshot(): HeatmapData {
   // Capped, decimated sample for the browser; the DB holds everything.
@@ -285,8 +287,8 @@ function snapshot(): HeatmapData {
     meta: {
       ...meta,
       done: doneCount,
-      failed: 0,
-      complete: scanComplete,
+      failed: failedCount,
+      complete: scanComplete && failedCount === 0,
       updatedAt: new Date().toISOString(),
     },
     cells,
@@ -323,23 +325,32 @@ const factorScore = (a: { factors: ReadonlyArray<FactorScore> }, f: ScoringFacto
   a.factors.find((x) => x.factor === f);
 
 async function analysePoint(p: GridPoint): Promise<CellRecord> {
-  await rateGate();
   const coord = { lat: p.lat, lng: p.lng };
-  const base: CellRecord = { id: cellId(p.lat, p.lng), lat: p.lat, lng: p.lng, offshore: p.offshore, landClass: p.landuse ?? null };
+  const base: CellRecord = {
+    id: cellId(p.lat, p.lng),
+    lat: p.lat,
+    lng: p.lng,
+    offshore: p.offshore,
+    landClass: p.landuse ?? null,
+  };
+  if (p.offshore) {
+    return { ...base, error: 'OFFSHORE_MODE_NOT_IMPLEMENTED', compositeScore: null };
+  }
+  await rateGate();
   try {
     const result = await analyseSite({ coordinate: coord, hubHeightM: HUB_M });
     if (!result.ok) return { ...base, error: result.error.code, compositeScore: null };
     const a = result.value;
 
     // Pull the raw per-source data (in-process cache hits after analyseSite).
-    const [windR, elevR, gridR, roadR, geoR] = await Promise.allSettled([
-      fetchWindData(coord),
+    const [elevR, gridR, roadR, geoR] = await Promise.allSettled([
       fetchElevationData(coord),
       fetchGridInfrastructure(coord),
       fetchRoadAccess(coord),
       reverseGeocode(coord),
     ]);
-    const wind = settledOk(windR);
+    const wind = a.windResource?.raw ?? null;
+    const resolvedWind = a.windResource?.resolved ?? null;
     const elev = settledOk(elevR);
     const grid = settledOk(gridR);
     const road = settledOk(roadR);
@@ -348,8 +359,11 @@ async function analysePoint(p: GridPoint): Promise<CellRecord> {
     // Energy yield + economics for the reference turbine.
     let energy: CellRecord['energy'] = null;
     let economics: CellRecord['economics'] = null;
-    if (wind && REF_TURBINE) {
-      const aepR = calculateAep(wind, REF_TURBINE, { hubHeightM: HUB_M });
+    if (resolvedWind && REF_TURBINE) {
+      const aepR = calculateAep(resolvedWind, REF_TURBINE, {
+        hubHeightM: HUB_M,
+        windShearAlpha: a.metadata.windShearAlpha,
+      });
       if (aepR.ok) {
         const y = aepR.value;
         energy = {
@@ -359,9 +373,9 @@ async function analysePoint(p: GridPoint): Promise<CellRecord> {
           netCapacityFactor: y.netCapacityFactor,
           grossAepMwh: y.grossAepMwh,
           netAepMwh: y.netAepMwh,
-          p50Mwh: y.p50.aepMwh,
-          p75Mwh: y.p75.aepMwh,
-          p90Mwh: y.p90.aepMwh,
+          centralEstimateMwh: y.centralEstimate.aepMwh,
+          downside10Mwh: y.downside10.aepMwh,
+          downside20Mwh: y.downside20.aepMwh,
           totalLossPct: y.losses.totalLossPct,
           wakeLossPct: y.losses.wakeLossPct,
         };
@@ -371,7 +385,9 @@ async function analysePoint(p: GridPoint): Promise<CellRecord> {
         economics = {
           lcoePerMwh: Math.round(lcoe.lcoePerMwh),
           irrPct: irr.converged ? Number((irr.irr * 100).toFixed(1)) : null,
-          simplePaybackYears: Number.isFinite(payback.simplePaybackYears) ? payback.simplePaybackYears : null,
+          simplePaybackYears: Number.isFinite(payback.simplePaybackYears)
+            ? payback.simplePaybackYears
+            : null,
           capexGbp: lcoe.breakdown.capex,
           energyPricePerMwh: REF_PRICE,
           subsidyFree: Math.round(lcoe.lcoePerMwh) <= REF_PRICE,
@@ -397,7 +413,12 @@ async function analysePoint(p: GridPoint): Promise<CellRecord> {
           }
         : null,
       terrain: elev
-        ? { elevationM: elev.elevationM, slopePercent: elev.slopePercent, aspectDeg: elev.aspectDeg, roughnessClass: elev.roughnessClass }
+        ? {
+            elevationM: elev.elevationM,
+            slopePercent: elev.slopePercent,
+            aspectDeg: elev.aspectDeg,
+            roughnessClass: elev.roughnessClass,
+          }
         : null,
       grid: grid
         ? {
@@ -408,10 +429,19 @@ async function analysePoint(p: GridPoint): Promise<CellRecord> {
           }
         : null,
       road: road
-        ? { nearestMajorRoadDistanceKm: road.nearestMajorRoadDistanceKm, nearestMajorRoadType: road.nearestMajorRoadType, bestRoadCategory: road.bestRoadCategory }
+        ? {
+            nearestMajorRoadDistanceKm: road.nearestMajorRoadDistanceKm,
+            nearestMajorRoadType: road.nearestMajorRoadType,
+            bestRoadCategory: road.bestRoadCategory,
+          }
         : null,
       geocode: geo
-        ? { countryCode: geo.countryCode, country: geo.country, region: geo.region, displayName: geo.displayName }
+        ? {
+            countryCode: geo.countryCode,
+            country: geo.country,
+            region: geo.region,
+            displayName: geo.displayName,
+          }
         : null,
       reanalysis:
         recon && recon.diagnostics
@@ -437,8 +467,18 @@ async function analysePoint(p: GridPoint): Promise<CellRecord> {
         detail: f.detail,
       })),
       constraints: [
-        ...a.hardConstraints.map((c) => ({ kind: 'hard' as const, factor: c.factor ?? null, severity: c.severity ?? null, description: c.description })),
-        ...a.warnings.map((w) => ({ kind: 'warning' as const, factor: w.factor ?? null, severity: null, description: w.description })),
+        ...a.hardConstraints.map((c) => ({
+          kind: 'hard' as const,
+          factor: c.factor ?? null,
+          severity: c.severity ?? null,
+          description: c.description,
+        })),
+        ...a.warnings.map((w) => ({
+          kind: 'warning' as const,
+          factor: w.factor ?? null,
+          severity: null,
+          description: w.description,
+        })),
       ],
       compositeScore: Math.round(a.compositeScore),
       overallConfidence: overallConfidence(a.factors),
@@ -473,7 +513,9 @@ function startServer(): void {
     res.writeHead(200, { 'content-type': 'application/json; charset=utf-8' });
     res.end(JSON.stringify(snapshot()));
   });
-  server.listen(PORT, () => console.log(`[serve] live feed on http://0.0.0.0:${PORT}/heatmap.json`));
+  server.listen(PORT, () =>
+    console.log(`[serve] live feed on http://0.0.0.0:${PORT}/heatmap.json`),
+  );
 }
 
 // ─── Main ────────────────────────────────────────────────────────────────
@@ -502,7 +544,10 @@ async function main(): Promise<void> {
       }
       classify = makeClassifier(uk, neighbours);
     } catch (err) {
-      console.warn('[mask] failed, gridding the whole window:', err instanceof Error ? err.message : err);
+      console.warn(
+        '[mask] failed, gridding the whole window:',
+        err instanceof Error ? err.message : err,
+      );
     }
   }
 
@@ -550,7 +595,7 @@ async function main(): Promise<void> {
   const migrated = store.migrateFromJson(OUT);
   if (migrated > 0) console.log(`[migrate] imported ${migrated} cells from ${OUT} into ${DB_PATH}`);
   console.log(`[store] ${DB_PATH} holds ${store.count()} cells`);
-  store.startRun({
+  activeRunId = store.startRun({
     bbox: `${WINDOW.south},${WINDOW.west},${WINDOW.north},${WINDOW.east}`,
     spacingKm: SPACING_KM,
     acres: Number(acres),
@@ -562,9 +607,12 @@ async function main(): Promise<void> {
 
   // Stream the grid through a bounded worker pool so analysis starts at once
   // and memory stays flat. A new `run` here skips cells already in the DB.
-  doneCount = store.count();
+  doneCount = store.countSuccessful();
+  failedCount = store.countFailed();
   console.log(`[run] streaming the grid (resume: ${doneCount} cells already stored)…`);
-  const it = gridPoints(classify, landClassify, steps, (n) => console.log(`[grid] scanned ${n.toLocaleString()} cells…`));
+  const it = gridPoints(classify, landClassify, steps, (n) =>
+    console.log(`[grid] scanned ${n.toLocaleString()} cells…`),
+  );
   let limited = 0;
   const pull = (): GridPoint | null => {
     if (LIMIT > 0 && limited >= LIMIT) return null;
@@ -577,10 +625,17 @@ async function main(): Promise<void> {
   async function worker(): Promise<void> {
     let p: GridPoint | null;
     while ((p = pull()) !== null) {
-      if (store.has(cellId(p.lat, p.lng))) continue;
+      const id = cellId(p.lat, p.lng);
+      if (store.has(id)) continue;
+      const wasFailed = store.isFailed(id);
       const rec = await analysePoint(p);
       store.upsertCell(rec);
-      doneCount += 1;
+      if (rec.error) {
+        if (!wasFailed) failedCount += 1;
+      } else {
+        doneCount += 1;
+        if (wasFailed) failedCount -= 1;
+      }
       if (doneCount % 25 === 0) {
         console.log(`[run] ${doneCount.toLocaleString()} / ~${estTotal.toLocaleString()} cells`);
       }
@@ -589,6 +644,10 @@ async function main(): Promise<void> {
   }
   await Promise.all(Array.from({ length: CONCURRENCY }, () => worker()));
   scanComplete = true;
+  if (activeRunId !== null) {
+    store.finishRun(activeRunId, doneCount, failedCount);
+    activeRunId = null;
+  }
 
   await mkdir(dirname(OUT), { recursive: true });
   await writeFile(OUT, JSON.stringify(snapshot()));
@@ -600,6 +659,7 @@ process.on('SIGINT', async () => {
   console.log('\n[exit] saving snapshot…');
   try {
     await writeFile(OUT, JSON.stringify(snapshot()));
+    if (activeRunId !== null) store.finishRun(activeRunId, doneCount, failedCount, 'interrupted');
     store.close();
   } catch {
     // best effort

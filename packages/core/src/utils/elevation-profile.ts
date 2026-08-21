@@ -37,11 +37,7 @@ function haversineDistanceM(a: LatLng, b: LatLng): number {
  * @param numPoints - Number of points (including start and end)
  * @returns Array of interpolated coordinates
  */
-export function interpolateCoordinates(
-  from: LatLng,
-  to: LatLng,
-  numPoints: number,
-): LatLng[] {
+export function interpolateCoordinates(from: LatLng, to: LatLng, numPoints: number): LatLng[] {
   if (numPoints < 2) return [from];
 
   const points: LatLng[] = [];
@@ -82,28 +78,33 @@ export async function fetchElevationProfile(
 
   const result = await fetchWithRetry(url, signal ? { signal } : {});
   if (!result.ok) {
-    return err(scoringError(
-      ScoringErrorCode.DataFetchFailed,
-      `Failed to fetch elevation profile: ${result.error.message}`,
-    ));
+    return err(
+      scoringError(
+        ScoringErrorCode.DataFetchFailed,
+        `Failed to fetch elevation profile: ${result.error.message}`,
+      ),
+    );
   }
 
   let elevations: Array<{ latitude: number; longitude: number; elevation: number }>;
   try {
-    const data = await result.value.json() as { results: Array<{ latitude: number; longitude: number; elevation: number }> };
+    const data = (await result.value.json()) as {
+      results: Array<{ latitude: number; longitude: number; elevation: number }>;
+    };
     elevations = data.results;
   } catch {
-    return err(scoringError(
-      ScoringErrorCode.DataFetchFailed,
-      'Invalid elevation profile response format',
-    ));
+    return err(
+      scoringError(ScoringErrorCode.DataFetchFailed, 'Invalid elevation profile response format'),
+    );
   }
 
   if (!elevations || elevations.length !== points.length) {
-    return err(scoringError(
-      ScoringErrorCode.DataFetchFailed,
-      `Expected ${points.length} elevation points, got ${elevations?.length ?? 0}`,
-    ));
+    return err(
+      scoringError(
+        ScoringErrorCode.DataFetchFailed,
+        `Expected ${points.length} elevation points, got ${elevations?.length ?? 0}`,
+      ),
+    );
   }
 
   const profilePoints: ElevationProfilePoint[] = points.map((coord, i) => ({

@@ -12,8 +12,12 @@ import type { ExclusionZone } from '../types/constraints.js';
 import type { WindDataSummary } from '../types/datasources.js';
 import type { WakeModelType } from '../types/wake.js';
 import { isPointInPolygon } from '../utils/geometry.js';
+import { pointInPolygonWithHoles } from '../utils/feature-geometry.js';
 import { distanceKm } from '../utils/geo.js';
-import { calculateDirectionalWakeLoss, layoutToTurbinePositions } from '../wake/wake-loss-calculator.js';
+import {
+  calculateDirectionalWakeLoss,
+  layoutToTurbinePositions,
+} from '../wake/wake-loss-calculator.js';
 
 export interface OptimiserOptions {
   maxIterations?: number;
@@ -47,14 +51,14 @@ const DEFAULT_MIN_SPACING_DIAMETERS = 3;
 
 // 8 compass directions as [dLat, dLng] unit vectors (approximate)
 const DIRECTIONS: Array<[number, number]> = [
-  [1, 0],    // N
-  [1, 1],    // NE
-  [0, 1],    // E
-  [-1, 1],   // SE
-  [-1, 0],   // S
-  [-1, -1],  // SW
-  [0, -1],   // W
-  [1, -1],   // NW
+  [1, 0], // N
+  [1, 1], // NE
+  [0, 1], // E
+  [-1, 1], // SE
+  [-1, 0], // S
+  [-1, -1], // SW
+  [0, -1], // W
+  [1, -1], // NW
 ];
 
 /**
@@ -98,7 +102,7 @@ function isValidPosition(
 ): boolean {
   if (!isPointInPolygon(point, boundary.polygon)) return false;
   for (const zone of exclusionZones) {
-    if (isPointInPolygon(point, zone.polygon)) return false;
+    if (pointInPolygonWithHoles(point, zone.polygon, zone.holes)) return false;
   }
   return true;
 }
@@ -152,7 +156,14 @@ export function optimiseLayout(
   const positions = initialLayout.positions.map((p) => ({ lat: p.lat, lng: p.lng }));
 
   // Evaluate initial AEP
-  const initialAep = evaluateAep(positions, turbine, windData, wakeModel, roughnessClass, hubHeightM);
+  const initialAep = evaluateAep(
+    positions,
+    turbine,
+    windData,
+    wakeModel,
+    roughnessClass,
+    hubHeightM,
+  );
 
   const convergenceHistory: ConvergenceEntry[] = [{ iteration: 0, aepMwh: initialAep }];
 
@@ -185,7 +196,14 @@ export function optimiseLayout(
 
         // Trial move
         positions[t] = candidate;
-        const trialAep = evaluateAep(positions, turbine, windData, wakeModel, roughnessClass, hubHeightM);
+        const trialAep = evaluateAep(
+          positions,
+          turbine,
+          windData,
+          wakeModel,
+          roughnessClass,
+          hubHeightM,
+        );
         positions[t] = original; // restore
 
         if (trialAep > bestAep) {
@@ -208,8 +226,7 @@ export function optimiseLayout(
     }
   }
 
-  const improvementPercent =
-    initialAep > 0 ? ((currentAep - initialAep) / initialAep) * 100 : 0;
+  const improvementPercent = initialAep > 0 ? ((currentAep - initialAep) / initialAep) * 100 : 0;
 
   return {
     optimisedPositions: positions.map((p) => ({ lat: p.lat, lng: p.lng })),

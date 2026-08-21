@@ -1,5 +1,11 @@
 import type { ScoringWeights } from '../types/analysis.js';
-import type { SiteBoundary, SamplePoint, AggregatedSiteScore, SiteAssessment, SiteAssessmentMetadata } from '../types/site.js';
+import type {
+  SiteBoundary,
+  SamplePoint,
+  AggregatedSiteScore,
+  SiteAssessment,
+  SiteAssessmentMetadata,
+} from '../types/site.js';
 import type { SiteConstraintReport } from '../types/constraints.js';
 import type { TurbineModel } from '../types/turbines.js';
 import type { ScoringError } from '../types/errors.js';
@@ -10,7 +16,7 @@ import { analyseSite, normaliseWeights } from '../scoring/engine.js';
 import { generateSampleGrid } from './site-boundary.js';
 import { detectConstraints } from '../constraints/constraint-detector.js';
 import { fetchConstraintData } from '../constraints/constraint-queries.js';
-import { isPointInPolygon } from '../utils/geometry.js';
+import { pointInPolygonWithHoles } from '../utils/feature-geometry.js';
 import type { FactorScore } from '../types/analysis.js';
 import { ScoringFactor } from '../types/analysis.js';
 
@@ -50,7 +56,12 @@ export async function assessSite(
   // Generate sample grid
   const gridPoints = generateSampleGrid(boundary, options.gridSpacingKm);
   if (gridPoints.length === 0) {
-    return err(scoringError(ScoringErrorCode.Unknown, 'Site boundary is too small to generate sample points'));
+    return err(
+      scoringError(
+        ScoringErrorCode.Unknown,
+        'Site boundary is too small to generate sample points',
+      ),
+    );
   }
 
   // Fetch constraint data for the entire site (one Overpass call)
@@ -96,7 +107,7 @@ export async function assessSite(
       // Check if this point falls in an exclusion zone
       const exclusionReasons: string[] = [];
       for (const zone of exclusionZones) {
-        if (isPointInPolygon(coord, zone.polygon)) {
+        if (pointInPolygonWithHoles(coord, zone.polygon, zone.holes)) {
           exclusionReasons.push(zone.reason);
         }
       }
@@ -115,10 +126,13 @@ export async function assessSite(
           coordinate: coord,
           analysis: {
             coordinate: coord,
-            compositeScore: 0,
+            compositeScore: null,
+            windResource: null,
             factors: [],
             hardConstraints: [],
-            warnings: [{ factor: ScoringFactor.WindResource, description: 'Analysis failed for this point' }],
+            warnings: [
+              { factor: ScoringFactor.WindResource, description: 'Analysis failed for this point' },
+            ],
             metadata: {
               analysedAt: new Date().toISOString(),
               dataFreshness: {},
@@ -127,6 +141,14 @@ export async function assessSite(
               durationMs: 0,
               hubHeightM,
               windShearAlpha: 0.14,
+              windShearBasis: 'Generic open-terrain screening assumption.',
+              completeness: {
+                status: 'indeterminate',
+                compositeEligible: false,
+                missingRequiredFactors: Object.values(ScoringFactor),
+                detail: 'Point analysis failed; no composite score was produced.',
+              },
+              evidence: [],
             },
           },
           isExcluded: true,
@@ -175,14 +197,16 @@ export async function assessSite(
 }
 
 function aggregateScores(samplePoints: SamplePoint[], totalAreaSqKm: number): AggregatedSiteScore {
-  const validPoints = samplePoints.filter((sp) => !sp.isExcluded && sp.analysis.factors.length > 0);
+  const validPoints = samplePoints.filter(
+    (sp) => !sp.isExcluded && sp.analysis.compositeScore !== null,
+  );
   const excludedCount = samplePoints.length - validPoints.length;
 
   if (validPoints.length === 0) {
     // All points excluded
     const firstPoint = samplePoints[0]!;
     return {
-      compositeScore: 0,
+      compositeScore: null,
       factorAverages: [],
       viableAreaSqKm: 0,
       viableAreaPercent: 0,
@@ -193,16 +217,33 @@ function aggregateScores(samplePoints: SamplePoint[], totalAreaSqKm: number): Ag
     };
   }
 
-  const compositeScores = validPoints.map((sp) => sp.analysis.compositeScore);
-  const compositeScore = Math.round(compositeScores.reduce((a, b) => a + b, 0) / compositeScores.length);
+  const compositeScores = validPoints.map((sp) => sp.analysis.compositeScore as number);
+  const compositeScore = Math.round(
+    compositeScores.reduce((a, b) => a + b, 0) / compositeScores.length,
+  );
 
   // Average each factor across valid points
-  const factorMap = new Map<string, { scores: number[]; weights: number[]; details: string[]; dataSources: string[]; confidences: Array<'high' | 'medium' | 'low'> }>();
+  const factorMap = new Map<
+    string,
+    {
+      scores: number[];
+      weights: number[];
+      details: string[];
+      dataSources: string[];
+      confidences: Array<'high' | 'medium' | 'low'>;
+    }
+  >();
   for (const sp of validPoints) {
     for (const f of sp.analysis.factors) {
       const key = f.factor;
       if (!factorMap.has(key)) {
-        factorMap.set(key, { scores: [], weights: [], details: [], dataSources: [], confidences: [] });
+        factorMap.set(key, {
+          scores: [],
+          weights: [],
+          details: [],
+          dataSources: [],
+          confidences: [],
+        });
       }
       const entry = factorMap.get(key)!;
       entry.scores.push(f.score);
@@ -223,7 +264,10 @@ function aggregateScores(samplePoints: SamplePoint[], totalAreaSqKm: number): Ag
     let bestConf: 'high' | 'medium' | 'low' = 'low';
     let bestCount = 0;
     for (const [c, count] of confCounts) {
-      if (count > bestCount) { bestConf = c as 'high' | 'medium' | 'low'; bestCount = count; }
+      if (count > bestCount) {
+        bestConf = c as 'high' | 'medium' | 'low';
+        bestCount = count;
+      }
     }
 
     factorAverages.push({
@@ -237,17 +281,18 @@ function aggregateScores(samplePoints: SamplePoint[], totalAreaSqKm: number): Ag
     });
   }
 
-  const viableAreaPercent = totalAreaSqKm > 0
-    ? Math.round((validPoints.length / samplePoints.length) * 100)
-    : 0;
+  const viableAreaPercent =
+    totalAreaSqKm > 0 ? Math.round((validPoints.length / samplePoints.length) * 100) : 0;
   const viableAreaSqKm = totalAreaSqKm * (validPoints.length / samplePoints.length);
 
   // Find best and worst points
   let bestPoint = validPoints[0]!;
   let worstPoint = validPoints[0]!;
   for (const sp of validPoints) {
-    if (sp.analysis.compositeScore > bestPoint.analysis.compositeScore) bestPoint = sp;
-    if (sp.analysis.compositeScore < worstPoint.analysis.compositeScore) worstPoint = sp;
+    if ((sp.analysis.compositeScore as number) > (bestPoint.analysis.compositeScore as number))
+      bestPoint = sp;
+    if ((sp.analysis.compositeScore as number) < (worstPoint.analysis.compositeScore as number))
+      worstPoint = sp;
   }
 
   return {
@@ -285,7 +330,8 @@ function emptyConstraintReport(): SiteConstraintReport {
       viableAreaPercent: 100,
       topBlocker: null,
       recommendation: 'proceed_with_caution',
-      reasoning: 'Constraint data unavailable. Proceed with caution and verify constraints manually.',
+      reasoning:
+        'Constraint data unavailable. Proceed with caution and verify constraints manually.',
     },
   };
 }

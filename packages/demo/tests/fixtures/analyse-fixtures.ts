@@ -17,6 +17,7 @@ const baseFactor = (factor: ScoringFactor, score: number, detail: string) => ({
 export const glasgowReconciled: SiteAnalysis = {
   coordinate: { lat: 55.86, lng: -4.25 },
   compositeScore: 72,
+  windResource: null,
   factors: [
     baseFactor(
       ScoringFactor.WindResource,
@@ -41,7 +42,8 @@ export const glasgowReconciled: SiteAnalysis = {
   warnings: [
     {
       factor: ScoringFactor.LandUseCompatibility,
-      description: 'Residential settlement 480 m to the south, noise buffer assessment recommended.',
+      description:
+        'Residential settlement 480 m to the south, noise buffer assessment recommended.',
     },
   ],
   metadata: {
@@ -52,6 +54,14 @@ export const glasgowReconciled: SiteAnalysis = {
     durationMs: 4720,
     hubHeightM: 100,
     windShearAlpha: 0.14,
+    windShearBasis: 'Fixed open-terrain screening assumption.',
+    completeness: {
+      status: 'complete',
+      compositeEligible: true,
+      missingRequiredFactors: [],
+      detail: 'All required screening factors available.',
+    },
+    evidence: [],
     reanalysisAttempted: ['era5', 'cerra'] as const,
     reanalysisSucceeded: ['cerra'] as const,
     reconciliation: {
@@ -78,6 +88,7 @@ export const glasgowReconciled: SiteAnalysis = {
 export const englandNoReconciliation: SiteAnalysis = {
   coordinate: { lat: 52.05, lng: -1.34 },
   compositeScore: 58,
+  windResource: null,
   factors: [
     baseFactor(
       ScoringFactor.WindResource,
@@ -103,7 +114,15 @@ export const englandNoReconciliation: SiteAnalysis = {
     sourcesFailed: ['cerra'],
     durationMs: 5210,
     hubHeightM: 100,
-    windShearAlpha: 0.18,
+    windShearAlpha: 0.14,
+    windShearBasis: 'Fixed open-terrain screening assumption.',
+    completeness: {
+      status: 'degraded',
+      compositeEligible: true,
+      missingRequiredFactors: [],
+      detail: 'Core screening evidence available; optional reanalysis was not applied.',
+    },
+    evidence: [],
     reanalysisAttempted: ['era5', 'cerra'] as const,
     reanalysisSucceeded: [] as const,
   },
@@ -115,6 +134,7 @@ export const englandNoReconciliation: SiteAnalysis = {
 export const constrainedSite: SiteAnalysis = {
   coordinate: { lat: 51.47, lng: -0.45 },
   compositeScore: 18,
+  windResource: null,
   factors: [
     baseFactor(ScoringFactor.WindResource, 60, '6.8 m/s at hub height.'),
     baseFactor(ScoringFactor.TerrainSuitability, 55, 'Flat lowland.'),
@@ -147,6 +167,14 @@ export const constrainedSite: SiteAnalysis = {
     sourcesFailed: [],
     durationMs: 4980,
     hubHeightM: 100,
-    windShearAlpha: 0.16,
+    windShearAlpha: 0.14,
+    windShearBasis: 'Fixed open-terrain screening assumption.',
+    completeness: {
+      status: 'complete',
+      compositeEligible: true,
+      missingRequiredFactors: [],
+      detail: 'All required screening factors available.',
+    },
+    evidence: [],
   },
 };

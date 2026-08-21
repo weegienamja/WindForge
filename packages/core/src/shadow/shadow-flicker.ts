@@ -3,8 +3,8 @@ import type { TurbinePosition } from '../types/wake.js';
 import type {
   ShadowFlickerResult,
   ReceptorFlicker,
-  ShadowComplianceOptions,
-  ShadowComplianceAssessment,
+  ShadowThresholdOptions,
+  ShadowThresholdAssessment,
 } from '../types/shadow.js';
 import { calculateSolarPosition } from './solar-position.js';
 import { distanceKm } from '../utils/geo.js';
@@ -102,7 +102,6 @@ export function calculateShadowFlicker(
       location: receptor,
       hoursPerYear: totalFlickerHours,
       minutesPerDay,
-      compliant: true, // Will be set by compliance check
     };
   });
 
@@ -128,67 +127,68 @@ export function calculateShadowFlicker(
 }
 
 /**
- * Assess shadow flicker compliance against planning limits.
- * Applies a sunshine probability factor to convert astronomical worst case to expected values.
+ * Compare shadow-flicker estimates with configurable screening thresholds.
+ * Applies a sunshine fraction to the astronomical worst case. This is not a
+ * planning or amenity compliance assessment.
  */
-export function assessShadowCompliance(
+export function assessShadowThresholds(
   result: ShadowFlickerResult,
-  options?: ShadowComplianceOptions,
-): ShadowComplianceAssessment {
+  options?: ShadowThresholdOptions,
+): ShadowThresholdAssessment {
   const maxHoursPerYear = options?.maxHoursPerYear ?? 30;
   const maxMinutesPerDay = options?.maxMinutesPerDay ?? 30;
   const sunshineFraction = options?.sunshineFraction ?? 0.32;
 
   const receptors = result.receptors.map((r) => {
     const expectedHours = r.hoursPerYear * sunshineFraction;
-    const worstDayMinutes = r.minutesPerDay.reduce(
-      (max, m) => Math.max(max, m.maxMinutes),
-      0,
-    );
+    const worstDayMinutes = r.minutesPerDay.reduce((max, m) => Math.max(max, m.maxMinutes), 0);
     const expectedMinutesPerDay = worstDayMinutes * sunshineFraction;
 
-    const compliantHoursPerYear = expectedHours <= maxHoursPerYear;
-    const compliantMinutesPerDay = expectedMinutesPerDay <= maxMinutesPerDay;
+    const withinAnnualThreshold = expectedHours <= maxHoursPerYear;
+    const withinDailyThreshold = expectedMinutesPerDay <= maxMinutesPerDay;
 
     return {
       location: r.location,
       astronomicalHoursPerYear: r.hoursPerYear,
       expectedHoursPerYear: Math.round(expectedHours * 10) / 10,
       maxMinutesPerDay: Math.round(expectedMinutesPerDay * 10) / 10,
-      compliantHoursPerYear,
-      compliantMinutesPerDay,
-      overallCompliant: compliantHoursPerYear && compliantMinutesPerDay,
+      withinAnnualThreshold,
+      withinDailyThreshold,
+      withinAllThresholds: withinAnnualThreshold && withinDailyThreshold,
     };
   });
 
-  const overallCompliant = receptors.every((r) => r.overallCompliant);
+  const overallWithinThresholds = receptors.every((r) => r.withinAllThresholds);
   const worstCaseExpectedHoursPerYear = receptors.reduce(
     (max, r) => Math.max(max, r.expectedHoursPerYear),
     0,
   );
-  const worstCaseMinutesPerDay = receptors.reduce(
-    (max, r) => Math.max(max, r.maxMinutesPerDay),
-    0,
-  );
+  const worstCaseMinutesPerDay = receptors.reduce((max, r) => Math.max(max, r.maxMinutesPerDay), 0);
 
-  const nonCompliantCount = receptors.filter((r) => !r.overallCompliant).length;
-  const summary = overallCompliant
-    ? `All ${receptors.length} receptor(s) compliant. ` +
+  const exceedanceCount = receptors.filter((r) => !r.withinAllThresholds).length;
+  const summary = overallWithinThresholds
+    ? `All ${receptors.length} receptor(s) were within the configured screening thresholds. ` +
       `Worst case: ${worstCaseExpectedHoursPerYear} expected hours/year ` +
       `(limit: ${maxHoursPerYear}), using ${(sunshineFraction * 100).toFixed(0)}% sunshine fraction.`
-    : `${nonCompliantCount} of ${receptors.length} receptor(s) exceed limits. ` +
+    : `${exceedanceCount} of ${receptors.length} receptor(s) exceed the configured screening thresholds. ` +
       `Worst case: ${worstCaseExpectedHoursPerYear} expected hours/year ` +
       `(limit: ${maxHoursPerYear}), ${worstCaseMinutesPerDay} minutes/day ` +
       `(limit: ${maxMinutesPerDay}).`;
 
   return {
     receptors,
-    overallCompliant,
+    overallWithinThresholds,
     worstCaseExpectedHoursPerYear,
     worstCaseMinutesPerDay,
+    assessmentLevel: 'screening',
+    disclaimer:
+      'Astronomical hourly-step screening with an assumed sunshine fraction; not a planning compliance assessment or substitute for receptor-specific study.',
     summary,
   };
 }
+
+/** @deprecated Use {@link assessShadowThresholds}. */
+export const assessShadowCompliance = assessShadowThresholds;
 
 /**
  * Determine if shadow flicker is occurring at a receptor from a specific turbine
@@ -243,8 +243,7 @@ export function isFlickerOccurring(
 
   // Angular width of the rotor as seen from the receptor
   // The rotor is a circle of diameter rotorDiameterM at distance distM
-  const rotorAngularWidth =
-    Math.atan2(turbine.rotorDiameterM / 2, distM) * (180 / Math.PI);
+  const rotorAngularWidth = Math.atan2(turbine.rotorDiameterM / 2, distM) * (180 / Math.PI);
 
   // Receptor is in flicker zone if it's within the shadow direction and angular width
   return Math.abs(shadowAngleDiff) <= rotorAngularWidth + 1; // +1 degree margin
@@ -259,9 +258,7 @@ export function bearing(from: LatLng, to: LatLng): number {
   const dLng = (to.lng - from.lng) * DEG_TO_RAD;
 
   const y = Math.sin(dLng) * Math.cos(lat2);
-  const x =
-    Math.cos(lat1) * Math.sin(lat2) -
-    Math.sin(lat1) * Math.cos(lat2) * Math.cos(dLng);
+  const x = Math.cos(lat1) * Math.sin(lat2) - Math.sin(lat1) * Math.cos(lat2) * Math.cos(dLng);
 
   let brng = Math.atan2(y, x) * (180 / Math.PI);
   return ((brng % 360) + 360) % 360;

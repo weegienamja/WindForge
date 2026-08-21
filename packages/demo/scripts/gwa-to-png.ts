@@ -49,7 +49,9 @@ async function main(): Promise<void> {
   const H = image.getHeight();
   const [minX, minY, maxX, maxY] = image.getBoundingBox();
   const nodata = image.getGDALNoData();
-  console.log(`[gwa] ${W}x${H}px · bbox [${minX.toFixed(2)},${minY.toFixed(2)} → ${maxX.toFixed(2)},${maxY.toFixed(2)}] · nodata ${nodata}`);
+  console.log(
+    `[gwa] ${W}x${H}px · bbox [${minX.toFixed(2)},${minY.toFixed(2)} → ${maxX.toFixed(2)},${maxY.toFixed(2)}] · nodata ${nodata}`,
+  );
   if (minX < -20 || maxX > 10 || minY < 40 || maxY > 65) {
     console.warn('[gwa] bbox does not look like EPSG:4326 lat/lng — overlay may be misplaced.');
   }

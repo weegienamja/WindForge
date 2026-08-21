@@ -1,5 +1,10 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { fetchEra5WindData, uvToSpeedDirection, validateEra5ApiKey, clearEra5Cache } from '../src/datasources/era5.js';
+import {
+  fetchEra5WindData,
+  uvToSpeedDirection,
+  validateEra5ApiKey,
+  clearEra5Cache,
+} from '../src/datasources/era5.js';
 
 describe('ERA5 Data Source', () => {
   beforeEach(() => {

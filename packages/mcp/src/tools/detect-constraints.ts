@@ -24,14 +24,14 @@ export const detectConstraintsTool: ToolDefinition<typeof inputSchema> = {
   name: 'detect_constraints',
   description:
     'Run only the constraints check for a polygon boundary, without doing the full scoring run. The engine ' +
-    'fetches OpenStreetMap data via Overpass for the boundary\'s bounding box, classifies hard constraints ' +
+    "fetches OpenStreetMap data via Overpass for the boundary's bounding box, categorises configured screening exclusions " +
     '(protected areas, military zones, airports, dwellings inside the parcel), soft constraints (residential ' +
     'buffers, water, forest, infrastructure setbacks), and informational features, and returns nearest-receptor ' +
     'distances (dwelling, settlement, protected area, substation, road, existing wind farm, waterbody, railway). ' +
-    'Use when the user wants a fast "is this site even buildable?" check before paying for a full assessment, ' +
-    'or when they want to see why a previous assessment flagged hard constraints. ' +
+    'Use when the user wants a fast supplementary OSM constraint screen before a formal data search, ' +
+    'or when they want to see why a previous assessment flagged screening exclusions. ' +
     'Inputs: `polygon` is an ordered array of `{lat, lng}` vertices, minimum 3; `name` labels the boundary. ' +
-    'Output: a `SiteConstraintReport` with categorised constraints and the nearest-receptor distance table. ' +
+    'Output: a `SiteConstraintReport` with categorised screening constraints and a nearest-feature distance table. OSM coverage is not authoritative. ' +
     'Latency: 5-20s (Overpass cold; ~24h cache once warm).',
   inputSchema,
   handler: async (input) => {

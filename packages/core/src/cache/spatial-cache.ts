@@ -25,10 +25,10 @@ interface CacheEntry<T> {
 
 /** Default TTLs per data type (milliseconds) */
 const DEFAULT_TTLS: Record<SpatialDataType, number> = {
-  elevation: 30 * 24 * 60 * 60 * 1000,  // 30 days
-  wind: 7 * 24 * 60 * 60 * 1000,         // 7 days
-  osm: 24 * 60 * 60 * 1000,              // 24 hours
-  custom: 24 * 60 * 60 * 1000,           // 24 hours
+  elevation: 30 * 24 * 60 * 60 * 1000, // 30 days
+  wind: 7 * 24 * 60 * 60 * 1000, // 7 days
+  osm: 24 * 60 * 60 * 1000, // 24 hours
+  custom: 24 * 60 * 60 * 1000, // 24 hours
 };
 
 /**
@@ -45,7 +45,7 @@ export function tileKey(lat: number, lng: number, zoom: number = 10): string {
   const n = Math.pow(2, zoom);
   const x = Math.floor(((lng + 180) / 360) * n);
   const latRad = (lat * Math.PI) / 180;
-  const y = Math.floor((1 - Math.log(Math.tan(latRad) + 1 / Math.cos(latRad)) / Math.PI) / 2 * n);
+  const y = Math.floor(((1 - Math.log(Math.tan(latRad) + 1 / Math.cos(latRad)) / Math.PI) / 2) * n);
   return `${zoom}/${x}/${y}`;
 }
 

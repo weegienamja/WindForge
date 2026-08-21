@@ -14,8 +14,22 @@ import {
 
 /** 16-point compass directions in clockwise order from North. */
 export const COMPASS_DIRECTIONS = [
-  'N', 'NNE', 'NE', 'ENE', 'E', 'ESE', 'SE', 'SSE',
-  'S', 'SSW', 'SW', 'WSW', 'W', 'WNW', 'NW', 'NNW',
+  'N',
+  'NNE',
+  'NE',
+  'ENE',
+  'E',
+  'ESE',
+  'SE',
+  'SSE',
+  'S',
+  'SSW',
+  'SW',
+  'WSW',
+  'W',
+  'WNW',
+  'NW',
+  'NNW',
 ] as const;
 
 export type CompassDirection = (typeof COMPASS_DIRECTIONS)[number];
@@ -91,7 +105,13 @@ export function emptyRoseData(bands: WindSpeedBand[]): WindRoseDirectionData[] {
  *
  * Uses Recharts RadarChart with stacked Radar layers.
  */
-export function WindRose({ data, bands, size = 400, className, theme: _theme }: WindRoseProps): ReactNode {
+export function WindRose({
+  data,
+  bands,
+  size = 400,
+  className,
+  theme: _theme,
+}: WindRoseProps): ReactNode {
   // Ensure data ordering matches COMPASS_DIRECTIONS
   const orderedData = useMemo(() => {
     const lookup = new Map(data.map((d) => [d.direction, d]));
@@ -110,7 +130,13 @@ export function WindRose({ data, bands, size = 400, className, theme: _theme }: 
     },
     React.createElement(
       ResponsiveContainer,
-      { width: '100%', height: '100%', children: null as unknown as React.ReactElement },
+      {
+        width: '100%',
+        height: '100%',
+        minWidth: 0,
+        initialDimension: { width: 1, height: 1 },
+        children: null as unknown as React.ReactElement,
+      },
       React.createElement(
         RadarChart,
         { data: orderedData, cx: '50%', cy: '50%', outerRadius: '75%' },
@@ -125,7 +151,7 @@ export function WindRose({ data, bands, size = 400, className, theme: _theme }: 
           tickFormatter: (v: number) => `${v}%`,
         }),
         // Render bands from last (outermost) to first so inner layers paint on top
-        ...([...bands].reverse().map((band) =>
+        ...[...bands].reverse().map((band) =>
           React.createElement(Radar, {
             key: band.label,
             name: band.label,
@@ -134,7 +160,7 @@ export function WindRose({ data, bands, size = 400, className, theme: _theme }: 
             fill: band.color,
             fillOpacity: 0.5,
           }),
-        )),
+        ),
         React.createElement(Tooltip, {
           formatter: ((value: unknown) => `${Number(value ?? 0).toFixed(1)}%`) as never,
         }),

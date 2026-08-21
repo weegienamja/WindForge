@@ -12,8 +12,10 @@ describe('errorCopyFor', () => {
     expect(errorCopyFor('TIMEOUT', 'cerra timeout')).toMatch(/Copernicus/);
   });
 
-  it('maps CONFIGURATION to the CDS_API_KEY hint', () => {
-    expect(errorCopyFor('CONFIGURATION', '')).toMatch(/CDS_API_KEY/);
+  it('maps CONFIGURATION without exposing server configuration names', () => {
+    const message = errorCopyFor('CONFIGURATION', '');
+    expect(message).toContain('Optional reanalysis is not configured');
+    expect(message).not.toContain('CDS_API_KEY');
   });
 
   it('falls back to the underlying message for unknown codes', () => {

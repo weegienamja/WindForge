@@ -31,9 +31,9 @@ const DEFAULT_ATMOSPHERIC_ABSORPTION_DB_PER_KM = 3.66;
  * Single-frequency A-weighted approximation for wind turbine broadband noise.
  */
 const GROUND_EFFECT: Record<GroundType, number> = {
-  hard: 0,     // Paved, water, concrete (acoustically reflective)
-  mixed: 1.5,  // Mixed terrain (ISO default for propagation over mixed ground)
-  soft: 3.0,   // Grassland, agricultural (acoustically absorptive)
+  hard: 0, // Paved, water, concrete (acoustically reflective)
+  mixed: 1.5, // Mixed terrain (ISO default for propagation over mixed ground)
+  soft: 3.0, // Grassland, agricultural (acoustically absorptive)
 };
 
 /**
@@ -160,10 +160,12 @@ export function barrierAttenuation(
   if (maxExcessM <= 0) return 0; // No obstruction
 
   // Path length difference (Maekawa method)
-  const dSourceBarrier = Math.sqrt(barrierDistM ** 2 + (sourceAbsoluteM - (sourcePoint.elevationM + maxExcessM)) ** 2);
+  const dSourceBarrier = Math.sqrt(
+    barrierDistM ** 2 + (sourceAbsoluteM - (sourcePoint.elevationM + maxExcessM)) ** 2,
+  );
   const dBarrierReceptor = Math.sqrt(
     (totalDistM - barrierDistM) ** 2 +
-    (receptorAbsoluteM - (receptorPoint.elevationM + maxExcessM)) ** 2,
+      (receptorAbsoluteM - (receptorPoint.elevationM + maxExcessM)) ** 2,
   );
   const d = Math.sqrt(totalDistM ** 2 + (sourceAbsoluteM - receptorAbsoluteM) ** 2);
 
@@ -173,7 +175,7 @@ export function barrierAttenuation(
 
   // Maekawa formula with effective wavelength for 500Hz
   const wavelengthM = 0.686; // speed of sound 343 m/s / 500 Hz
-  const n = 2 * delta / wavelengthM; // Fresnel number
+  const n = (2 * delta) / wavelengthM; // Fresnel number
 
   // Attenuation: capped at 25 dB per ISO 9613-2
   const abar = 10 * Math.log10(3 + 20 * n);
@@ -287,5 +289,7 @@ export function calculateNoiseAtReceptor(
     predictedLevelDba,
     contributions,
     turbineCount: turbines.length,
+    assessmentLevel: 'simplified-screening',
+    method: 'broadband-ISO-9613-informed',
   };
 }

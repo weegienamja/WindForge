@@ -25,11 +25,11 @@ function makeInputs(overrides: Partial<PlanningInputs> = {}): PlanningInputs {
 
 describe('scorePlanning', () => {
   it('returns a valid FactorScore for planningFeasibility', () => {
-    const result = scorePlanning(makeInputs(), 0.10);
+    const result = scorePlanning(makeInputs(), 0.1);
     expect(result.ok).toBe(true);
     if (result.ok) {
       expect(result.value.factor).toBe('planningFeasibility');
-      expect(result.value.weight).toBe(0.10);
+      expect(result.value.weight).toBe(0.1);
       expect(result.value.score).toBeGreaterThanOrEqual(0);
       expect(result.value.score).toBeLessThanOrEqual(100);
       expect(result.value.dataSource).toContain('Nominatim');
@@ -39,8 +39,8 @@ describe('scorePlanning', () => {
   // --- Country context ---
 
   it('boosts score for favourable country (GB)', () => {
-    const result = scorePlanning(makeInputs({ geocode: makeGeocode({ countryCode: 'GB' }) }), 0.10);
-    const noCountry = scorePlanning(makeInputs({ geocode: null }), 0.10);
+    const result = scorePlanning(makeInputs({ geocode: makeGeocode({ countryCode: 'GB' }) }), 0.1);
+    const noCountry = scorePlanning(makeInputs({ geocode: null }), 0.1);
     expect(result.ok && noCountry.ok).toBe(true);
     if (result.ok && noCountry.ok) {
       expect(result.value.score).toBeGreaterThan(noCountry.value.score);
@@ -48,7 +48,10 @@ describe('scorePlanning', () => {
   });
 
   it('boosts score for favourable country (DE)', () => {
-    const result = scorePlanning(makeInputs({ geocode: makeGeocode({ countryCode: 'DE', country: 'Germany' }) }), 0.10);
+    const result = scorePlanning(
+      makeInputs({ geocode: makeGeocode({ countryCode: 'DE', country: 'Germany' }) }),
+      0.1,
+    );
     expect(result.ok).toBe(true);
     if (result.ok) {
       expect(result.value.detail).toContain('Germany');
@@ -59,7 +62,7 @@ describe('scorePlanning', () => {
   it('does not penalise non-favourable countries', () => {
     const result = scorePlanning(
       makeInputs({ geocode: makeGeocode({ countryCode: 'JP', country: 'Japan' }) }),
-      0.10,
+      0.1,
     );
     expect(result.ok).toBe(true);
     if (result.ok) {
@@ -68,7 +71,7 @@ describe('scorePlanning', () => {
   });
 
   it('uses low confidence when no geocode available', () => {
-    const result = scorePlanning(makeInputs({ geocode: null }), 0.10);
+    const result = scorePlanning(makeInputs({ geocode: null }), 0.1);
     expect(result.ok).toBe(true);
     if (result.ok) {
       expect(result.value.confidence).toBe('low');
@@ -76,7 +79,7 @@ describe('scorePlanning', () => {
   });
 
   it('uses medium confidence when geocode available', () => {
-    const result = scorePlanning(makeInputs(), 0.10);
+    const result = scorePlanning(makeInputs(), 0.1);
     expect(result.ok).toBe(true);
     if (result.ok) {
       expect(result.value.confidence).toBe('medium');
@@ -86,10 +89,7 @@ describe('scorePlanning', () => {
   // --- Wind farm proximity ---
 
   it('boosts strongly when wind farm < 5km away', () => {
-    const result = scorePlanning(
-      makeInputs({ nearbyWindFarms: [{ distanceKm: 3.2 }] }),
-      0.10,
-    );
+    const result = scorePlanning(makeInputs({ nearbyWindFarms: [{ distanceKm: 3.2 }] }), 0.1);
     expect(result.ok).toBe(true);
     if (result.ok) {
       expect(result.value.detail).toContain('strong planning precedent');
@@ -98,10 +98,7 @@ describe('scorePlanning', () => {
   });
 
   it('boosts moderately when wind farm 5-10km away', () => {
-    const result = scorePlanning(
-      makeInputs({ nearbyWindFarms: [{ distanceKm: 7.5 }] }),
-      0.10,
-    );
+    const result = scorePlanning(makeInputs({ nearbyWindFarms: [{ distanceKm: 7.5 }] }), 0.1);
     expect(result.ok).toBe(true);
     if (result.ok) {
       expect(result.value.detail).toContain('planning precedent exists');
@@ -109,10 +106,7 @@ describe('scorePlanning', () => {
   });
 
   it('gives small boost when wind farm > 10km away', () => {
-    const result = scorePlanning(
-      makeInputs({ nearbyWindFarms: [{ distanceKm: 15 }] }),
-      0.10,
-    );
+    const result = scorePlanning(makeInputs({ nearbyWindFarms: [{ distanceKm: 15 }] }), 0.1);
     expect(result.ok).toBe(true);
     if (result.ok) {
       expect(result.value.detail).toContain('15.0km away');
@@ -120,10 +114,7 @@ describe('scorePlanning', () => {
   });
 
   it('indicates no wind installations when none found', () => {
-    const result = scorePlanning(
-      makeInputs({ nearbyWindFarms: [] }),
-      0.10,
-    );
+    const result = scorePlanning(makeInputs({ nearbyWindFarms: [] }), 0.1);
     expect(result.ok).toBe(true);
     if (result.ok) {
       expect(result.value.detail).toContain('No existing wind installations');
@@ -132,12 +123,12 @@ describe('scorePlanning', () => {
 
   it('gives extra boost when 4+ wind installations nearby', () => {
     const farms: NearbyWindFarm[] = [
-      { distanceKm: 3 }, { distanceKm: 5 }, { distanceKm: 8 }, { distanceKm: 12 },
+      { distanceKm: 3 },
+      { distanceKm: 5 },
+      { distanceKm: 8 },
+      { distanceKm: 12 },
     ];
-    const result = scorePlanning(
-      makeInputs({ nearbyWindFarms: farms }),
-      0.10,
-    );
+    const result = scorePlanning(makeInputs({ nearbyWindFarms: farms }), 0.1);
     expect(result.ok).toBe(true);
     if (result.ok) {
       expect(result.value.detail).toContain('4 wind installations');
@@ -147,10 +138,7 @@ describe('scorePlanning', () => {
   // --- Residential density ---
 
   it('penalises high density areas (>20 tags)', () => {
-    const result = scorePlanning(
-      makeInputs({ residentialDensityProxy: 25 }),
-      0.10,
-    );
+    const result = scorePlanning(makeInputs({ residentialDensityProxy: 25 }), 0.1);
     expect(result.ok).toBe(true);
     if (result.ok) {
       expect(result.value.detail).toContain('High density area');
@@ -158,10 +146,7 @@ describe('scorePlanning', () => {
   });
 
   it('small penalty for moderate density (5-20 tags)', () => {
-    const result = scorePlanning(
-      makeInputs({ residentialDensityProxy: 10 }),
-      0.10,
-    );
+    const result = scorePlanning(makeInputs({ residentialDensityProxy: 10 }), 0.1);
     expect(result.ok).toBe(true);
     if (result.ok) {
       expect(result.value.detail).toContain('Moderate density');
@@ -169,10 +154,7 @@ describe('scorePlanning', () => {
   });
 
   it('favours low density areas (<5 tags)', () => {
-    const result = scorePlanning(
-      makeInputs({ residentialDensityProxy: 2 }),
-      0.10,
-    );
+    const result = scorePlanning(makeInputs({ residentialDensityProxy: 2 }), 0.1);
     expect(result.ok).toBe(true);
     if (result.ok) {
       expect(result.value.detail).toContain('Low density area');
@@ -185,10 +167,15 @@ describe('scorePlanning', () => {
     const result = scorePlanning(
       makeInputs({
         geocode: makeGeocode({ countryCode: 'DK', country: 'Denmark' }),
-        nearbyWindFarms: [{ distanceKm: 2 }, { distanceKm: 4 }, { distanceKm: 6 }, { distanceKm: 8 }],
+        nearbyWindFarms: [
+          { distanceKm: 2 },
+          { distanceKm: 4 },
+          { distanceKm: 6 },
+          { distanceKm: 8 },
+        ],
         residentialDensityProxy: 0,
       }),
-      0.10,
+      0.1,
     );
     expect(result.ok).toBe(true);
     if (result.ok) {
@@ -200,7 +187,7 @@ describe('scorePlanning', () => {
   it('worst case: no geo, no farms, high density', () => {
     const result = scorePlanning(
       makeInputs({ geocode: null, nearbyWindFarms: [], residentialDensityProxy: 30 }),
-      0.10,
+      0.1,
     );
     expect(result.ok).toBe(true);
     if (result.ok) {
@@ -210,7 +197,7 @@ describe('scorePlanning', () => {
   });
 
   it('includes disclaimer about formal planning assessment', () => {
-    const result = scorePlanning(makeInputs(), 0.10);
+    const result = scorePlanning(makeInputs(), 0.1);
     expect(result.ok).toBe(true);
     if (result.ok) {
       expect(result.value.detail).toContain('not a substitute for formal planning assessment');

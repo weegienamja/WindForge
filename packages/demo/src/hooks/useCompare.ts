@@ -12,7 +12,7 @@ export interface CompareSnapshot {
   lat: number;
   lng: number;
   hub: number;
-  composite: number;
+  composite: number | null;
   windSpeedMs: number | null;
   netAepMwh: number | null;
   lcoePerMwh: number | null;

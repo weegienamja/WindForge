@@ -64,7 +64,9 @@ export async function reverseGeocode(
     });
 
     if (!response.ok) {
-      return err(scoringError(ScoringErrorCode.DataFetchFailed, `Nominatim HTTP ${response.status}`));
+      return err(
+        scoringError(ScoringErrorCode.DataFetchFailed, `Nominatim HTTP ${response.status}`),
+      );
     }
 
     const data = (await response.json()) as NominatimResponse;

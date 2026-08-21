@@ -11,7 +11,7 @@
  */
 
 const NOMINATIM = 'https://nominatim.openstreetmap.org';
-const USER_AGENT = 'WindForge/0.3 (+https://wind.jamieblair.co.uk)';
+const USER_AGENT = 'WindForge/0.3 (+https://github.com/weegienamja/WindForge)';
 
 // Cache successful lookups for a day — place geometry does not move.
 export const revalidate = 86_400;
@@ -29,7 +29,10 @@ export interface GeocodeHit {
 function shortLabel(displayName: string): string {
   // Nominatim display names are long ("Stornoway, Western Isles, Scotland, UK").
   // Keep the first and last two components for a compact, readable chip.
-  const parts = displayName.split(',').map((p) => p.trim()).filter(Boolean);
+  const parts = displayName
+    .split(',')
+    .map((p) => p.trim())
+    .filter(Boolean);
   if (parts.length <= 3) return parts.join(', ');
   return [parts[0], parts[parts.length - 2], parts[parts.length - 1]].join(', ');
 }
@@ -39,7 +42,10 @@ function jsonResponse(body: unknown, status = 200): Response {
     status,
     headers: {
       'content-type': 'application/json; charset=utf-8',
-      'cache-control': `public, s-maxage=${revalidate}, stale-while-revalidate=${revalidate}`,
+      'cache-control':
+        status === 200
+          ? `public, s-maxage=${revalidate}, stale-while-revalidate=${revalidate}`
+          : 'private, no-store, max-age=0',
     },
   });
 }
@@ -53,6 +59,7 @@ export async function GET(request: Request): Promise<Response> {
   try {
     if (q) {
       if (q.length < 2) return jsonResponse({ results: [] });
+      if (q.length > 120) return jsonResponse({ error: 'Query is too long' }, 400);
       const url = `${NOMINATIM}/search?q=${encodeURIComponent(q)}&format=jsonv2&limit=6&addressdetails=0`;
       const res = await fetch(url, {
         headers: { 'User-Agent': USER_AGENT, 'Accept-Language': 'en' },
@@ -80,7 +87,14 @@ export async function GET(request: Request): Promise<Response> {
     if (lat !== null && lng !== null) {
       const latN = Number(lat);
       const lngN = Number(lng);
-      if (!Number.isFinite(latN) || !Number.isFinite(lngN)) {
+      if (
+        !Number.isFinite(latN) ||
+        latN < -90 ||
+        latN > 90 ||
+        !Number.isFinite(lngN) ||
+        lngN < -180 ||
+        lngN > 180
+      ) {
         return jsonResponse({ error: 'Invalid coordinate' }, 400);
       }
       const url = `${NOMINATIM}/reverse?lat=${latN}&lon=${lngN}&format=jsonv2&zoom=10`;
@@ -95,8 +109,7 @@ export async function GET(request: Request): Promise<Response> {
     }
 
     return jsonResponse({ error: 'Provide ?q= or ?lat=&lng=' }, 400);
-  } catch (cause) {
-    const message = cause instanceof Error ? cause.message : 'Geocode request failed';
-    return jsonResponse({ error: message }, 500);
+  } catch {
+    return jsonResponse({ error: 'Geocode request failed' }, 500);
   }
 }

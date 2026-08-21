@@ -27,20 +27,6 @@ export interface Era5Options {
   levelType?: 'single' | 'pressure';
 }
 
-/** CDS API response structure (simplified) */
-interface CdsApiResponse {
-  state: 'completed' | 'queued' | 'running' | 'failed';
-  location?: string;
-  request_id?: string;
-  error?: { message: string };
-}
-
-/**
- * CDS API base URL.
- * The v2 API uses a REST endpoint for request submission and result retrieval.
- */
-const CDS_API_URL = 'https://cds.climate.copernicus.eu/api/v2';
-
 /**
  * Fetch ERA5 wind data for a coordinate.
  *
@@ -69,94 +55,15 @@ export async function fetchEra5WindData(
   const cached = era5Cache.get(cacheKey);
   if (cached) return ok(cached);
 
-  const startYear = options.startYear ?? 2000;
-  const endYear = options.endYear ?? new Date().getFullYear() - 1;
-
-  // Build CDS API request
-  const requestBody = {
-    dataset: 'reanalysis-era5-single-levels-monthly-means',
-    product_type: 'monthly_averaged_reanalysis',
-    variable: [
-      '100m_u_component_of_wind',
-      '100m_v_component_of_wind',
-      '10m_u_component_of_wind',
-      '10m_v_component_of_wind',
-    ],
-    year: Array.from(
-      { length: endYear - startYear + 1 },
-      (_, i) => String(startYear + i),
-    ),
-    month: Array.from({ length: 12 }, (_, i) => String(i + 1).padStart(2, '0')),
-    time: '00:00',
-    area: [
-      coord.lat + 0.25,
-      coord.lng - 0.25,
-      coord.lat - 0.25,
-      coord.lng + 0.25,
-    ],
-    format: 'json',
-  };
-
-  const url = `${CDS_API_URL}/resources/reanalysis-era5-single-levels-monthly-means`;
-
-  const response = await fetchWithRetry(url, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${apiKey}`,
-    },
-    body: JSON.stringify(requestBody),
+  const history = await fetchEra5MonthlyHistory(coord, {
+    cdsApiKey: apiKey,
+    startYear: options.startYear,
+    endYear: options.endYear,
+    heightM: 100,
   });
-
-  if (!response.ok) {
-    return err(
-      scoringError(
-        ScoringErrorCode.DataFetchFailed,
-        `ERA5 API request failed: ${response.error?.message ?? 'Unknown error'}`,
-        response.error,
-      ),
-    );
-  }
-
-  let data: CdsApiResponse;
-  try {
-    data = (await response.value.json()) as CdsApiResponse;
-  } catch (cause) {
-    return err(
-      scoringError(
-        ScoringErrorCode.DataFetchFailed,
-        'Failed to parse ERA5 API response',
-        cause,
-      ),
-    );
-  }
-
-  if (data.state === 'failed') {
-    return err(
-      scoringError(
-        ScoringErrorCode.DataFetchFailed,
-        `ERA5 request failed: ${data.error?.message ?? 'Unknown error'}`,
-      ),
-    );
-  }
-
-  // For a proper implementation, we would poll until state === 'completed',
-  // then download the data file. For now, we return a structured error
-  // indicating the async nature of the API.
-  if (data.state !== 'completed') {
-    return err(
-      scoringError(
-        ScoringErrorCode.DataFetchFailed,
-        `ERA5 request queued (state: ${data.state}). CDS API processes requests asynchronously. Request ID: ${data.request_id ?? 'unknown'}.`,
-      ),
-    );
-  }
-
-  // Parse completed response into WindDataSummary
-  // This is a simplified parser - real ERA5 responses are NetCDF/GRIB
-  const summary = parseEra5Response(coord, startYear, endYear);
-  era5Cache.set(cacheKey, summary);
-  return ok(summary);
+  if (!history.ok) return history;
+  era5Cache.set(cacheKey, history.value.summary);
+  return ok(history.value.summary);
 }
 
 /**
@@ -166,7 +73,10 @@ export async function fetchEra5WindData(
  * Speed = sqrt(u^2 + v^2)
  * Direction = atan2(-u, -v) converted to meteorological convention (0=N, clockwise)
  */
-export function uvToSpeedDirection(u: number, v: number): { speedMs: number; directionDeg: number } {
+export function uvToSpeedDirection(
+  u: number,
+  v: number,
+): { speedMs: number; directionDeg: number } {
   const speedMs = Math.sqrt(u * u + v * v);
   if (speedMs < 0.001) return { speedMs: 0, directionDeg: 0 };
 
@@ -183,16 +93,15 @@ export function uvToSpeedDirection(u: number, v: number): { speedMs: number; dir
 /**
  * Check whether the CDS API is reachable and the key is valid.
  */
-export async function validateEra5ApiKey(
-  apiKey: string,
-): Promise<Result<boolean, ScoringError>> {
+export async function validateEra5ApiKey(apiKey: string): Promise<Result<boolean, ScoringError>> {
   if (!apiKey || apiKey.trim().length === 0) {
     return ok(false);
   }
 
-  const url = `${CDS_API_URL}/resources`;
+  const url =
+    'https://cds.climate.copernicus.eu/api/retrieve/v1/processes/reanalysis-era5-single-levels-monthly-means';
   const response = await fetchWithRetry(url, {
-    headers: { 'Authorization': `Bearer ${apiKey}` },
+    headers: { 'PRIVATE-TOKEN': apiKey },
   });
 
   if (!response.ok) {
@@ -200,35 +109,6 @@ export async function validateEra5ApiKey(
   }
 
   return ok(true);
-}
-
-/** Placeholder parser for ERA5 completed response */
-function parseEra5Response(
-  coord: LatLng,
-  startYear: number,
-  endYear: number,
-): WindDataSummary {
-  // In a full implementation, this would parse NetCDF/GRIB data.
-  // For now, returns a skeleton structure.
-  const months: MonthlyWindAverage[] = [];
-  for (let m = 1; m <= 12; m++) {
-    months.push({
-      month: m,
-      averageSpeedMs: 0,
-      averageDirectionDeg: 0,
-    });
-  }
-
-  return {
-    coordinate: coord,
-    monthlyAverages: months,
-    annualAverageSpeedMs: 0,
-    speedStdDevMs: 0,
-    prevailingDirectionDeg: 0,
-    directionalConsistency: 0,
-    dataYears: endYear - startYear + 1,
-    referenceHeightM: 100,
-  };
 }
 
 export function clearEra5Cache(): void {
@@ -255,10 +135,13 @@ export interface Era5HistoryOptions {
   readonly signal?: AbortSignal;
 }
 
-const DEFAULT_CDS_API_URL = 'https://cds.climate.copernicus.eu/api/v2';
+const DEFAULT_CDS_API_URL = 'https://cds.climate.copernicus.eu/api/retrieve/v1';
 
 interface CdsTaskResponse {
-  state: 'queued' | 'running' | 'completed' | 'failed';
+  status?: 'accepted' | 'running' | 'successful' | 'failed' | 'rejected' | 'dismissed';
+  jobID?: string;
+  /** Legacy aliases accepted for test fixtures and self-hosted mirrors. */
+  state?: 'queued' | 'running' | 'completed' | 'failed';
   request_id?: string;
   location?: string;
   error?: { message?: string; reason?: string };
@@ -300,10 +183,7 @@ export async function fetchEra5MonthlyHistory(
   const cached = era5HistoryCache.get(cacheKey);
   if (cached) return ok(cached);
 
-  const variables = [
-    `${heightM}m_u_component_of_wind`,
-    `${heightM}m_v_component_of_wind`,
-  ];
+  const variables = [`${heightM}m_u_component_of_wind`, `${heightM}m_v_component_of_wind`];
 
   const submitBody = {
     product_type: 'monthly_averaged_reanalysis',
@@ -321,17 +201,17 @@ export async function fetchEra5MonthlyHistory(
     format: 'netcdf',
   };
 
-  const submitUrl = `${apiUrl}/resources/reanalysis-era5-single-levels-monthly-means`;
+  const submitUrl = `${apiUrl}/processes/reanalysis-era5-single-levels-monthly-means/execution`;
   const submitResult = await fetchWithRetry(
     submitUrl,
     {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        Authorization: `Bearer ${apiKey}`,
+        'PRIVATE-TOKEN': apiKey,
         ...(options.signal ? {} : {}),
       },
-      body: JSON.stringify(submitBody),
+      body: JSON.stringify({ inputs: submitBody }),
       ...(options.signal ? { signal: options.signal } : {}),
     },
     { maxRetries: 1 },
@@ -350,10 +230,12 @@ export async function fetchEra5MonthlyHistory(
   try {
     submitData = (await submitResult.value.json()) as CdsTaskResponse;
   } catch (cause) {
-    return err(scoringError(ScoringErrorCode.ParseError, 'Failed to parse ERA5 submission response', cause));
+    return err(
+      scoringError(ScoringErrorCode.ParseError, 'Failed to parse ERA5 submission response', cause),
+    );
   }
 
-  if (submitData.state === 'failed') {
+  if (isFailedTask(submitData)) {
     return err(
       scoringError(
         ScoringErrorCode.DataFetchFailed,
@@ -362,9 +244,11 @@ export async function fetchEra5MonthlyHistory(
     );
   }
 
-  const requestId = submitData.request_id;
-  if (!requestId && submitData.state !== 'completed') {
-    return err(scoringError(ScoringErrorCode.DataFetchFailed, 'ERA5 submission did not return a request_id'));
+  const requestId = submitData.jobID ?? submitData.request_id;
+  if (!requestId && !isSuccessfulTask(submitData)) {
+    return err(
+      scoringError(ScoringErrorCode.DataFetchFailed, 'ERA5 submission did not return a jobID'),
+    );
   }
 
   const pollResult = await pollCdsTask(apiUrl, apiKey, submitData, options);
@@ -374,7 +258,7 @@ export async function fetchEra5MonthlyHistory(
   const downloadResult = await fetchWithRetry(
     downloadUrl,
     {
-      headers: { Authorization: `Bearer ${apiKey}` },
+      headers: { 'PRIVATE-TOKEN': apiKey },
       ...(options.signal ? { signal: options.signal } : {}),
     },
     { maxRetries: 2 },
@@ -393,7 +277,9 @@ export async function fetchEra5MonthlyHistory(
   try {
     buffer = await downloadResult.value.arrayBuffer();
   } catch (cause) {
-    return err(scoringError(ScoringErrorCode.ParseError, 'Failed to read ERA5 download payload', cause));
+    return err(
+      scoringError(ScoringErrorCode.ParseError, 'Failed to read ERA5 download payload', cause),
+    );
   }
 
   const parsed = parseEra5NetCdf(buffer, coordinate, heightM);
@@ -416,6 +302,18 @@ export async function fetchEra5MonthlyHistory(
     endYear,
   };
   const summary = summariseEra5History(coordinate, records, heightM);
+  if (
+    summary.monthlyAverages.length !== 12 ||
+    !Number.isFinite(summary.annualAverageSpeedMs) ||
+    !Number.isFinite(summary.prevailingDirectionDeg)
+  ) {
+    return err(
+      scoringError(
+        ScoringErrorCode.InsufficientData,
+        'ERA5 payload did not contain complete monthly speed and direction evidence',
+      ),
+    );
+  }
   const source: ReanalysisSource = { summary, history };
   era5HistoryCache.set(cacheKey, source);
   return ok(source);
@@ -427,11 +325,11 @@ async function pollCdsTask(
   initial: CdsTaskResponse,
   options: Era5HistoryOptions,
 ): Promise<Result<string, ScoringError>> {
-  if (initial.state === 'completed' && initial.location) {
+  if (isSuccessfulTask(initial) && initial.location) {
     return ok(initial.location);
   }
 
-  const requestId = initial.request_id;
+  const requestId = initial.jobID ?? initial.request_id;
   if (!requestId) {
     return err(scoringError(ScoringErrorCode.DataFetchFailed, 'ERA5 task missing request_id'));
   }
@@ -440,7 +338,7 @@ async function pollCdsTask(
   const pollIntervalSeconds = options.pollIntervalSeconds ?? 5;
   const deadline = Date.now() + maxPollSeconds * 1000;
 
-  const taskUrl = `${apiUrl}/tasks/${requestId}`;
+  const taskUrl = `${apiUrl}/jobs/${requestId}`;
 
   while (Date.now() < deadline) {
     await sleep(pollIntervalSeconds * 1000);
@@ -448,7 +346,7 @@ async function pollCdsTask(
     const taskResult = await fetchWithRetry(
       taskUrl,
       {
-        headers: { Authorization: `Bearer ${apiKey}` },
+        headers: { 'PRIVATE-TOKEN': apiKey },
         ...(options.signal ? { signal: options.signal } : {}),
       },
       { maxRetries: 1 },
@@ -462,10 +360,40 @@ async function pollCdsTask(
       continue;
     }
 
-    if (task.state === 'completed' && task.location) {
-      return ok(task.location);
+    if (isSuccessfulTask(task)) {
+      const resultsResult = await fetchWithRetry(
+        `${apiUrl}/jobs/${requestId}/results`,
+        {
+          headers: { 'PRIVATE-TOKEN': apiKey },
+          ...(options.signal ? { signal: options.signal } : {}),
+        },
+        { maxRetries: 1 },
+      );
+      if (!resultsResult.ok) {
+        return err(
+          scoringError(
+            ScoringErrorCode.DataFetchFailed,
+            `ERA5 result lookup failed: ${resultsResult.error.message}`,
+          ),
+        );
+      }
+      try {
+        const results: unknown = await resultsResult.value.json();
+        const href = findDownloadHref(results);
+        if (href) return ok(href);
+      } catch (cause) {
+        return err(
+          scoringError(ScoringErrorCode.ParseError, 'Failed to parse ERA5 results response', cause),
+        );
+      }
+      return err(
+        scoringError(
+          ScoringErrorCode.DataFetchFailed,
+          'ERA5 results did not contain a downloadable asset',
+        ),
+      );
     }
-    if (task.state === 'failed') {
+    if (isFailedTask(task)) {
       return err(
         scoringError(
           ScoringErrorCode.DataFetchFailed,
@@ -482,6 +410,33 @@ async function pollCdsTask(
       `ERA5 CDS task did not complete within ${maxPollSeconds}s (elapsed ${elapsedSeconds}s)`,
     ),
   );
+}
+
+function isSuccessfulTask(task: CdsTaskResponse): boolean {
+  return task.status === 'successful' || task.state === 'completed';
+}
+
+function isFailedTask(task: CdsTaskResponse): boolean {
+  return ['failed', 'rejected', 'dismissed'].includes(task.status ?? '') || task.state === 'failed';
+}
+
+function findDownloadHref(value: unknown): string | null {
+  if (!value || typeof value !== 'object') return null;
+  if ('href' in value && typeof (value as { href?: unknown }).href === 'string') {
+    return (value as { href: string }).href;
+  }
+  for (const nested of Object.values(value as Record<string, unknown>)) {
+    if (Array.isArray(nested)) {
+      for (const item of nested) {
+        const found = findDownloadHref(item);
+        if (found) return found;
+      }
+    } else {
+      const found = findDownloadHref(nested);
+      if (found) return found;
+    }
+  }
+  return null;
 }
 
 function sleep(ms: number): Promise<void> {
@@ -510,7 +465,12 @@ function yearList(startYear: number, endYear: number): string[] {
   return out;
 }
 
-function era5HistoryCacheKey(coord: LatLng, startYear: number, endYear: number, heightM: number): string {
+function era5HistoryCacheKey(
+  coord: LatLng,
+  startYear: number,
+  endYear: number,
+  heightM: number,
+): string {
   // ~25 km grid (geohash-4 equivalent for caching)
   const lat = Math.round(coord.lat * 4) / 4;
   const lng = Math.round(coord.lng * 4) / 4;
@@ -532,13 +492,28 @@ export function parseEra5NetCdf(
   try {
     nc = openNetCdf(buffer);
   } catch (cause) {
-    return err(scoringError(ScoringErrorCode.ParseError, 'Failed to open ERA5 NetCDF payload', cause));
+    return err(
+      scoringError(ScoringErrorCode.ParseError, 'Failed to open ERA5 NetCDF payload', cause),
+    );
   }
 
-  const uName = pickVariableName(nc, ['u' + heightM, `${heightM}m_u_component_of_wind`, 'u_component_of_wind']);
-  const vName = pickVariableName(nc, ['v' + heightM, `${heightM}m_v_component_of_wind`, 'v_component_of_wind']);
+  const uName = pickVariableName(nc, [
+    'u' + heightM,
+    `${heightM}m_u_component_of_wind`,
+    'u_component_of_wind',
+  ]);
+  const vName = pickVariableName(nc, [
+    'v' + heightM,
+    `${heightM}m_v_component_of_wind`,
+    'v_component_of_wind',
+  ]);
   if (!uName || !vName) {
-    return err(scoringError(ScoringErrorCode.ParseError, `ERA5 NetCDF missing u/v variables for ${heightM}m`));
+    return err(
+      scoringError(
+        ScoringErrorCode.ParseError,
+        `ERA5 NetCDF missing u/v variables for ${heightM}m`,
+      ),
+    );
   }
 
   let times: number[];
@@ -553,7 +528,9 @@ export function parseEra5NetCdf(
     uData = toNumberArray(nc.getDataVariable(uName));
     vData = toNumberArray(nc.getDataVariable(vName));
   } catch (cause) {
-    return err(scoringError(ScoringErrorCode.ParseError, 'ERA5 NetCDF missing required variables', cause));
+    return err(
+      scoringError(ScoringErrorCode.ParseError, 'ERA5 NetCDF missing required variables', cause),
+    );
   }
 
   if (times.length === 0 || lats.length === 0 || lngs.length === 0) {
@@ -571,16 +548,16 @@ export function parseEra5NetCdf(
     const u = uData[flat];
     const v = vData[flat];
     if (u === undefined || v === undefined || !Number.isFinite(u) || !Number.isFinite(v)) continue;
-    const speed = Math.sqrt(u * u + v * v);
+    const { speedMs: speed, directionDeg } = uvToSpeedDirection(u, v);
     const date = hoursSinceEpochToDate(times[t] ?? 0);
     records.push({
       year: date.year,
       month: date.month,
-      ws2m: 0,
-      ws10m: heightM === 10 ? speed : 0,
-      ws50m: 0,
-      wd10m: 0,
-      wd50m: 0,
+      ws2m: null,
+      ws10m: heightM === 10 ? speed : null,
+      ws50m: null,
+      wd10m: heightM === 10 ? directionDeg : null,
+      wd50m: heightM === 100 ? directionDeg : null,
       // Note: for 100m we still populate ws50m as a proxy reference height
       // for downstream reconciliation (the reconciler uses average speed).
       ...(heightM === 100 ? { ws50m: speed } : {}),
@@ -655,31 +632,40 @@ function summariseEra5History(
     .map((r) => r[speedField] as number)
     .filter((v) => Number.isFinite(v) && v > 0);
 
-  const annualAverageSpeedMs = speeds.length > 0 ? mean(speeds) : 0;
+  const annualAverageSpeedMs = speeds.length > 0 ? mean(speeds) : Number.NaN;
   const speedStdDevMs = speeds.length > 1 ? stdDev(speeds, annualAverageSpeedMs) : 0;
 
   const monthlyAverages: MonthlyWindAverage[] = [];
+  const directionField: keyof MonthlyWindRecord = heightM === 10 ? 'wd10m' : 'wd50m';
   for (let m = 1; m <= 12; m++) {
     const monthSpeeds = records
       .filter((r) => r.month === m)
       .map((r) => r[speedField] as number)
       .filter((v) => Number.isFinite(v) && v > 0);
+    const monthDirections = records
+      .filter((r) => r.month === m)
+      .map((r) => r[directionField] as number | null)
+      .filter((v): v is number => v !== null && Number.isFinite(v));
+    if (monthSpeeds.length === 0 || monthDirections.length === 0) continue;
     monthlyAverages.push({
       month: m,
-      averageSpeedMs: monthSpeeds.length > 0 ? round2(mean(monthSpeeds)) : 0,
-      averageDirectionDeg: 0,
+      averageSpeedMs: round2(mean(monthSpeeds)),
+      averageDirectionDeg: round2(meanAngle(monthDirections)),
     });
   }
 
   const years = new Set(records.map((r) => r.year)).size;
+  const directions = records
+    .map((r) => r[directionField] as number | null)
+    .filter((v): v is number => v !== null && Number.isFinite(v));
 
   return {
     coordinate,
     monthlyAverages,
     annualAverageSpeedMs: round2(annualAverageSpeedMs),
     speedStdDevMs: round2(speedStdDevMs),
-    prevailingDirectionDeg: 0,
-    directionalConsistency: 0,
+    prevailingDirectionDeg: round2(meanAngle(directions)),
+    directionalConsistency: round2(directionalConsistency(directions)),
     dataYears: years,
     referenceHeightM: heightM,
   };
@@ -699,4 +685,29 @@ function stdDev(values: readonly number[], avg: number): number {
 
 function round2(v: number): number {
   return Math.round(v * 100) / 100;
+}
+
+function meanAngle(values: readonly number[]): number {
+  if (values.length === 0) return Number.NaN;
+  let sin = 0;
+  let cos = 0;
+  for (const value of values) {
+    const radians = (value * Math.PI) / 180;
+    sin += Math.sin(radians);
+    cos += Math.cos(radians);
+  }
+  const angle = (Math.atan2(sin, cos) * 180) / Math.PI;
+  return angle < 0 ? angle + 360 : angle;
+}
+
+function directionalConsistency(values: readonly number[]): number {
+  if (values.length === 0) return Number.NaN;
+  let sin = 0;
+  let cos = 0;
+  for (const value of values) {
+    const radians = (value * Math.PI) / 180;
+    sin += Math.sin(radians);
+    cos += Math.cos(radians);
+  }
+  return Math.sqrt(sin * sin + cos * cos) / values.length;
 }

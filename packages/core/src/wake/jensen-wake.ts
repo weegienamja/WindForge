@@ -17,7 +17,7 @@ const WAKE_DECAY_BY_ROUGHNESS: Record<number, number> = {
   0: 0.04, // Offshore / water
   1: 0.06, // Open flat terrain
   2: 0.075, // Agricultural / mixed
-  3: 0.10, // Suburban / forested
+  3: 0.1, // Suburban / forested
 };
 
 const DEFAULT_WAKE_DECAY = 0.075;
@@ -186,11 +186,7 @@ export function jensenSingleWake(
   const wakeRadiusM = rotorRadiusM + k * downwindM;
 
   // Check if downstream rotor overlaps with wake
-  const overlap = computeCircleOverlap(
-    crosswindM,
-    wakeRadiusM,
-    downstreamRotorRadiusM,
-  );
+  const overlap = computeCircleOverlap(crosswindM, wakeRadiusM, downstreamRotorRadiusM);
 
   if (overlap <= 0) {
     return { velocityDeficit: 0, overlapFraction: 0 };
@@ -233,9 +229,7 @@ function computeCircleOverlap(
 
   const part1 = r1 * r1 * Math.acos((d * d + r1 * r1 - r2 * r2) / (2 * d * r1));
   const part2 = r2 * r2 * Math.acos((d * d + r2 * r2 - r1 * r1) / (2 * d * r2));
-  const part3 = 0.5 * Math.sqrt(
-    (-d + r1 + r2) * (d + r1 - r2) * (d - r1 + r2) * (d + r1 + r2),
-  );
+  const part3 = 0.5 * Math.sqrt((-d + r1 + r2) * (d + r1 - r2) * (d - r1 + r2) * (d + r1 + r2));
 
   const intersectionArea = part1 + part2 - part3;
   const rotorArea = Math.PI * r2 * r2;

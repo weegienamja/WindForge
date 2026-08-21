@@ -14,8 +14,18 @@ export { WeightSliders } from './components/index.js';
 export type { WeightSlidersProps } from './components/WeightSliders.js';
 /** Polar radar chart showing wind direction frequency by speed band. */
 export { WindRose } from './components/index.js';
-export type { WindRoseProps, WindRoseDirectionData, WindSpeedBand, CompassDirection } from './components/WindRose.js';
-export { DEFAULT_WIND_BANDS, COMPASS_DIRECTIONS, degreesToCompass, emptyRoseData } from './components/WindRose.js';
+export type {
+  WindRoseProps,
+  WindRoseDirectionData,
+  WindSpeedBand,
+  CompassDirection,
+} from './components/WindRose.js';
+export {
+  DEFAULT_WIND_BANDS,
+  COMPASS_DIRECTIONS,
+  degreesToCompass,
+  emptyRoseData,
+} from './components/WindRose.js';
 /** Line chart showing monthly wind speed trend with linear regression overlay. */
 export { WindTrendChart } from './components/index.js';
 export type { WindTrendChartProps } from './components/WindTrendChart.js';
@@ -53,7 +63,7 @@ export type { ConstraintMapProps } from './components/ConstraintMap.js';
 /** Grouped turbine model selector with power class categories. */
 export { TurbineSelector } from './components/index.js';
 export type { TurbineSelectorProps } from './components/TurbineSelector.js';
-/** Energy yield card showing AEP, P-scenarios, losses, and monthly production. */
+/** Energy yield card showing AEP, deterministic downside sensitivities, losses, and monthly production. */
 export { EnergyYieldCard } from './components/index.js';
 export type { EnergyYieldCardProps } from './components/EnergyYieldCard.js';
 /** Horizontal stacked bar chart for the AEP loss stack. */

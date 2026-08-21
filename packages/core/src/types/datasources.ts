@@ -34,6 +34,7 @@ export interface ElevationData {
   elevationM: number;
   slopePercent: number;
   aspectDeg: number;
+  /** @deprecated Elevation-derived terrain-variation band; not aerodynamic roughness or land cover. */
   roughnessClass: number;
 }
 
@@ -43,11 +44,11 @@ export interface ElevationData {
 export interface MonthlyWindRecord {
   year: number;
   month: number;
-  ws2m: number;
-  ws10m: number;
-  ws50m: number;
-  wd10m: number;
-  wd50m: number;
+  ws2m: number | null;
+  ws10m: number | null;
+  ws50m: number | null;
+  wd10m: number | null;
+  wd50m: number | null;
 }
 
 /** Full monthly history across multiple years */
@@ -61,11 +62,11 @@ export interface MonthlyWindHistory {
 /** A single daily record with multi-height measurements */
 export interface DailyWindRecord {
   date: string; // YYYY-MM-DD
-  ws2m: number;
-  ws10m: number;
-  ws50m: number;
-  wd10m: number;
-  wd50m: number;
+  ws2m: number | null;
+  ws10m: number | null;
+  ws50m: number | null;
+  wd10m: number | null;
+  wd50m: number | null;
 }
 
 /** Daily wind data for a date range */
@@ -79,11 +80,11 @@ export interface DailyWindData {
 /** A single hourly record with multi-height measurements */
 export interface HourlyWindRecord {
   datetime: string; // ISO 8601 e.g. 2024-01-15T14:00
-  ws2m: number;
-  ws10m: number;
-  ws50m: number;
-  wd10m: number;
-  wd50m: number;
+  ws2m: number | null;
+  ws10m: number | null;
+  ws50m: number | null;
+  wd10m: number | null;
+  wd50m: number | null;
 }
 
 /** Hourly wind data for a date range */
@@ -105,10 +106,10 @@ export interface TrendPoint {
 
 export interface WindTrendResult {
   points: TrendPoint[];
-  slopePerYear: number;
-  rSquared: number;
-  trendDirection: 'increasing' | 'decreasing' | 'stable';
-  trendMagnitude: number;
+  slopePerYear: number | null;
+  rSquared: number | null;
+  trendDirection: 'increasing' | 'decreasing' | 'stable' | 'indeterminate';
+  trendMagnitude: number | null;
   summary: string;
 }
 
@@ -120,10 +121,10 @@ export interface SeasonalHeatmapCell {
 
 export interface SeasonalHeatmapResult {
   cells: SeasonalHeatmapCell[];
-  minSpeed: number;
-  maxSpeed: number;
-  bestSeason: string;
-  worstSeason: string;
+  minSpeed: number | null;
+  maxSpeed: number | null;
+  bestSeason: string | null;
+  worstSeason: string | null;
 }
 
 export interface BoxPlotData {
@@ -147,8 +148,8 @@ export interface DiurnalPoint {
 
 export interface DiurnalProfileResult {
   hours: DiurnalPoint[];
-  peakHour: number;
-  troughHour: number;
+  peakHour: number | null;
+  troughHour: number | null;
   summary: string;
 }
 
@@ -161,9 +162,9 @@ export interface SpeedDistributionBin {
 
 export interface SpeedDistributionResult {
   bins: SpeedDistributionBin[];
-  weibullK: number;
-  weibullC: number;
-  meanSpeed: number;
-  medianSpeed: number;
+  weibullK: number | null;
+  weibullC: number | null;
+  meanSpeed: number | null;
+  medianSpeed: number | null;
   summary: string;
 }

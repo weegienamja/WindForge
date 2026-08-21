@@ -84,7 +84,10 @@ function syntheticField(cells: Array<{ lat: number; lng: number }>): Vector[] {
   });
 }
 
-async function liveField(cells: Array<{ lat: number; lng: number }>, limitN: number): Promise<Vector[]> {
+async function liveField(
+  cells: Array<{ lat: number; lng: number }>,
+  limitN: number,
+): Promise<Vector[]> {
   // Lazy import so the synthetic path doesn't require core to be built.
   const { fetchMonthlyWindHistory } = await import('@jamieblair/windforge-core');
   const pLimit = (await import('p-limit')).default;
@@ -103,19 +106,19 @@ async function liveField(cells: Array<{ lat: number; lng: number }>, limitN: num
             process.stderr.write(`  ${done}/${cells.length} cells fetched\n`);
           }
           if (!result.ok) {
-            results.push({ lat: cell.lat, lng: cell.lng, u: 0, v: 0 });
             return;
           }
           // Pick January if available; otherwise the first record.
           const records = result.value.records;
           const jan = records.find((r) => r.month === 1) ?? records[0];
           if (!jan) {
-            results.push({ lat: cell.lat, lng: cell.lng, u: 0, v: 0 });
             return;
           }
           // Convert speed + direction (degrees from north) to u/v components.
-          const speed = jan.ws50m ?? jan.ws10m ?? 0;
-          const dirRad = ((jan.wd50m ?? jan.wd10m ?? 0) * Math.PI) / 180;
+          const speed = jan.ws50m ?? jan.ws10m;
+          const direction = jan.wd50m ?? jan.wd10m;
+          if (speed === null || direction === null) return;
+          const dirRad = (direction * Math.PI) / 180;
           // Met convention: direction wind comes from. u = east, v = north.
           const u = -speed * Math.sin(dirRad);
           const v = -speed * Math.cos(dirRad);
@@ -126,7 +129,7 @@ async function liveField(cells: Array<{ lat: number; lng: number }>, limitN: num
             v: Number(v.toFixed(3)),
           });
         } catch {
-          results.push({ lat: cell.lat, lng: cell.lng, u: 0, v: 0 });
+          // Missing cells are omitted; calm winds are never fabricated.
         }
       }),
     ),
@@ -143,14 +146,18 @@ async function main(): Promise<void> {
   const limitN = limitArg >= 0 ? Number(argv[limitArg + 1]) || 4 : 4;
 
   const cells = buildGrid();
-  process.stderr.write(`Building wind field: ${cells.length} cells, mode=${live ? 'live' : 'synthetic'}\n`);
+  process.stderr.write(
+    `Building wind field: ${cells.length} cells, mode=${live ? 'live' : 'synthetic'}\n`,
+  );
 
   const vectors = live ? await liveField(cells, limitN) : syntheticField(cells);
 
   mkdirSync(dirname(OUTPUT), { recursive: true });
   const json = JSON.stringify(vectors);
   writeFileSync(OUTPUT, json);
-  process.stderr.write(`Wrote ${OUTPUT} (${(json.length / 1024).toFixed(1)} KB, ${vectors.length} vectors)\n`);
+  process.stderr.write(
+    `Wrote ${OUTPUT} (${(json.length / 1024).toFixed(1)} KB, ${vectors.length} vectors)\n`,
+  );
 }
 
 main().catch((err) => {

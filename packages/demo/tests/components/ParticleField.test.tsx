@@ -11,7 +11,10 @@ describe('ParticleField', () => {
   beforeEach(() => {
     // Mock fetch: the field is provided directly so this should not be hit,
     // but provide a stub regardless.
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true, json: () => Promise.resolve([]) }));
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({ ok: true, json: () => Promise.resolve([]) }),
+    );
   });
 
   it('renders a labelled canvas element', () => {

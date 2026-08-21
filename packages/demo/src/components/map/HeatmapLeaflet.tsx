@@ -1,6 +1,13 @@
 'use client';
 
-import { ImageOverlay, MapContainer, Rectangle, TileLayer, Tooltip, useMapEvents } from 'react-leaflet';
+import {
+  ImageOverlay,
+  MapContainer,
+  Rectangle,
+  TileLayer,
+  Tooltip,
+  useMapEvents,
+} from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import { scoreColor, type HeatmapCell, type HeatmapMeta } from '../../lib/heatmap';
 
@@ -32,7 +39,14 @@ function MapClick({ onMapPick }: { onMapPick: (lat: number, lng: number) => void
  * Renders the suitability grid as coloured rectangles over a dark basemap, and/or
  * a fine Global Wind Atlas raster overlay. Canvas rendering keeps cells smooth.
  */
-export function HeatmapLeaflet({ cells, meta, onPick, colorFor, gwa, onMapPick }: HeatmapLeafletProps) {
+export function HeatmapLeaflet({
+  cells,
+  meta,
+  onPick,
+  colorFor,
+  gwa,
+  onMapPick,
+}: HeatmapLeafletProps) {
   const halfLat = meta.latStepDeg / 2;
   const halfLng = meta.lngStepDeg / 2;
   const fill = colorFor ?? ((c: HeatmapCell) => scoreColor(c.score ?? 0));
@@ -56,9 +70,7 @@ export function HeatmapLeaflet({ cells, meta, onPick, colorFor, gwa, onMapPick }
         opacity={0.85}
       />
 
-      {gwa ? (
-        <ImageOverlay url={gwa.url} bounds={gwa.bounds} opacity={gwa.opacity ?? 0.8} />
-      ) : null}
+      {gwa ? <ImageOverlay url={gwa.url} bounds={gwa.bounds} opacity={gwa.opacity ?? 0.8} /> : null}
       {gwa && onMapPick ? <MapClick onMapPick={onMapPick} /> : null}
 
       {cells.map((cell) => {
@@ -82,15 +94,24 @@ export function HeatmapLeaflet({ cells, meta, onPick, colorFor, gwa, onMapPick }
               <div style={{ fontFamily: 'monospace', fontSize: 12 }}>
                 <strong>Score {cell.score}</strong>
                 {cell.offshore ? <> · offshore</> : null}
-                {typeof cell.windSpeedMs === 'number' ? <> · {cell.windSpeedMs.toFixed(1)} m/s</> : null}
+                {typeof cell.windSpeedMs === 'number' ? (
+                  <> · {cell.windSpeedMs.toFixed(1)} m/s</>
+                ) : null}
                 {typeof cell.lcoePerMwh === 'number' ? (
                   <>
                     {' '}
                     · £{cell.lcoePerMwh}/MWh{cell.subsidyFree ? ' (subsidy-free)' : ''}
                   </>
                 ) : null}
-                {typeof cell.capacityFactor === 'number' ? <> · CF {(cell.capacityFactor * 100).toFixed(0)}%</> : null}
-                {cell.hardConstraints ? <> · {cell.hardConstraints} hard limit{cell.hardConstraints === 1 ? '' : 's'}</> : null}
+                {typeof cell.capacityFactor === 'number' ? (
+                  <> · CF {(cell.capacityFactor * 100).toFixed(0)}%</>
+                ) : null}
+                {cell.hardConstraints ? (
+                  <>
+                    {' '}
+                    · {cell.hardConstraints} hard limit{cell.hardConstraints === 1 ? '' : 's'}
+                  </>
+                ) : null}
                 <br />
                 {cell.lat.toFixed(3)}, {cell.lng.toFixed(3)}
               </div>

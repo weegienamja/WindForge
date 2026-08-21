@@ -6,10 +6,7 @@ import { ok } from '../types/result.js';
 import { clamp, linearScale } from '../utils/geo.js';
 import type { RoadAccess } from '../datasources/osm-overpass.js';
 
-export function scoreAccess(
-  roads: RoadAccess,
-  weight: number,
-): Result<FactorScore, ScoringError> {
+export function scoreAccess(roads: RoadAccess, weight: number): Result<FactorScore, ScoringError> {
   let score: number;
 
   switch (roads.bestRoadCategory) {
@@ -69,7 +66,9 @@ function buildDetail(roads: RoadAccess, score: number): string {
   parts.push(`${quality}.`);
 
   if (roads.nearestMajorRoadDistanceKm >= 0) {
-    parts.push(`Nearest major road (${roads.nearestMajorRoadType}): ${roads.nearestMajorRoadDistanceKm.toFixed(1)}km.`);
+    parts.push(
+      `Nearest major road (${roads.nearestMajorRoadType}): ${roads.nearestMajorRoadDistanceKm.toFixed(1)}km.`,
+    );
   } else {
     parts.push('No major roads found within 5km.');
   }
@@ -79,7 +78,9 @@ function buildDetail(roads: RoadAccess, score: number): string {
   }
 
   if (roads.bestRoadCategory === 'none') {
-    parts.push('No roads found within search area. Construction vehicle access may be a hard constraint.');
+    parts.push(
+      'No roads were found in the OSM search area; construction access is indeterminate and requires a dedicated logistics review.',
+    );
   }
 
   return parts.join(' ');

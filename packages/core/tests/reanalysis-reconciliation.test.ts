@@ -81,7 +81,9 @@ function syntheticSource(
     records.push({ year, month, ws });
   }
   const meanMs = speeds.reduce((s, v) => s + v, 0) / speeds.length;
-  const sdMs = Math.sqrt(speeds.reduce((s, v) => s + (v - meanMs) * (v - meanMs), 0) / speeds.length);
+  const sdMs = Math.sqrt(
+    speeds.reduce((s, v) => s + (v - meanMs) * (v - meanMs), 0) / speeds.length,
+  );
   return {
     history: makeHistory(records),
     summary: { ...makeSummary(meanMs, sdMs, dataYears) },
@@ -109,7 +111,7 @@ describe('reconcileWindData: source preference', () => {
     const rand = rng(1);
     const truth = (i: number) => normal(rand, 8, 2);
     const ref = syntheticSource(2018, 36, truth, 3);
-    const nasa = syntheticSource(2018, 36, (i) => 0.85 * (truth(i)) + 0.5, 3);
+    const nasa = syntheticSource(2018, 36, (i) => 0.85 * truth(i) + 0.5, 3);
     const result = reconcileWindData({ nasa, era5: ref, cerra: ref });
     expect(result.ok).toBe(true);
     if (!result.ok) return;

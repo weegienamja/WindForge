@@ -144,8 +144,7 @@ export function ParticleField({
     const reduceMotion =
       typeof window !== 'undefined' &&
       window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    const matches = (q: string) =>
-      typeof window !== 'undefined' && window.matchMedia(q).matches;
+    const matches = (q: string) => typeof window !== 'undefined' && window.matchMedia(q).matches;
     // Scale particle density to the viewport so phones stay smooth and
     // battery-friendly while desktops get the full dense field.
     const particleCount = matches('(max-width: 767px)')
@@ -161,9 +160,7 @@ export function ParticleField({
     const resolveBg = () => {
       if (backgroundColor) return backgroundColor;
       if (typeof window !== 'undefined') {
-        const s = getComputedStyle(document.documentElement)
-          .getPropertyValue('--surface-0')
-          .trim();
+        const s = getComputedStyle(document.documentElement).getPropertyValue('--surface-0').trim();
         if (s) return s;
       }
       return '#0a0e1a';
@@ -256,13 +253,7 @@ export function ParticleField({
         p.y -= v * speedScale;
         p.age += 1;
 
-        if (
-          p.age > p.maxAge ||
-          p.x < 0 ||
-          p.x > width ||
-          p.y < 0 ||
-          p.y > height
-        ) {
+        if (p.age > p.maxAge || p.x < 0 || p.x > width || p.y < 0 || p.y > height) {
           respawn(p);
           continue;
         }
