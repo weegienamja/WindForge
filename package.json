@@ -18,11 +18,11 @@
     "check": "pnpm format:check && turbo run lint check test build && pnpm --filter @jamieblair/windforge-mcp validate-publish"
   },
   "devDependencies": {
-    "@biomejs/biome": "^2.4.9",
+    "@biomejs/biome": "^2.5.10",
     "next": "^15.5.23",
     "tsx": "^4.23.12",
     "turbo": "^2.10.11",
-    "typescript": "^5.7.3"
+    "typescript": "^7.0.2"
   },
   "pnpm": {
     "overrides": {
