@@ -19,7 +19,7 @@
   },
   "devDependencies": {
     "@biomejs/biome": "^2.4.9",
-    "next": "^15.5.23",
+    "next": "^16.3.2",
     "tsx": "^4.23.12",
     "turbo": "^2.10.11",
     "typescript": "^5.7.3"
