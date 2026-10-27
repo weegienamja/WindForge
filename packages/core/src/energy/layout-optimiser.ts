@@ -11,9 +11,7 @@ import type { TurbineModel, TurbineLayoutEstimate } from '../types/turbines.js';
 import type { ExclusionZone } from '../types/constraints.js';
 import type { WindDataSummary } from '../types/datasources.js';
 import type { WakeModelType } from '../types/wake.js';
-import { isPointInPolygon } from '../utils/geometry.js';
-import { pointInPolygonWithHoles } from '../utils/feature-geometry.js';
-import { distanceKm } from '../utils/geo.js';
+import { isValidPosition, satisfiesSpacing } from './layout-constraints.js';
 import {
   calculateDirectionalWakeLoss,
   layoutToTurbinePositions,
@@ -72,39 +70,6 @@ function metresToDegLng(metres: number, latDeg: number): number {
   const cosLat = Math.cos((latDeg * Math.PI) / 180);
   if (cosLat === 0) return 0;
   return metres / (111_320 * cosLat);
-}
-
-/**
- * Check whether a candidate position satisfies the minimum spacing constraint
- * relative to all other turbine positions (excluding the turbine being moved).
- */
-function satisfiesSpacing(
-  candidate: LatLng,
-  positions: LatLng[],
-  movingIndex: number,
-  minSpacingKm: number,
-): boolean {
-  for (let i = 0; i < positions.length; i++) {
-    if (i === movingIndex) continue;
-    const d = distanceKm(candidate, positions[i]!);
-    if (d < minSpacingKm) return false;
-  }
-  return true;
-}
-
-/**
- * Check whether a point is inside the boundary and outside all exclusion zones.
- */
-function isValidPosition(
-  point: LatLng,
-  boundary: SiteBoundary,
-  exclusionZones: ExclusionZone[],
-): boolean {
-  if (!isPointInPolygon(point, boundary.polygon)) return false;
-  for (const zone of exclusionZones) {
-    if (pointInPolygonWithHoles(point, zone.polygon, zone.holes)) return false;
-  }
-  return true;
 }
 
 /**

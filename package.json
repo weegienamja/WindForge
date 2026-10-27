@@ -12,6 +12,7 @@
     "build": "turbo build",
     "dev": "turbo dev",
     "test": "turbo test",
+    "benchmark:layouts": "tsx packages/core/benchmarks/candidate-layout-search.ts",
     "lint": "turbo lint",
     "format": "turbo format",
     "format:check": "biome format .",

@@ -245,6 +245,13 @@ export type {
 export { calculateAep } from './energy/index.js';
 export { estimateTurbineCapacity } from './energy/index.js';
 export { optimiseLayout } from './energy/index.js';
+export { findCandidateLayouts, optimiseLayoutWithCandidates } from './energy/index.js';
+export type {
+  CandidateLayoutSearchOptions,
+  CandidateLayoutSearchResult,
+  MultiStartOptimiserOptions,
+  MultiStartOptimisedLayoutResult,
+} from './energy/index.js';
 export type { OptimiserOptions, ConvergenceEntry, OptimisedLayoutResult } from './energy/index.js';
 
 // ─── Wake Modelling ───

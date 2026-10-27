@@ -57,6 +57,15 @@ if (result.ok) {
 }
 ```
 
+### Candidate layout search
+
+The core SDK also exposes `optimiseLayoutWithCandidates` for bounded, fixed-turbine-count
+layout experiments. It searches a finite pool of locations, refines several feasible starts
+with the existing wake model, and returns the best result alongside the original optimizer's
+baseline. Counts are labelled exact or partial; the result is not a global energy optimum.
+See [Candidate layout search](docs/CANDIDATE-LAYOUT-SEARCH.md) for usage, limits and the
+reproducible `pnpm benchmark:layouts` comparison.
+
 ### MCP server
 
 ```json
