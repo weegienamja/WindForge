@@ -47,6 +47,10 @@ Do not put credentials in Wrangler `vars`, public environment variables or sourc
 The CDS health probe validates the token against the authenticated profile API;
 an upstream outage is reported separately from an invalid token. A missing key
 only affects the optional Copernicus integration, not standard site analysis.
+The map background uses standard OpenStreetMap tiles, which require no API key.
+Keep the on-map attribution visible and preserve normal browser caching and
+Referer headers. Do not add bulk downloads or offline prefetching; see the
+[OSM tile usage policy](https://operations.osmfoundation.org/policies/tiles/).
 For local Workers preview, copy `packages/demo/.dev.vars.example` to `.dev.vars` in the
 same directory; this file and all generated deployment output are ignored by Git.
 

@@ -299,10 +299,12 @@ export function SiteBoundaryEditor({
             center: [center.lat, center.lng],
             zoom,
             style: { height: '100%', width: '100%' },
-            attributionControl: false,
           },
           React.createElement(TileLayer, {
-            url: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+            url: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+            attribution:
+              '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+            maxZoom: 19,
           }),
           React.createElement(MapClickHandler, { onMapClick: handleMapClick }),
           // Draw the polygon if we have 3+ points
