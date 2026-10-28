@@ -44,6 +44,9 @@ configured deployment workflow.
 Basic analysis needs no secrets. If explicit CDS checks are needed, set the optional
 server-only secret with `pnpm --filter @jamieblair/windforge-demo exec wrangler secret put CDS_API_KEY`.
 Do not put credentials in Wrangler `vars`, public environment variables or source files.
+The CDS health probe validates the token against the authenticated profile API;
+an upstream outage is reported separately from an invalid token. A missing key
+only affects the optional Copernicus integration, not standard site analysis.
 For local Workers preview, copy `packages/demo/.dev.vars.example` to `.dev.vars` in the
 same directory; this file and all generated deployment output are ignored by Git.
 
@@ -51,6 +54,18 @@ Prerendered pages use OpenNext's read-only static-assets incremental cache. Dyna
 analysis and health routes do not use ISR. This deployment needs no R2, KV, D1 or
 Durable Object resources. Introducing runtime revalidation requires configuring a
 writable cache before relying on that feature.
+
+Overpass queries try the global OSM France mirror first, then Private.coffee and
+the main Overpass instance. Each attempt has a 12-second HTTP budget and a
+10-second query execution limit, leaving room for failover within the analysis
+deadline. Caller cancellation stops retries. HTTP 200 responses containing an
+Overpass error remark are rejected, including partial or empty results, and are
+never cached as evidence of an unconstrained site. Successful feature results
+retain the existing 24-hour in-process cache and full geometry.
+
+Public mirrors can lag behind OSM updates. Analysis metadata records the returned
+grid, land-use and road snapshot dates, and the UI warns when that evidence is
+more than 30 days old. This remains preliminary screening data.
 
 The long-running heatmap generator and its local SQLite database remain separate
 from HTTP requests. They publish a public JSON feed or the committed snapshot as

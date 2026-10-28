@@ -1,37 +1,37 @@
+import { reconcileWindData } from '../analysis/reanalysis-reconciliation.js';
+import { fetchMonthlyWindHistory, fetchWindData } from '../datasources/nasa-power.js';
+import { reverseGeocode } from '../datasources/nominatim.js';
+import { fetchElevationData } from '../datasources/open-elevation.js';
+import {
+  fetchGridInfrastructure,
+  fetchLandUse,
+  fetchNearbyWindFarms,
+  fetchRoadAccess,
+} from '../datasources/osm-overpass.js';
 import type {
-  ScoringWeights,
-  FactorScore,
-  Constraint,
-  Warning,
-  SiteAnalysis,
   AnalysisOptions,
-  ReconciliationMetadata,
+  Constraint,
   EvidenceStatus,
+  FactorScore,
+  ReconciliationMetadata,
+  ScoringWeights,
+  SiteAnalysis,
+  Warning,
   WindResourceResult,
 } from '../types/analysis.js';
 import { ScoringFactor } from '../types/analysis.js';
 import type { ScoringError } from '../types/errors.js';
 import { ScoringErrorCode, scoringError } from '../types/errors.js';
-import type { Result } from '../types/result.js';
-import { ok, err } from '../types/result.js';
-import { fetchWindData, fetchMonthlyWindHistory } from '../datasources/nasa-power.js';
-import { fetchElevationData } from '../datasources/open-elevation.js';
-import {
-  fetchGridInfrastructure,
-  fetchLandUse,
-  fetchRoadAccess,
-  fetchNearbyWindFarms,
-} from '../datasources/osm-overpass.js';
-import { reverseGeocode } from '../datasources/nominatim.js';
-import { reconcileWindData } from '../analysis/reanalysis-reconciliation.js';
 import type { ReconciledWindData } from '../types/reconciliation.js';
-import { scoreWindResource } from './wind-resource.js';
-import { scoreTerrainSuitability } from './terrain-suitability.js';
+import type { Result } from '../types/result.js';
+import { err, ok } from '../types/result.js';
+import { isValidCoordinate } from '../utils/geo.js';
+import { scoreAccess } from './access.js';
 import { scoreGridProximity } from './grid-proximity.js';
 import { scoreLandUse } from './land-use.js';
 import { scorePlanning } from './planning.js';
-import { scoreAccess } from './access.js';
-import { isValidCoordinate } from '../utils/geo.js';
+import { scoreTerrainSuitability } from './terrain-suitability.js';
+import { scoreWindResource } from './wind-resource.js';
 
 const DEFAULT_HUB_HEIGHT_M = 80;
 const SCREENING_WIND_SHEAR_ALPHA = 0.14;
@@ -303,7 +303,9 @@ export async function analyseSite(
     if (gridScore.ok) {
       factors.push(gridScore.value);
       sourcesUsed.push('Overpass (grid)');
-      dataFreshness[ScoringFactor.GridProximity] = 'OSM infrastructure data';
+      dataFreshness[ScoringFactor.GridProximity] = gridResult.value.osmBaseTimestamp
+        ? `OSM infrastructure snapshot: ${gridResult.value.osmBaseTimestamp}`
+        : 'OSM infrastructure data (snapshot date not provided)';
       checkConstraints(gridScore.value, hardConstraints, warnings);
       evidence.push({
         source: 'OpenStreetMap via Overpass',
@@ -335,7 +337,9 @@ export async function analyseSite(
       factors.push(luScore.value.factorScore);
       hardConstraints.push(...luScore.value.hardConstraints);
       sourcesUsed.push('Overpass (land use)');
-      dataFreshness[ScoringFactor.LandUseCompatibility] = 'OSM land use data';
+      dataFreshness[ScoringFactor.LandUseCompatibility] = landUseResult.value.osmBaseTimestamp
+        ? `OSM land use snapshot: ${landUseResult.value.osmBaseTimestamp}`
+        : 'OSM land use data (snapshot date not provided)';
       checkConstraints(luScore.value.factorScore, hardConstraints, warnings);
       evidence.push({
         source: 'OpenStreetMap via Overpass',
@@ -410,7 +414,9 @@ export async function analyseSite(
     if (accessScore.ok) {
       factors.push(accessScore.value);
       sourcesUsed.push('Overpass (roads)');
-      dataFreshness[ScoringFactor.AccessLogistics] = 'OSM road network data';
+      dataFreshness[ScoringFactor.AccessLogistics] = roadResult.value.osmBaseTimestamp
+        ? `OSM road network snapshot: ${roadResult.value.osmBaseTimestamp}`
+        : 'OSM road network data (snapshot date not provided)';
       checkConstraints(accessScore.value, hardConstraints, warnings);
       evidence.push({
         source: 'OpenStreetMap via Overpass',
@@ -436,6 +442,21 @@ export async function analyseSite(
   }
 
   // Deduplicate sourcesUsed
+  const osmTimestamps = [gridResult, landUseResult, roadResult]
+    .flatMap((result) =>
+      result?.ok && result.value.osmBaseTimestamp
+        ? [Date.parse(result.value.osmBaseTimestamp)]
+        : [],
+    )
+    .filter(Number.isFinite);
+  const oldestOsmTimestamp = Math.min(...osmTimestamps);
+  if (Date.now() - oldestOsmTimestamp > 30 * 24 * 60 * 60 * 1000) {
+    warnings.push({
+      factor: ScoringFactor.LandUseCompatibility,
+      description: `OpenStreetMap evidence includes a snapshot from ${new Date(oldestOsmTimestamp).toISOString().slice(0, 10)}. Verify recent site changes before relying on these results.`,
+    });
+  }
+
   const uniqueSources = [...new Set(sourcesUsed)];
 
   const presentFactors = new Set(factors.map((factor) => factor.factor));

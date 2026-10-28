@@ -1,40 +1,23 @@
+import {
+  OVERPASS_TIMEOUT_S,
+  type OverpassElement,
+  type OverpassResponse,
+  queryOverpass,
+} from '../datasources/overpass-client.js';
 import type { LatLng } from '../types/analysis.js';
-import type { SiteBoundary } from '../types/site.js';
 import type { ScoringError } from '../types/errors.js';
-import { ScoringErrorCode, scoringError } from '../types/errors.js';
 import type { Result } from '../types/result.js';
-import { ok, err } from '../types/result.js';
+import { ok } from '../types/result.js';
+import type { SiteBoundary } from '../types/site.js';
 import { createCache } from '../utils/cache.js';
+import { osmElementToGeometry, representativeLocation } from '../utils/feature-geometry.js';
 import { expandBoundingBox } from '../utils/geometry.js';
 import { getMaxSetbackKm } from './constraint-definitions.js';
-import {
-  osmElementToGeometry,
-  representativeLocation,
-  type OsmGeometryMember,
-  type OsmGeometryPoint,
-} from '../utils/feature-geometry.js';
 
-const OVERPASS_ENDPOINTS = [
-  'https://overpass-api.de/api/interpreter',
-  'https://overpass.kumi.systems/api/interpreter',
-] as const;
-const OVERPASS_TIMEOUT_S = 30;
 const CACHE_TTL_MS = 24 * 60 * 60 * 1000; // 24 hours
 
-export interface ConstraintElement {
-  type: string;
-  id: number;
-  lat?: number;
-  lon?: number;
-  center?: { lat: number; lon: number };
-  geometry?: OsmGeometryPoint[];
-  members?: OsmGeometryMember[];
-  tags?: Record<string, string>;
-}
-
-export interface ConstraintOverpassResponse {
-  elements: ConstraintElement[];
-}
+export type ConstraintElement = OverpassElement;
+export type ConstraintOverpassResponse = OverpassResponse;
 
 const constraintCache = createCache<ConstraintOverpassResponse>(CACHE_TTL_MS);
 
@@ -88,87 +71,9 @@ export async function fetchConstraintData(
 );
 out body geom;`;
 
-  let lastError: ScoringError | null = null;
-  for (let attempt = 0; attempt < OVERPASS_ENDPOINTS.length; attempt++) {
-    if (signal?.aborted) {
-      return err(scoringError(ScoringErrorCode.Timeout, 'Overpass constraint query cancelled'));
-    }
-    if (attempt > 0) await new Promise((resolve) => setTimeout(resolve, 1500));
-    const result = await requestConstraintData(OVERPASS_ENDPOINTS[attempt]!, query, signal);
-    if (result.ok) {
-      constraintCache.set(cacheKey, result.value);
-      return result;
-    }
-    lastError = result.error;
-    if (!result.error.cause || result.error.code === ScoringErrorCode.ParseError) break;
-  }
-
-  return err(
-    lastError ?? scoringError(ScoringErrorCode.DataFetchFailed, 'Overpass constraint query failed'),
-  );
-}
-
-async function requestConstraintData(
-  endpoint: string,
-  query: string,
-  signal?: AbortSignal,
-): Promise<Result<ConstraintOverpassResponse, ScoringError>> {
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), (OVERPASS_TIMEOUT_S + 5) * 1000);
-  const onAbort = () => controller.abort();
-  signal?.addEventListener('abort', onAbort, { once: true });
-
-  try {
-    const response = await fetch(endpoint, {
-      method: 'POST',
-      headers: {
-        Accept: 'application/json',
-        'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
-        'User-Agent': 'WindForge/0.3 (+https://github.com/weegienamja/WindForge)',
-      },
-      body: new URLSearchParams({ data: query }),
-      signal: controller.signal,
-    });
-    if (!response.ok) {
-      const transient = response.status === 429 || response.status >= 500;
-      return err(
-        scoringError(
-          ScoringErrorCode.DataFetchFailed,
-          `Overpass constraint query HTTP ${response.status}`,
-          transient ? new Error('transient upstream response') : undefined,
-        ),
-      );
-    }
-
-    const data: unknown = await response.json();
-    if (!isConstraintResponse(data)) {
-      return err(
-        scoringError(
-          ScoringErrorCode.ParseError,
-          'Overpass returned an invalid constraint payload',
-        ),
-      );
-    }
-    return ok(data);
-  } catch (cause) {
-    const aborted = controller.signal.aborted;
-    return err(
-      scoringError(
-        aborted ? ScoringErrorCode.Timeout : ScoringErrorCode.DataFetchFailed,
-        aborted ? 'Overpass constraint query timed out' : 'Overpass constraint query failed',
-        cause,
-      ),
-    );
-  } finally {
-    clearTimeout(timeout);
-    signal?.removeEventListener('abort', onAbort);
-  }
-}
-
-function isConstraintResponse(value: unknown): value is ConstraintOverpassResponse {
-  return Boolean(
-    value && typeof value === 'object' && Array.isArray((value as { elements?: unknown }).elements),
-  );
+  const result = await queryOverpass(query, signal);
+  if (result.ok) constraintCache.set(cacheKey, result.value);
+  return result;
 }
 
 /**

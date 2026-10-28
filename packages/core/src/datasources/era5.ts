@@ -8,11 +8,11 @@
 // If no key is provided, callers should fall back to NASA POWER.
 
 import type { LatLng } from '../types/analysis.js';
-import type { WindDataSummary, MonthlyWindAverage } from '../types/datasources.js';
+import type { MonthlyWindAverage, WindDataSummary } from '../types/datasources.js';
 import type { ScoringError } from '../types/errors.js';
 import { ScoringErrorCode, scoringError } from '../types/errors.js';
 import type { Result } from '../types/result.js';
-import { ok, err } from '../types/result.js';
+import { err, ok } from '../types/result.js';
 import { createCache } from '../utils/cache.js';
 import { fetchWithRetry } from '../utils/fetch.js';
 
@@ -98,17 +98,35 @@ export async function validateEra5ApiKey(apiKey: string): Promise<Result<boolean
     return ok(false);
   }
 
-  const url =
-    'https://cds.climate.copernicus.eu/api/retrieve/v1/processes/reanalysis-era5-single-levels-monthly-means';
-  const response = await fetchWithRetry(url, {
-    headers: { 'PRIVATE-TOKEN': apiKey },
-  });
-
-  if (!response.ok) {
-    return ok(false);
+  // Dataset descriptions are public and return 200 even for invalid tokens.
+  // Use the same authentication endpoint as ecmwf-datastores-client instead.
+  const signal = AbortSignal.timeout(10_000);
+  try {
+    const response = await fetch(
+      'https://cds.climate.copernicus.eu/api/profiles/v1/account/verification/pat',
+      { method: 'POST', headers: { 'PRIVATE-TOKEN': apiKey.trim() }, signal },
+    );
+    await response.body?.cancel();
+    if (response.status === 401 || response.status === 403) return ok(false);
+    if (!response.ok) {
+      return err(
+        scoringError(
+          ScoringErrorCode.DataFetchFailed,
+          `CDS authentication check HTTP ${response.status}`,
+        ),
+      );
+    }
+    return ok(true);
+  } catch {
+    return err(
+      scoringError(
+        signal.aborted ? ScoringErrorCode.Timeout : ScoringErrorCode.DataFetchFailed,
+        signal.aborted
+          ? 'CDS authentication check timed out'
+          : 'CDS authentication service unavailable',
+      ),
+    );
   }
-
-  return ok(true);
 }
 
 export function clearEra5Cache(): void {
@@ -119,8 +137,8 @@ export function clearEra5Cache(): void {
 // ─── Phase 5: Monthly history fetcher ───
 
 import { NetCDFReader } from 'netcdfjs';
-import type { MonthlyWindHistory, MonthlyWindRecord } from '../types/datasources.js';
 import type { ReanalysisSource } from '../types/analysis.js';
+import type { MonthlyWindHistory, MonthlyWindRecord } from '../types/datasources.js';
 
 const era5HistoryCache = createCache<ReanalysisSource>(7 * 24 * 60 * 60 * 1000);
 

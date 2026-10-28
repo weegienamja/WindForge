@@ -1,9 +1,9 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
+  clearEra5Cache,
   fetchEra5WindData,
   uvToSpeedDirection,
   validateEra5ApiKey,
-  clearEra5Cache,
 } from '../src/datasources/era5.js';
 
 describe('ERA5 Data Source', () => {
@@ -31,6 +31,35 @@ describe('ERA5 Data Source', () => {
     if (result.ok) {
       expect(result.value).toBe(false);
     }
+  });
+
+  it('validates the token with the authenticated profile endpoint', async () => {
+    const fetch = vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response('{}'));
+    expect(await validateEra5ApiKey(' test-token ')).toEqual({ ok: true, value: true });
+    expect(fetch).toHaveBeenCalledWith(
+      'https://cds.climate.copernicus.eu/api/profiles/v1/account/verification/pat',
+      expect.objectContaining({ method: 'POST', headers: { 'PRIVATE-TOKEN': 'test-token' } }),
+    );
+  });
+
+  it.each([401, 403])('reports a rejected credential for HTTP %s', async (status) => {
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response('{}', { status }));
+    expect(await validateEra5ApiKey('test-token')).toEqual({ ok: true, value: false });
+  });
+
+  it('distinguishes provider failure from an invalid key', async () => {
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response('{}', { status: 503 }));
+    expect(await validateEra5ApiKey('test-token')).toMatchObject({
+      ok: false,
+      error: { code: 'DATA_FETCH_FAILED' },
+    });
+  });
+
+  it('does not expose request credentials in network errors', async () => {
+    vi.spyOn(globalThis, 'fetch').mockRejectedValue(new Error('test-token'));
+    const result = await validateEra5ApiKey('test-token');
+    expect(result).toMatchObject({ ok: false, error: { code: 'DATA_FETCH_FAILED' } });
+    expect(JSON.stringify(result)).not.toContain('test-token');
   });
 
   describe('uvToSpeedDirection', () => {

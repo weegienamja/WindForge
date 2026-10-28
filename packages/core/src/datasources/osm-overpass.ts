@@ -1,26 +1,18 @@
 import type { LatLng } from '../types/analysis.js';
 import type { ScoringError } from '../types/errors.js';
-import { ScoringErrorCode, scoringError } from '../types/errors.js';
 import type { Result } from '../types/result.js';
-import { ok, err } from '../types/result.js';
+import { ok } from '../types/result.js';
 import { createCache } from '../utils/cache.js';
-import {
-  geometryDistanceToPointM,
-  osmElementToGeometry,
-  type OsmGeometryMember,
-  type OsmGeometryPoint,
-} from '../utils/feature-geometry.js';
+import { geometryDistanceToPointM, osmElementToGeometry } from '../utils/feature-geometry.js';
 
-const OVERPASS_ENDPOINTS = [
-  'https://overpass-api.de/api/interpreter',
-  'https://overpass.kumi.systems/api/interpreter',
-] as const;
-const OVERPASS_TIMEOUT_S = 20;
+import { OVERPASS_TIMEOUT_S, queryOverpass } from './overpass-client.js';
+
 const CACHE_TTL_MS = 24 * 60 * 60 * 1000; // 24 hours
 
 // --- Public result types ---
 
 export interface GridInfrastructure {
+  osmBaseTimestamp?: string;
   nearestLineDistanceKm: number;
   nearestSubstationDistanceKm: number;
   lineCount: number;
@@ -29,6 +21,7 @@ export interface GridInfrastructure {
 }
 
 export interface LandUseResult {
+  osmBaseTimestamp?: string;
   hardConstraints: LandUseConstraint[];
   softConstraints: LandUseSoftConstraint[];
   positiveIndicators: string[];
@@ -47,6 +40,7 @@ export interface LandUseSoftConstraint {
 }
 
 export interface RoadAccess {
+  osmBaseTimestamp?: string;
   nearestMajorRoadDistanceKm: number;
   nearestMajorRoadType: string;
   nearestSecondaryRoadDistanceKm: number;
@@ -97,88 +91,6 @@ function bboxString(bbox: { south: number; west: number; north: number; east: nu
   return `${bbox.south},${bbox.west},${bbox.north},${bbox.east}`;
 }
 
-// --- Raw Overpass query execution ---
-
-interface OverpassElement {
-  type: string;
-  id: number;
-  lat?: number;
-  lon?: number;
-  center?: { lat: number; lon: number };
-  geometry?: OsmGeometryPoint[];
-  members?: OsmGeometryMember[];
-  tags?: Record<string, string>;
-}
-
-interface OverpassResponse {
-  elements: OverpassElement[];
-}
-
-async function runOverpassQuery(
-  endpoint: string,
-  query: string,
-  signal?: AbortSignal,
-): Promise<Result<OverpassResponse, ScoringError>> {
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), (OVERPASS_TIMEOUT_S + 5) * 1000);
-  // If an external signal aborts, propagate to our controller
-  const onAbort = () => controller.abort();
-  signal?.addEventListener('abort', onAbort);
-
-  try {
-    const response = await fetch(endpoint, {
-      method: 'POST',
-      headers: {
-        Accept: 'application/json',
-        'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
-        'User-Agent': 'WindForge/0.3 (+https://github.com/weegienamja/WindForge)',
-      },
-      body: new URLSearchParams({ data: query }),
-      signal: controller.signal,
-    });
-
-    if (!response.ok) {
-      const transient = response.status === 429 || response.status >= 500;
-      return err(
-        scoringError(
-          ScoringErrorCode.DataFetchFailed,
-          `Overpass API HTTP ${response.status}`,
-          transient ? new Error('transient upstream response') : undefined,
-        ),
-      );
-    }
-
-    const data: unknown = await response.json();
-    if (!data || typeof data !== 'object' || !Array.isArray((data as OverpassResponse).elements)) {
-      return err(scoringError(ScoringErrorCode.ParseError, 'Overpass returned an invalid payload'));
-    }
-    return ok(data as OverpassResponse);
-  } catch (cause) {
-    const isAbort = cause instanceof DOMException && cause.name === 'AbortError';
-    return err(
-      scoringError(
-        isAbort ? ScoringErrorCode.Timeout : ScoringErrorCode.DataFetchFailed,
-        isAbort ? 'Overpass API request timed out' : 'Overpass API request failed',
-        cause,
-      ),
-    );
-  } finally {
-    clearTimeout(timeout);
-    signal?.removeEventListener('abort', onAbort);
-  }
-}
-
-async function runOverpassWithRetry(
-  query: string,
-  signal?: AbortSignal,
-): Promise<Result<OverpassResponse, ScoringError>> {
-  const first = await runOverpassQuery(OVERPASS_ENDPOINTS[0], query, signal);
-  if (first.ok || !first.error.cause || first.error.code === ScoringErrorCode.ParseError)
-    return first;
-  await new Promise((r) => setTimeout(r, 1500));
-  return runOverpassQuery(OVERPASS_ENDPOINTS[1], query, signal);
-}
-
 // --- Grid infrastructure ---
 
 export async function fetchGridInfrastructure(
@@ -219,7 +131,7 @@ async function queryGridInfrastructure(
 );
 out body geom;`;
 
-  const result = await runOverpassWithRetry(query, signal);
+  const result = await queryOverpass(query, signal);
   if (!result.ok) return result;
 
   const elements = result.value.elements;
@@ -246,6 +158,7 @@ out body geom;`;
   if (nearestSubstationDistanceKm === Number.POSITIVE_INFINITY) nearestSubstationDistanceKm = -1;
 
   return ok({
+    osmBaseTimestamp: result.value.osmBaseTimestamp,
     nearestLineDistanceKm,
     nearestSubstationDistanceKm,
     lineCount,
@@ -294,7 +207,7 @@ export async function fetchLandUse(
 );
 out body geom;`;
 
-  const result = await runOverpassWithRetry(query, signal);
+  const result = await queryOverpass(query, signal);
   if (!result.ok) return result;
 
   const hardConstraints: LandUseConstraint[] = [];
@@ -375,6 +288,7 @@ out body geom;`;
   }
 
   const data: LandUseResult = {
+    osmBaseTimestamp: result.value.osmBaseTimestamp,
     hardConstraints,
     softConstraints,
     positiveIndicators,
@@ -405,7 +319,7 @@ export async function fetchRoadAccess(
 );
 out body geom;`;
 
-  const result = await runOverpassWithRetry(query, signal);
+  const result = await queryOverpass(query, signal);
   if (!result.ok) return result;
 
   let nearestMajorRoadDistanceKm = Number.POSITIVE_INFINITY;
@@ -446,6 +360,7 @@ out body geom;`;
     nearestSecondaryRoadDistanceKm = -1;
 
   const data: RoadAccess = {
+    osmBaseTimestamp: result.value.osmBaseTimestamp,
     nearestMajorRoadDistanceKm,
     nearestMajorRoadType,
     nearestSecondaryRoadDistanceKm,
@@ -478,7 +393,7 @@ export async function fetchNearbyWindFarms(
 );
 out body geom;`;
 
-  const result = await runOverpassWithRetry(query, signal);
+  const result = await queryOverpass(query, signal);
   if (!result.ok) return result;
 
   const farms: NearbyWindFarm[] = [];
