@@ -2,7 +2,7 @@ import '@testing-library/jest-dom/vitest';
 import { vi } from 'vitest';
 
 // Default matchMedia mock. Individual tests can override.
-if (!window.matchMedia) {
+if (typeof window !== 'undefined' && !window.matchMedia) {
   Object.defineProperty(window, 'matchMedia', {
     writable: true,
     value: (query: string) => ({
@@ -20,7 +20,7 @@ if (!window.matchMedia) {
 
 // jsdom does not implement IntersectionObserver, provide a minimal stub
 // that immediately reports the target as in view.
-if (!('IntersectionObserver' in window)) {
+if (typeof window !== 'undefined' && !('IntersectionObserver' in window)) {
   class IO {
     constructor(private cb: IntersectionObserverCallback) {}
     observe(target: Element) {

@@ -1,5 +1,7 @@
+// @vitest-environment node
+
 import { describe, expect, it } from 'vitest';
-import { WindForgeDB, type CellRecord } from '../scripts/lib/heatmap-store';
+import { type CellRecord, WindForgeDB } from '../scripts/lib/heatmap-store';
 
 const record = (over: Partial<CellRecord> = {}): CellRecord => ({
   id: '55.86000,-4.25000',
