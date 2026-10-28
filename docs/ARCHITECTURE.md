@@ -34,7 +34,7 @@ Overpass is requested with full element geometry. OSM nodes become points, ways 
 
 ## Deployment
 
-The Next.js application deploys from `packages/demo`. `/api/analyse` and `/api/health` are dynamic Node routes with no-store responses. Only server routes can access `CDS_API_KEY`. Static/client bundles must contain no credential values.
+The Next.js application deploys from `packages/demo` to Cloudflare Workers through OpenNext. The canonical URL is https://windforge.khmer-iq.workers.dev. `/api/analyse` and `/api/health` are dynamic routes running with Workers Node.js compatibility and no-store responses. Prerendered pages use the static-assets incremental cache; there is no runtime ISR or database binding. Only server routes can access `CDS_API_KEY`. Static/client bundles must contain no credential values. See [Cloudflare deployment](CLOUDFLARE.md).
 
 ## Change discipline
 

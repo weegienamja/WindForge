@@ -36,4 +36,4 @@ LIMITATIONS
     containing credentials.
 
 See docs/HEATMAP.md. The public map is:
-  https://wind-forge-demo.vercel.app/map
+  https://windforge.khmer-iq.workers.dev/map

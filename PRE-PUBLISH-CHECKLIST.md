@@ -15,7 +15,7 @@
 - [ ] Exercise landing, valid analysis, invalid analysis input, geocoding, partial/provider failure presentation, map, navigation, and a mobile viewport.
 - [ ] Confirm required provider failure withholds the composite rather than displaying a neutral score.
 - [ ] Confirm the static map identifies itself as partial and shows timestamp/resolution/source limitations.
-- [ ] Inspect browser console, network responses, Vercel build/runtime logs, HTML, and delivered JavaScript for errors or secret leakage.
+- [ ] Inspect browser console, network responses, Cloudflare Workers build/runtime logs, HTML, and delivered JavaScript for errors or secret leakage.
 - [ ] Verify the preview deployment before merge and the canonical production URL after merge/promotion.
 
 ## Scientific and public claims

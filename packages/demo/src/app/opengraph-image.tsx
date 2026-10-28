@@ -106,7 +106,7 @@ export default function OgImage() {
           <span>·</span>
           <span>MCP-ready</span>
         </div>
-        <div>wind-forge-demo.vercel.app</div>
+        <div>windforge.khmer-iq.workers.dev</div>
       </div>
     </div>,
     {

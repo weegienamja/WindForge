@@ -12,7 +12,7 @@ $Data = Join-Path $Repo 'heatmap-data'
 $Db   = Join-Path $Data 'uk.db'
 $Out  = Join-Path $Data 'uk.json'
 $Log  = Join-Path $Here 'worker.log'
-$MapUrl = 'https://wind-forge-demo.vercel.app/map'
+$MapUrl = 'https://windforge.khmer-iq.workers.dev/map'
 # ------------------------------------------------------------------------------
 
 $script:proc = $null

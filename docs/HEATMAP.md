@@ -1,6 +1,6 @@
 # UK heatmap pipeline
 
-`packages/demo/scripts/generate-heatmap.ts` is a slow, polite, resumable worker for coarse screening cells. It is separate from Vercel because a run can take hours and public providers rate-limit sustained requests.
+`packages/demo/scripts/generate-heatmap.ts` is a slow, polite, resumable worker for coarse screening cells. It is separate from Cloudflare Workers because a run can take hours and public providers rate-limit sustained requests.
 
 ## Truthfulness boundary
 

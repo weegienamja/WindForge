@@ -6,7 +6,7 @@ Open-source, screening-level evidence for early wind-energy site investigation.
 [![CI](https://img.shields.io/github/actions/workflow/status/weegienamja/WindForge/ci.yml?branch=main&label=CI)](https://github.com/weegienamja/WindForge/actions)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
-**Live demo:** https://wind-forge-demo.vercel.app
+**Live demo:** https://windforge.khmer-iq.workers.dev
 
 WindForge combines public wind, elevation, OpenStreetMap, and geocoding evidence into an explained six-factor screen. It also includes reusable TypeScript modules for energy-yield sensitivity, layouts, wakes, noise, shadow flicker, wind-condition screening, finance, and report data, plus a local Model Context Protocol (MCP) server.
 
@@ -40,6 +40,13 @@ pnpm dev --filter @jamieblair/windforge-demo
 ```
 
 The demo is then available at `http://localhost:3000`. Basic analysis needs no credentials.
+
+### Cloudflare deployment
+
+The public app runs on Cloudflare Workers at https://windforge.khmer-iq.workers.dev.
+Run `pnpm deploy:cloudflare` from the repository root to build the workspace packages
+and deploy the OpenNext Worker. See [Cloudflare deployment](docs/CLOUDFLARE.md) for
+authentication, local preview, build settings and verification.
 
 ### TypeScript SDK
 

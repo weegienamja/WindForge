@@ -23,7 +23,12 @@ temp/
 .env.development
 .env.production
 
+.open-next
+.wrangler
 .vercel
+.dev.vars
+.dev.vars.*
+!.dev.vars.example
 
 # Heatmap worker output / checkpoints (the live feed is generated, not committed)
 heatmap-data/

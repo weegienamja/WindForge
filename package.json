@@ -16,7 +16,10 @@
     "lint": "turbo lint",
     "format": "turbo format",
     "format:check": "biome format .",
-    "check": "pnpm format:check && turbo run lint check test build && pnpm --filter @jamieblair/windforge-mcp validate-publish"
+    "check": "pnpm format:check && turbo run lint check test build && pnpm --filter @jamieblair/windforge-mcp validate-publish",
+    "build:cloudflare": "pnpm --filter @jamieblair/windforge-core build && pnpm --filter @jamieblair/windforge build && pnpm --filter @jamieblair/windforge-demo build:cloudflare",
+    "deploy:cloudflare": "pnpm build:cloudflare && pnpm --filter @jamieblair/windforge-demo deploy:cloudflare",
+    "preview:cloudflare": "pnpm build:cloudflare && pnpm --filter @jamieblair/windforge-demo preview:cloudflare"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.4.9",
@@ -37,6 +40,7 @@
       "esbuild": "0.28.2",
       "fast-uri": "3.1.9",
       "fflate": "0.8.3",
+      "glob@10": "10.5.0",
       "hono": "4.13.11",
       "ip-address": "10.7.4",
       "nanoid@3": "3.3.18",

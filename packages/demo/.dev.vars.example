@@ -1,0 +1,3 @@
+NEXTJS_ENV=development
+# Optional, server-only. Never commit a real credential.
+CDS_API_KEY=

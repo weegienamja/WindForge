@@ -16,13 +16,13 @@
   powershell -ExecutionPolicy Bypass -File packages\demo\scripts\heatmap-live.ps1
 
 .PARAMETER AppUrl
-  Base URL of the deployed app. Default: https://wind-forge-demo.vercel.app
+  Base URL of the deployed app. Default: https://windforge.khmer-iq.workers.dev
 
 .PARAMETER Port
   Local port the worker serves on. Default: 8088
 #>
 param(
-  [string]$AppUrl = 'https://wind-forge-demo.vercel.app',
+  [string]$AppUrl = 'https://windforge.khmer-iq.workers.dev',
   [int]$Port = 8088
 )
 

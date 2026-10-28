@@ -28,6 +28,9 @@ jobs:
 
       - run: pnpm check
 
+      - name: Validate Cloudflare Worker bundle
+        run: pnpm --filter @jamieblair/windforge-demo build:cloudflare
+
       - name: Audit production dependencies
         run: pnpm audit --prod --audit-level high
 

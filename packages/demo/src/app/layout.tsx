@@ -39,13 +39,13 @@ export const metadata: Metadata = {
     'MCP',
     'open source',
   ],
-  alternates: { canonical: 'https://wind-forge-demo.vercel.app' },
+  alternates: { canonical: 'https://windforge.khmer-iq.workers.dev' },
   openGraph: {
     title: 'WindForge · Wind site screening',
     description:
       'Open-source, six-factor pre-feasibility screening with explicit evidence provenance and completeness.',
     type: 'website',
-    url: 'https://wind-forge-demo.vercel.app',
+    url: 'https://windforge.khmer-iq.workers.dev',
     siteName: 'WindForge',
   },
   twitter: {
@@ -54,7 +54,7 @@ export const metadata: Metadata = {
     description:
       'Open-source pre-feasibility screening with explicit evidence provenance and completeness.',
   },
-  metadataBase: new URL('https://wind-forge-demo.vercel.app'),
+  metadataBase: new URL('https://windforge.khmer-iq.workers.dev'),
 };
 
 // Mobile-first viewport. Leaflet's CSS is imported by the LeafletMap component
