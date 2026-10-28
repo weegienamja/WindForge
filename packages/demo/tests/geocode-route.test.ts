@@ -64,6 +64,31 @@ describe('/api/geocode', () => {
     expect(res.headers.get('cache-control')).toContain('no-store');
   });
 
+  it('rejects blank reverse coordinates before contacting the provider', async () => {
+    const fetchSpy = vi.fn();
+    vi.stubGlobal('fetch', fetchSpy);
+    for (const query of ['?lat=&lng=', '?lat=%20&lng=0', '?lat=0&lng=%20']) {
+      expect((await GET(req(query))).status).toBe(400);
+    }
+    expect(fetchSpy).not.toHaveBeenCalled();
+  });
+
+  it('filters malformed provider rows without inventing zero coordinates', async () => {
+    mockFetchOnce([
+      { display_name: 'Valid', lat: '0', lon: '0' },
+      { display_name: 'Missing', lat: null, lon: null },
+      { display_name: 'Blank', lat: '', lon: ' ' },
+      { display_name: 'Outside', lat: '91', lon: '181' },
+      { display_name: {}, lat: '1', lon: '2' },
+      null,
+    ]);
+    const response = await GET(req('?q=Test'));
+    expect(response.status).toBe(200);
+    expect((await response.json()).results).toEqual([
+      { displayName: 'Valid', label: 'Valid', category: '', lat: 0, lng: 0 },
+    ]);
+  });
+
   it('rejects out-of-range coordinates and oversized queries', async () => {
     expect((await GET(req('?lat=91&lng=0'))).status).toBe(400);
     expect((await GET(req(`?q=${'x'.repeat(121)}`))).status).toBe(400);
@@ -79,5 +104,17 @@ describe('/api/geocode', () => {
     const res = await GET(req('?q=Stornoway'));
     expect(res.status).toBe(502);
     expect(res.headers.get('cache-control')).toContain('no-store');
+  });
+
+  it('does not cache malformed provider payloads or timeouts as successful lookups', async () => {
+    mockFetchOnce({ error: 'Invalid response shape' });
+    const malformed = await GET(req('?q=Test'));
+    expect(malformed.status).toBe(502);
+    expect(malformed.headers.get('cache-control')).toContain('no-store');
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockRejectedValue(new DOMException('Timed out', 'TimeoutError')),
+    );
+    expect((await GET(req('?q=Test'))).status).toBe(504);
   });
 });

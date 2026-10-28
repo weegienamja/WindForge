@@ -6,7 +6,6 @@ import type {
   SiteAssessment,
   SiteAssessmentMetadata,
 } from '../types/site.js';
-import type { SiteConstraintReport } from '../types/constraints.js';
 import type { TurbineModel } from '../types/turbines.js';
 import type { ScoringError } from '../types/errors.js';
 import { ScoringErrorCode, scoringError } from '../types/errors.js';
@@ -19,6 +18,8 @@ import { fetchConstraintData } from '../constraints/constraint-queries.js';
 import { pointInPolygonWithHoles } from '../utils/feature-geometry.js';
 import type { FactorScore } from '../types/analysis.js';
 import { ScoringFactor } from '../types/analysis.js';
+import { calculateAep } from '../energy/aep-calculator.js';
+import { estimateTurbineCapacity } from '../energy/turbine-layout.js';
 
 export interface SiteAssessmentOptions {
   weights?: Partial<ScoringWeights>;
@@ -49,6 +50,23 @@ export async function assessSite(
   const maxConcurrent = options.maxConcurrentAnalyses ?? 5;
   const signal = options.signal;
 
+  if (
+    !Number.isSafeInteger(maxConcurrent) ||
+    maxConcurrent < 1 ||
+    !Number.isFinite(hubHeightM) ||
+    hubHeightM <= 0 ||
+    (options.gridSpacingKm !== undefined &&
+      (!Number.isFinite(options.gridSpacingKm) || options.gridSpacingKm <= 0))
+  ) {
+    return err(
+      scoringError(
+        ScoringErrorCode.Configuration,
+        'Use positive finite hub height and grid spacing, and a positive integer concurrency limit.',
+      ),
+    );
+  }
+  if (signal?.aborted) return err(scoringError(ScoringErrorCode.Unknown, 'Assessment cancelled'));
+
   const weightsResult = normaliseWeights(options.weights ?? {});
   if (!weightsResult.ok) return weightsResult;
   const weights = weightsResult.value;
@@ -66,14 +84,9 @@ export async function assessSite(
 
   // Fetch constraint data for the entire site (one Overpass call)
   const constraintDataResult = await fetchConstraintData(boundary, signal);
-  let constraintReport: SiteConstraintReport;
-
-  if (constraintDataResult.ok) {
-    constraintReport = detectConstraints(boundary, constraintDataResult.value);
-  } else {
-    // Fallback if Overpass fails: empty constraint report
-    constraintReport = emptyConstraintReport();
-  }
+  // An unavailable constraint survey cannot establish that land is viable.
+  if (!constraintDataResult.ok) return constraintDataResult;
+  const constraintReport = detectConstraints(boundary, constraintDataResult.value);
 
   // Determine exclusion zones
   const exclusionZones = constraintReport.exclusionZones;
@@ -173,8 +186,7 @@ export async function assessSite(
     for (const s of sp.analysis.metadata.sourcesUsed) sourcesUsed.add(s);
     for (const s of sp.analysis.metadata.sourcesFailed) sourcesFailed.add(s);
   }
-  if (constraintDataResult.ok) sourcesUsed.add('Overpass (constraints)');
-  else sourcesFailed.add('Overpass (constraints)');
+  sourcesUsed.add('Overpass (constraints)');
 
   const metadata: SiteAssessmentMetadata = {
     analysedAt: new Date().toISOString(),
@@ -192,6 +204,35 @@ export async function assessSite(
     constraints: constraintReport,
     metadata,
   };
+
+  if (options.turbineModel) {
+    const reference = aggregatedScore.bestPoint.analysis;
+    const wind = reference.windResource?.resolved;
+    if (aggregatedScore.compositeScore === null || !wind) {
+      return err(
+        scoringError(
+          ScoringErrorCode.InsufficientData,
+          'Energy estimation requires a scored sample point with resolved wind evidence.',
+        ),
+      );
+    }
+    // Validate the model before using its rotor diameter to generate a grid.
+    const aepOptions = { hubHeightM, windShearAlpha: reference.metadata.windShearAlpha };
+    const validation = calculateAep(wind, options.turbineModel, aepOptions);
+    if (!validation.ok) return validation;
+    const layout = estimateTurbineCapacity(boundary, options.turbineModel, wind, exclusionZones);
+    const energy = calculateAep(wind, options.turbineModel, {
+      ...aepOptions,
+      turbineCount: layout.turbineCount,
+    });
+    if (!energy.ok) return energy;
+    assessment.turbineLayout = layout;
+    assessment.energyYield = {
+      ...energy.value,
+      summary: `${energy.value.summary} Wind evidence comes from the highest-scoring sample point (${reference.coordinate.lat}, ${reference.coordinate.lng}); it is not a spatially integrated site yield.`,
+    };
+    assessment.metadata.durationMs = Date.now() - startTime;
+  }
 
   return ok(assessment);
 }
@@ -304,34 +345,5 @@ function aggregateScores(samplePoints: SamplePoint[], totalAreaSqKm: number): Ag
     worstPoint,
     sampleCount: samplePoints.length,
     excludedCount,
-  };
-}
-
-function emptyConstraintReport(): SiteConstraintReport {
-  return {
-    hardConstraints: [],
-    softConstraints: [],
-    infoConstraints: [],
-    exclusionZones: [],
-    nearestReceptors: {
-      nearestDwellingM: null,
-      nearestSettlementM: null,
-      nearestProtectedAreaM: null,
-      nearestSubstationM: null,
-      nearestMajorRoadM: null,
-      nearestExistingWindFarmM: null,
-      nearestWaterbodyM: null,
-      nearestRailwayM: null,
-    },
-    summary: {
-      totalHard: 0,
-      totalSoft: 0,
-      totalInfo: 0,
-      viableAreaPercent: 100,
-      topBlocker: null,
-      recommendation: 'proceed_with_caution',
-      reasoning:
-        'Constraint data unavailable. Proceed with caution and verify constraints manually.',
-    },
   };
 }

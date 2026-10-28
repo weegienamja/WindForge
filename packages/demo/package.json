@@ -22,7 +22,7 @@
     "@jamieblair/windforge-core": "workspace:*",
     "framer-motion": "^12.38.0",
     "leaflet": "^1.9.4",
-    "next": "^15.5.23",
+    "next": "^15.5.28",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "react-leaflet": "^5.0.0",
@@ -44,6 +44,6 @@
     "pngjs": "^7.0.0",
     "tsx": "^4.23.12",
     "typescript": "^5.0.0",
-    "vitest": "^3.2.7"
+    "vitest": "^4.1.12"
   }
 }

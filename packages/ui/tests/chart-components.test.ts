@@ -1,4 +1,6 @@
 import { describe, it, expect } from 'vitest';
+// Load the shared chart dependency graph during collection, outside per-test deadlines.
+import { WindTrendChart } from '../src/components/WindTrendChart.js';
 
 // NOTE: We cannot import from '../src/index.js' directly because SiteMap imports Leaflet,
 // which requires `window` (DOM). Instead, test individual component modules.
@@ -6,9 +8,8 @@ import { describe, it, expect } from 'vitest';
 // ─── Smoke: chart components are importable ───
 
 describe('Chart component exports', () => {
-  it('exports WindTrendChart', async () => {
-    const mod = await import('../src/components/WindTrendChart.js');
-    expect(typeof mod.WindTrendChart).toBe('function');
+  it('exports WindTrendChart', () => {
+    expect(typeof WindTrendChart).toBe('function');
   });
 
   it('exports SeasonalHeatmap', async () => {

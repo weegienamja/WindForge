@@ -13,9 +13,26 @@ describe('errorCopyFor', () => {
   });
 
   it('maps CONFIGURATION without exposing server configuration names', () => {
-    const message = errorCopyFor('CONFIGURATION', '');
+    const message = errorCopyFor('CONFIGURATION', 'CDS_API_KEY missing');
     expect(message).toContain('Optional reanalysis is not configured');
     expect(message).not.toContain('CDS_API_KEY');
+  });
+
+  it('does not attribute ordinary analysis failures to Copernicus', () => {
+    expect(errorCopyFor('TIMEOUT', 'Analysis did not complete within 45 seconds.')).toBe(
+      'Analysis did not complete within 45 seconds.',
+    );
+    expect(errorCopyFor('CONFIGURATION', 'Invalid turbine dimensions.')).toBe(
+      'Invalid turbine dimensions.',
+    );
+    expect(errorCopyFor('CONFIGURATION', '')).not.toContain('reanalysis');
+  });
+
+  it('preserves specific range and insufficient-data errors', () => {
+    expect(errorCopyFor('OUT_OF_RANGE', 'Unknown turbine model.')).toBe('Unknown turbine model.');
+    expect(errorCopyFor('INSUFFICIENT_DATA', 'Wind statistics must be finite.')).toBe(
+      'Wind statistics must be finite.',
+    );
   });
 
   it('falls back to the underlying message for unknown codes', () => {

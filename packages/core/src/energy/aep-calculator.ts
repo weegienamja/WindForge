@@ -53,21 +53,109 @@ export function calculateAep(
   const turbineCount = options.turbineCount ?? 1;
   const elevationM = options.elevationM ?? 0;
   const roughnessAlpha = options.windShearAlpha ?? 0.14;
+  const refHeightM = windData.referenceHeightM ?? 50;
+  const wakeModel = options.wakeModel ?? 'parametric';
+  const lossOverrides = { ...DEFAULT_LOSSES };
+  for (const key of Object.keys(DEFAULT_LOSSES) as Array<keyof LossOverrides>) {
+    const value = options.losses?.[key];
+    if (value !== undefined) lossOverrides[key] = value;
+  }
 
-  if (windData.annualAverageSpeedMs <= 0) {
+  if (
+    !Number.isFinite(windData.annualAverageSpeedMs) ||
+    windData.annualAverageSpeedMs <= 0 ||
+    (windData.speedStdDevMs !== undefined &&
+      (!Number.isFinite(windData.speedStdDevMs) || windData.speedStdDevMs < 0)) ||
+    windData.monthlyAverages.some(
+      (month) =>
+        !Number.isInteger(month.month) ||
+        month.month < 1 ||
+        month.month > 12 ||
+        !Number.isFinite(month.averageSpeedMs) ||
+        month.averageSpeedMs < 0 ||
+        !Number.isFinite(month.averageDirectionDeg),
+    ) ||
+    new Set(windData.monthlyAverages.map((month) => month.month)).size !==
+      windData.monthlyAverages.length
+  ) {
     return err(
-      scoringError(ScoringErrorCode.DataFetchFailed, 'No valid wind speed data available'),
+      scoringError(
+        ScoringErrorCode.InsufficientData,
+        'Wind statistics must be finite, with a positive annual mean and distinct calendar months.',
+      ),
     );
   }
 
-  if (turbine.powerCurve.length < 3) {
+  if (
+    !Number.isSafeInteger(turbineCount) ||
+    turbineCount < 0 ||
+    !Number.isFinite(hubHeightM) ||
+    hubHeightM <= 0 ||
+    !Number.isFinite(refHeightM) ||
+    refHeightM <= 0 ||
+    !Number.isFinite(elevationM) ||
+    !Number.isFinite(roughnessAlpha) ||
+    !Number.isFinite(turbine.ratedPowerKw) ||
+    turbine.ratedPowerKw <= 0 ||
+    !Number.isFinite(turbine.rotorDiameterM) ||
+    turbine.rotorDiameterM <= 0 ||
+    !['parametric', 'jensen', 'bastankhah'].includes(wakeModel) ||
+    (options.roughnessClass !== undefined &&
+      (!Number.isFinite(options.roughnessClass) ||
+        options.roughnessClass < 0 ||
+        options.roughnessClass > 3)) ||
+    Object.values(lossOverrides).some(
+      (value) => !Number.isFinite(value) || value < 0 || value > 100,
+    )
+  ) {
     return err(
-      scoringError(ScoringErrorCode.Unknown, 'Turbine power curve has insufficient data points'),
+      scoringError(
+        ScoringErrorCode.Configuration,
+        'AEP requires valid finite dimensions, a non-negative integer turbine count, and loss percentages between 0 and 100.',
+      ),
+    );
+  }
+
+  if (
+    wakeModel !== 'parametric' &&
+    (!options.layoutPositions ||
+      options.layoutPositions.length !== turbineCount ||
+      options.layoutPositions.some(
+        (point) =>
+          !Number.isFinite(point.lat) ||
+          Math.abs(point.lat) > 90 ||
+          !Number.isFinite(point.lng) ||
+          Math.abs(point.lng) > 180,
+      ))
+  ) {
+    return err(
+      scoringError(
+        ScoringErrorCode.Configuration,
+        'Directional wake modelling requires one valid layout coordinate per turbine.',
+      ),
+    );
+  }
+
+  if (
+    turbine.powerCurve.length < 3 ||
+    turbine.powerCurve.some(
+      (point, index) =>
+        !Number.isFinite(point.windSpeedMs) ||
+        point.windSpeedMs < 0 ||
+        !Number.isFinite(point.powerKw) ||
+        point.powerKw < 0 ||
+        (index > 0 && point.windSpeedMs <= turbine.powerCurve[index - 1]!.windSpeedMs),
+    )
+  ) {
+    return err(
+      scoringError(
+        ScoringErrorCode.Configuration,
+        'Turbine power curve needs at least three finite, non-negative points in strictly increasing wind-speed order.',
+      ),
     );
   }
 
   // 1. Extrapolate wind speed to hub height
-  const refHeightM = windData.referenceHeightM ?? 50;
   const hubSpeedMs = extrapolateWindSpeed(
     windData.annualAverageSpeedMs,
     refHeightM,
@@ -76,7 +164,20 @@ export function calculateAep(
   );
 
   // 2. Fit Weibull parameters from mean and standard deviation
-  const { k, c } = fitWeibullFromStats(hubSpeedMs, windData.speedStdDevMs ?? hubSpeedMs * 0.5);
+  // Multiplication by the height factor scales both the mean and standard deviation.
+  const hubStdDevMs =
+    windData.speedStdDevMs === undefined
+      ? hubSpeedMs * 0.5
+      : extrapolateWindSpeed(windData.speedStdDevMs, refHeightM, hubHeightM, roughnessAlpha);
+  if (!Number.isFinite(hubSpeedMs) || hubSpeedMs <= 0 || !Number.isFinite(hubStdDevMs)) {
+    return err(
+      scoringError(
+        ScoringErrorCode.Configuration,
+        'Wind-height extrapolation is outside the finite numerical range.',
+      ),
+    );
+  }
+  const { k, c } = fitWeibullFromStats(hubSpeedMs, hubStdDevMs);
 
   // 3. Gross AEP from Weibull x power curve integration
   const grossAepPerTurbineMwh = integrateWeibullPowerCurve(k, c, turbine.powerCurve) / 1000;
@@ -87,18 +188,29 @@ export function calculateAep(
   const densityCorrectedAepMwh = grossAepPerTurbineMwh * densityFactor;
 
   // 5. Build loss stack with optional directional wake model
-  const lossOverrides = { ...DEFAULT_LOSSES, ...options.losses };
-
   // Determine wake loss: directional model or parametric flat %
-  const wakeModel = options.wakeModel ?? 'parametric';
   let directionalWakeLossPct: number | undefined;
 
-  if (wakeModel !== 'parametric' && options.layoutPositions && options.layoutPositions.length > 1) {
+  if (wakeModel !== 'parametric' && options.layoutPositions) {
     const turbinePositions = layoutToTurbinePositions(options.layoutPositions, turbine, hubHeightM);
     const wakeLossResult = calculateDirectionalWakeLoss(
       turbinePositions,
       turbine,
-      windData,
+      {
+        ...windData,
+        referenceHeightM: hubHeightM,
+        annualAverageSpeedMs: hubSpeedMs,
+        speedStdDevMs: hubStdDevMs,
+        monthlyAverages: windData.monthlyAverages.map((month) => ({
+          ...month,
+          averageSpeedMs: extrapolateWindSpeed(
+            month.averageSpeedMs,
+            refHeightM,
+            hubHeightM,
+            roughnessAlpha,
+          ),
+        })),
+      },
       wakeModel,
       {
         roughnessClass: options.roughnessClass,
@@ -154,6 +266,23 @@ export function calculateAep(
     netMultiplier,
     densityFactor,
   );
+
+  if (
+    ![
+      grossTotalAepMwh,
+      netTotalAepMwh,
+      grossCapacityFactor,
+      netCapacityFactor,
+      ...monthlyProductionMwh,
+    ].every(Number.isFinite)
+  ) {
+    return err(
+      scoringError(
+        ScoringErrorCode.InsufficientData,
+        'AEP calculation produced a non-finite result.',
+      ),
+    );
+  }
 
   // Confidence assessment
   const dataYears = windData.dataYears ?? 0;
@@ -419,8 +548,8 @@ function computeMonthlyProduction(
   const monthly: number[] = [];
 
   for (let month = 0; month < 12; month++) {
-    const monthlyAvg = windData.monthlyAverages[month];
-    if (!monthlyAvg) {
+    const monthlyAvg = windData.monthlyAverages.find((record) => record.month === month + 1);
+    if (!monthlyAvg || monthlyAvg.averageSpeedMs === 0) {
       monthly.push(0);
       continue;
     }

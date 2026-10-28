@@ -37,6 +37,33 @@ function shortLabel(displayName: string): string {
   return [parts[0], parts[parts.length - 2], parts[parts.length - 1]].join(', ');
 }
 
+function coordinateNumber(value: unknown, limit: number): number | null {
+  if (typeof value !== 'number' && (typeof value !== 'string' || value.trim() === '')) return null;
+  const number = Number(value);
+  return Number.isFinite(number) && Math.abs(number) <= limit ? number : null;
+}
+
+function geocodeHit(value: unknown): GeocodeHit | null {
+  if (!value || typeof value !== 'object') return null;
+  const row = value as Record<string, unknown>;
+  const lat = coordinateNumber(row.lat, 90);
+  const lng = coordinateNumber(row.lon, 180);
+  if (
+    lat === null ||
+    lng === null ||
+    typeof row.display_name !== 'string' ||
+    !row.display_name.trim()
+  )
+    return null;
+  return {
+    displayName: row.display_name,
+    lat,
+    lng,
+    category: typeof row.category === 'string' ? row.category : '',
+    label: shortLabel(row.display_name),
+  };
+}
+
 function jsonResponse(body: unknown, status = 200): Response {
   return new Response(JSON.stringify(body), {
     status,
@@ -66,35 +93,16 @@ export async function GET(request: Request): Promise<Response> {
         signal: AbortSignal.timeout(8000),
       });
       if (!res.ok) return jsonResponse({ error: `Nominatim ${res.status}` }, 502);
-      const raw = (await res.json()) as Array<{
-        display_name?: string;
-        lat?: string;
-        lon?: string;
-        category?: string;
-      }>;
-      const results: GeocodeHit[] = raw
-        .map((r) => ({
-          displayName: r.display_name ?? '',
-          lat: Number(r.lat),
-          lng: Number(r.lon),
-          category: r.category ?? '',
-          label: shortLabel(r.display_name ?? ''),
-        }))
-        .filter((r) => Number.isFinite(r.lat) && Number.isFinite(r.lng) && r.displayName);
+      const raw: unknown = await res.json();
+      if (!Array.isArray(raw)) return jsonResponse({ error: 'Invalid geocoding response' }, 502);
+      const results = raw.map(geocodeHit).filter((hit): hit is GeocodeHit => hit !== null);
       return jsonResponse({ results });
     }
 
     if (lat !== null && lng !== null) {
-      const latN = Number(lat);
-      const lngN = Number(lng);
-      if (
-        !Number.isFinite(latN) ||
-        latN < -90 ||
-        latN > 90 ||
-        !Number.isFinite(lngN) ||
-        lngN < -180 ||
-        lngN > 180
-      ) {
+      const latN = coordinateNumber(lat, 90);
+      const lngN = coordinateNumber(lng, 180);
+      if (latN === null || lngN === null) {
         return jsonResponse({ error: 'Invalid coordinate' }, 400);
       }
       const url = `${NOMINATIM}/reverse?lat=${latN}&lon=${lngN}&format=jsonv2&zoom=10`;
@@ -103,13 +111,31 @@ export async function GET(request: Request): Promise<Response> {
         signal: AbortSignal.timeout(8000),
       });
       if (!res.ok) return jsonResponse({ error: `Nominatim ${res.status}` }, 502);
-      const data = (await res.json()) as { display_name?: string };
-      const displayName = data.display_name ?? '';
+      const data: unknown = await res.json();
+      if (
+        !data ||
+        typeof data !== 'object' ||
+        !('display_name' in data) ||
+        typeof data.display_name !== 'string' ||
+        !data.display_name.trim()
+      ) {
+        return jsonResponse({ error: 'Invalid geocoding response' }, 502);
+      }
+      const displayName = data.display_name;
       return jsonResponse({ displayName, label: shortLabel(displayName) });
     }
 
     return jsonResponse({ error: 'Provide ?q= or ?lat=&lng=' }, 400);
-  } catch {
-    return jsonResponse({ error: 'Geocode request failed' }, 500);
+  } catch (error) {
+    // DOMException can come from a different realm and need not satisfy instanceof Error.
+    const timedOut =
+      error !== null &&
+      typeof error === 'object' &&
+      'name' in error &&
+      error.name === 'TimeoutError';
+    return jsonResponse(
+      { error: timedOut ? 'Geocode request timed out' : 'Geocode request failed' },
+      timedOut ? 504 : 502,
+    );
   }
 }

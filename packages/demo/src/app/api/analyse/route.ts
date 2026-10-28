@@ -60,11 +60,33 @@ export async function POST(request: Request): Promise<Response> {
   }
   let body: unknown;
   try {
-    const rawBody = await request.text();
-    if (new TextEncoder().encode(rawBody).byteLength > MAX_BODY_BYTES) {
-      return apiError(ScoringErrorCode.OutOfRange, 'Request body is too large.', 413);
+    // Enforce the limit while reading, including chunked requests with no Content-Length.
+    const reader = request.body?.getReader();
+    const chunks: Uint8Array[] = [];
+    let byteLength = 0;
+    if (reader) {
+      try {
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          byteLength += value.byteLength;
+          if (byteLength > MAX_BODY_BYTES) {
+            await reader.cancel();
+            return apiError(ScoringErrorCode.OutOfRange, 'Request body is too large.', 413);
+          }
+          chunks.push(value);
+        }
+      } finally {
+        reader.releaseLock();
+      }
     }
-    body = JSON.parse(rawBody);
+    const bytes = new Uint8Array(byteLength);
+    let offset = 0;
+    for (const chunk of chunks) {
+      bytes.set(chunk, offset);
+      offset += chunk.byteLength;
+    }
+    body = JSON.parse(new TextDecoder('utf-8', { fatal: true }).decode(bytes));
   } catch {
     return apiError(ScoringErrorCode.ParseError, 'Request body must be valid JSON.', 400);
   }

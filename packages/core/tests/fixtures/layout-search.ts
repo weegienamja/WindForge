@@ -42,18 +42,15 @@ export const turbine: TurbineModel = {
 export const windData: WindDataSummary = {
   coordinate: boundary.centroid,
   annualAverageSpeedMs: 8,
-  annualAverageDirectionDeg: 270,
+  speedStdDevMs: 4,
+  directionalConsistency: 1,
   prevailingDirectionDeg: 270,
   dataYears: 1,
-  measurementHeightM: 80,
+  referenceHeightM: 80,
   monthlyAverages: Array.from({ length: 12 }, (_, i) => ({
-    year: 2023,
     month: i + 1,
     averageSpeedMs: 8,
     averageDirectionDeg: 270,
-    maxGustMs: 20,
-    prevailingDirection: 'W',
-    dataCompleteness: 1,
   })),
 };
 

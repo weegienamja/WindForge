@@ -73,6 +73,17 @@ downside20
 
 The downside cases scale net production by 10% and 20%. They are sensitivity cases, not exceedance probabilities.
 
+The height adjustment scales both the mean speed and its standard deviation by the
+same power-law factor. Directional wake losses within `calculateAep` also use the
+hub-height wind data. Monthly production is indexed by calendar month, independent
+of input record order. These corrections can change estimates produced by older
+versions.
+
+Invalid or non-finite wind statistics, dimensions, power curves, turbine counts
+and loss percentages return a structured error. Losses must be between 0% and
+100%. A directional wake model requires exactly one valid layout coordinate per
+turbine; a single turbine has zero directional wake loss.
+
 ## Constraint geometry and site assessment
 
 ```ts
@@ -83,6 +94,16 @@ assessSite(boundary, options?)
 ```
 
 Detected features can carry Point, LineString, MultiLineString, Polygon, or MultiPolygon geometry and evidence provenance. Intersections, distances, buffers, holes, and clipped areas operate on actual geometry. OSM-derived designations remain supplementary screening evidence.
+
+`assessSite` propagates a failed constraint-data lookup as an error: an unavailable
+survey cannot establish a viable-area score. It requires positive finite hub
+height/grid spacing and a positive integer concurrency limit.
+
+When `turbineModel` is supplied, the result includes a rotor-spaced `turbineLayout`
+and `energyYield` using the resolved wind evidence and shear assumption of the
+highest-scoring sample point. The summary identifies that point; this is not a
+spatially integrated site yield. A missing scored wind resource or invalid model
+returns an error. Energy totals use the layout's turbine count.
 
 ## Screening models
 
@@ -107,8 +128,8 @@ The demo exposes `POST /api/analyse` with the typed contract in `packages/demo/s
 {
   "coordinate": { "lat": 55.86, "lng": -4.25 },
   "hubHeightM": 100,
-  "turbineId": "vestas-v90-2mw"
+  "turbineId": "vestas-v90-2000"
 }
 ```
 
-The route validates coordinate ranges, allowed hub heights, turbine ids, and a 2 KiB body limit; applies a 45-second abort; disables caching; and keeps provider access server-side. A successful response has separately named `auxiliaryErrors.windHistory` and `auxiliaryErrors.energyYield` fields so partial failures cannot be misattributed.
+The route validates coordinate ranges, allowed hub heights, turbine ids, and a 2 KiB body limit enforced while streaming; applies a 45-second analysis abort; disables caching; and keeps provider access server-side. A successful response has separately named `auxiliaryErrors.windHistory` and `auxiliaryErrors.energyYield` fields so partial failures cannot be misattributed.

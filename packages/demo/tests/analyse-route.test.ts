@@ -62,6 +62,31 @@ describe('POST /api/analyse', () => {
     expect(mocks.analyseSite).not.toHaveBeenCalled();
   });
 
+  it('stops reading a streamed body as soon as the byte limit is exceeded', async () => {
+    let reads = 0;
+    const cancel = vi.fn();
+    const body = new ReadableStream<Uint8Array>(
+      {
+        pull(controller) {
+          reads++;
+          controller.enqueue(new TextEncoder().encode('x'.repeat(3_000)));
+          if (reads === 3) controller.close();
+        },
+        cancel,
+      },
+      { highWaterMark: 0 },
+    );
+    const req = new Request('http://localhost/api/analyse', {
+      method: 'POST',
+      body,
+      duplex: 'half',
+    } as RequestInit & { duplex: 'half' });
+    expect((await POST(req)).status).toBe(413);
+    expect(reads).toBe(1);
+    expect(cancel).toHaveBeenCalled();
+    expect(mocks.analyseSite).not.toHaveBeenCalled();
+  });
+
   it('rejects unknown turbine identifiers', async () => {
     mocks.getTurbineById.mockReturnValue(undefined);
     const response = await POST(request(INPUT));
@@ -104,7 +129,7 @@ describe('POST /api/analyse', () => {
   it('attributes an AEP failure separately from wind-history failure', async () => {
     mocks.calculateAep.mockReturnValue({
       ok: false,
-      error: { code: ScoringErrorCode.CalculationError, message: 'AEP unavailable.' },
+      error: { code: ScoringErrorCode.InsufficientData, message: 'AEP unavailable.' },
     });
     const response = await POST(request(INPUT));
     const payload = await response.json();
@@ -115,7 +140,7 @@ describe('POST /api/analyse', () => {
     expect(payload.auxiliaryErrors).toEqual({
       windHistory: null,
       energyYield: {
-        code: ScoringErrorCode.CalculationError,
+        code: ScoringErrorCode.InsufficientData,
         message: 'AEP unavailable.',
       },
     });

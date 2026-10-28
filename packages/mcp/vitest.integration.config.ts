@@ -16,6 +16,6 @@ export default defineConfig({
     // Run sequentially so we don't hammer the same upstream API in parallel.
     fileParallelism: false,
     pool: 'forks',
-    poolOptions: { forks: { singleFork: true } },
+    maxWorkers: 1,
   },
 });

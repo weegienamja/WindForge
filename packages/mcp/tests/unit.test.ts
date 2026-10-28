@@ -94,7 +94,7 @@ describe('zodToJsonSchema', () => {
   });
 
   it('handles ZodRecord by emitting additionalProperties', () => {
-    const schema = z.object({ weights: z.record(z.number()) });
+    const schema = z.object({ weights: z.record(z.string(), z.number()) });
     const json = zodToJsonSchema(schema);
     expect(json.properties?.weights?.type).toBe('object');
     const ap = json.properties?.weights?.additionalProperties as { type?: string } | undefined;
@@ -107,5 +107,35 @@ describe('zodToJsonSchema', () => {
     });
     const json = zodToJsonSchema(schema);
     expect(json.properties?.lat?.description).toBe('Latitude in degrees');
+  });
+
+  it('preserves integer, string and collection constraints advertised to clients', () => {
+    const schema = z
+      .object({
+        count: z.number().int().min(1).max(200).optional().describe('Turbine count'),
+        name: z.string().min(1).max(120),
+        polygon: z.array(z.number()).min(3).max(100),
+      })
+      .strict();
+    expect(zodToJsonSchema(schema)).toMatchObject({
+      additionalProperties: false,
+      required: ['name', 'polygon'],
+      properties: {
+        count: { type: 'integer', minimum: 1, maximum: 200, description: 'Turbine count' },
+        name: { minLength: 1, maxLength: 120 },
+        polygon: { minItems: 3, maxItems: 100 },
+      },
+    });
+  });
+
+  it('publishes the actual calculate_aep and polygon input constraints', () => {
+    const aep = tools.find((tool) => tool.name === 'calculate_aep')!;
+    const parcel = tools.find((tool) => tool.name === 'assess_site_polygon')!;
+    expect(zodToJsonSchema(aep.inputSchema).properties?.turbineCount).toMatchObject({
+      type: 'integer',
+      minimum: 1,
+      maximum: 200,
+    });
+    expect(zodToJsonSchema(parcel.inputSchema).properties?.polygon).toMatchObject({ minItems: 3 });
   });
 });

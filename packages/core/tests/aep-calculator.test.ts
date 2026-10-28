@@ -66,6 +66,42 @@ describe('calculateAep', () => {
   });
 
   describe('error handling', () => {
+    it('rejects non-finite wind data and invalid model options', () => {
+      for (const speed of [NaN, Infinity, -Infinity]) {
+        expect(
+          calculateAep(makeWindData({ annualAverageSpeedMs: speed }), getTestTurbine()).ok,
+        ).toBe(false);
+      }
+      for (const options of [
+        { turbineCount: -1 },
+        { turbineCount: 1.5 },
+        { turbineCount: Infinity },
+        { hubHeightM: 0 },
+        { hubHeightM: NaN },
+        { elevationM: Infinity },
+        { windShearAlpha: NaN },
+        { losses: { electricalLossPct: 101 } },
+        { losses: { wakeLossPct: -1 } },
+        { losses: { availabilityLossPct: NaN } },
+      ]) {
+        expect(calculateAep(makeWindData(), getTestTurbine(), options).ok).toBe(false);
+      }
+      expect(calculateAep(makeWindData({ referenceHeightM: 0 }), getTestTurbine()).ok).toBe(false);
+      expect(calculateAep(makeWindData({ speedStdDevMs: NaN }), getTestTurbine()).ok).toBe(false);
+      expect(calculateAep(makeWindData(), { ...getTestTurbine(), ratedPowerKw: 0 }).ok).toBe(false);
+    });
+
+    it('rejects inconsistent directional layout counts', () => {
+      const result = calculateAep(makeWindData(), getTestTurbine(), {
+        wakeModel: 'jensen',
+        turbineCount: 3,
+        layoutPositions: [
+          { lat: 55.86, lng: -4.25 },
+          { lat: 55.87, lng: -4.25 },
+        ],
+      });
+      expect(result.ok).toBe(false);
+    });
     it('returns error for zero wind speed', () => {
       const result = calculateAep(makeWindData({ annualAverageSpeedMs: 0 }), getTestTurbine());
       expect(result.ok).toBe(false);
@@ -87,6 +123,57 @@ describe('calculateAep', () => {
   });
 
   describe('hub height effects', () => {
+    it.each([
+      'jensen',
+      'bastankhah',
+    ] as const)('uses hub-height wind for %s wake losses', (wakeModel) => {
+      const wind = makeWindData();
+      const factor = 2 ** 0.14;
+      const atHub = {
+        ...wind,
+        referenceHeightM: 100,
+        annualAverageSpeedMs: wind.annualAverageSpeedMs * factor,
+        speedStdDevMs: wind.speedStdDevMs * factor,
+        monthlyAverages: wind.monthlyAverages.map((month) => ({
+          ...month,
+          averageSpeedMs: month.averageSpeedMs * factor,
+        })),
+      };
+      const options = {
+        hubHeightM: 100,
+        turbineCount: 2,
+        wakeModel,
+        layoutPositions: [
+          { lat: 55.86, lng: -4.25 },
+          { lat: 55.863, lng: -4.245 },
+        ],
+      };
+      const referenceResult = calculateAep(wind, getTestTurbine(), options);
+      const hubResult = calculateAep(atHub, getTestTurbine(), options);
+      if (!referenceResult.ok || !hubResult.ok) throw new Error('Expected ok');
+      expect(referenceResult.value.losses.wakeLossPct).toBe(hubResult.value.losses.wakeLossPct);
+      expect(referenceResult.value.netTotalAepMwh).toBe(hubResult.value.netTotalAepMwh);
+    });
+    it('gives the same result for equivalent wind statistics at different reference heights', () => {
+      const wind = makeWindData();
+      const factor = (100 / 50) ** 0.14;
+      const atHub = makeWindData({
+        referenceHeightM: 100,
+        annualAverageSpeedMs: wind.annualAverageSpeedMs * factor,
+        speedStdDevMs: wind.speedStdDevMs * factor,
+        monthlyAverages: wind.monthlyAverages.map((month) => ({
+          ...month,
+          averageSpeedMs: month.averageSpeedMs * factor,
+        })),
+      });
+      const fromReference = calculateAep(wind, getTestTurbine(), { hubHeightM: 100 });
+      const alreadyAtHub = calculateAep(atHub, getTestTurbine(), { hubHeightM: 100 });
+      if (!fromReference.ok || !alreadyAtHub.ok) throw new Error('Expected ok');
+      expect(fromReference.value.assumptions.weibullK).toBe(
+        alreadyAtHub.value.assumptions.weibullK,
+      );
+      expect(fromReference.value.grossAepMwh).toBe(alreadyAtHub.value.grossAepMwh);
+    });
     it('uses specified hub height', () => {
       const result = calculateAep(makeWindData(), getTestTurbine(), { hubHeightM: 105 });
       if (!result.ok) throw new Error('Expected ok');
@@ -167,6 +254,16 @@ describe('calculateAep', () => {
   });
 
   describe('multi-turbine', () => {
+    it('uses zero wake loss for one turbine when a directional model is requested', () => {
+      const result = calculateAep(makeWindData(), getTestTurbine(), {
+        wakeModel: 'jensen',
+        turbineCount: 1,
+        layoutPositions: [{ lat: 55.86, lng: -4.25 }],
+      });
+      if (!result.ok) throw new Error('Expected ok');
+      expect(result.value.losses.wakeLossPct).toBe(0);
+      expect(result.value.assumptions.lossAssumptions).toContain('Directional');
+    });
     it('total AEP scales with turbine count', () => {
       const single = calculateAep(makeWindData(), getTestTurbine(), { turbineCount: 1 });
       const multi = calculateAep(makeWindData(), getTestTurbine(), { turbineCount: 5 });
@@ -185,6 +282,16 @@ describe('calculateAep', () => {
   });
 
   describe('monthly production', () => {
+    it('uses calendar month numbers regardless of record order', () => {
+      const wind = makeWindData();
+      const ordered = calculateAep(wind, getTestTurbine());
+      const reversed = calculateAep(
+        { ...wind, monthlyAverages: [...wind.monthlyAverages].reverse() },
+        getTestTurbine(),
+      );
+      if (!ordered.ok || !reversed.ok) throw new Error('Expected ok');
+      expect(reversed.value.monthlyProductionMwh).toEqual(ordered.value.monthlyProductionMwh);
+    });
     it('returns 12 monthly values', () => {
       const result = calculateAep(makeWindData(), getTestTurbine());
       if (!result.ok) throw new Error('Expected ok');
