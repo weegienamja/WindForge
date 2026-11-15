@@ -26,7 +26,7 @@ with sync_playwright() as pw:
     p.get_by_label("Boundary partition").nth(1).select_option("east")
     p.get_by_label("Site setting").select_option("onshore")
     p.get_by_label("Comparison title").fill(
-        "Caithness degree-box screening · west / east"
+        "Caithness degree-box screening Â· west / east"
     )
     p.get_by_text("Parcel, site bisect and receptor", exact=True).click()
     p.get_by_label("Parcel GeoJSON").fill(
@@ -89,4 +89,28 @@ with sync_playwright() as pw:
         p.get_by_role("button", name="Export JSON", exact=True).click()
     dl.value.save_as(out / "Caithness-parcel.json")
     p.screenshot(path=out / "parcel-comparison.png", full_page=True)
+    assert all(c.get("noiseDba") is None for c in report["cases"])
+    # Exercise the optional acoustic branch using a labelled test input only.
+    fixture = {
+        **r.request.post_data_json,
+        "title": "Acceptance fixture only: acoustic input",
+        "configs": [
+            {
+                **case["config"],
+                "soundDba": 102,
+                "soundSource": "Synthetic test input: IEA 3.4 reference, full load. Not measured.",
+            }
+            for case in report["cases"]
+        ],
+    }
+    acoustic = ctx.request.post(base + "/api/engineering", data=fixture, timeout=90000)
+    assert acoustic.ok, (acoustic.status, acoustic.text())
+    result = acoustic.json()
+    for case in result["report"]["cases"]:
+        assert 0 < case["noiseDba"] < 102
+        assert any("Synthetic test input" in v for v in case["basis"])
+    assert ctx.request.post(
+        base + "/api/engineering", data={"op": "remove", "id": result["id"]}
+    ).ok
+    print("Passed: real parcel, isolated halves, documented-input acoustic gate and export.")
     browser.close()

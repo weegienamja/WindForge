@@ -34,7 +34,7 @@ with sync_playwright() as pw:
     p.get_by_role("button", name="Use in configuration A").click()
     p.get_by_label("Site setting").select_option("onshore")
     p.get_by_label("Comparison title").fill(
-        "Caithness · six and four reference turbines"
+        "Caithness Â· six and four reference turbines"
     )
     p.get_by_role("button", name="Calculate and save comparison").click()
     expect(p.get_by_role("heading", name="Comparison result")).to_be_visible()
@@ -88,8 +88,8 @@ with sync_playwright() as pw:
         "record",
         model="iea34",
         component="gearbox",
-        text="test observation: inspection pending",
-        title="Isolation test extract",
+        text="note,velocity [mm/s]\ninspection pending,1.2\nfixture,2.4",
+        title="isolation-test.csv",
         provenance="Browser acceptance fixture only",
     )
     assert own.ok
@@ -124,11 +124,15 @@ with sync_playwright() as pw:
         recordId=rec,
         question="Which bearing measurements distinguish drivetrain vibration at different loads?",
     ).json()
-    assert grc["citations"] and all(
+    private_url = "/engineering?item=" + rec
+    assert any(s["url"] == private_url for s in grc["citations"])
+    evidence = [s for s in grc["citations"] if s["url"] != private_url]
+    assert evidence and all(
         "openei.org" in s["url"] or "nlr.gov" in s["url"] or "energy.gov" in s["url"]
-        for s in grc["citations"]
+        for s in evidence
     )
     assert "inspection pending" in grc["record"]
+    assert "1.2 to 2.4 (2 numeric observations" in grc["record"]
     v = api(
         desktop,
         "recalculate",
