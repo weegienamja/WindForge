@@ -21,7 +21,7 @@ with sync_playwright() as pw:
     for model in catalogue["models"]:
         geometry = json.loads((ROOT / "geometry" / (model["bladeAsset"] + ".json")).read_bytes())
         page.get_by_label("Reference design").select_option(model["id"])
-        station = page.get_by_label("Reference section", exact=True)
+        station = page.get_by_role("combobox", name="Reference section", exact=True)
         expect(station.locator("option")).to_have_count(len(geometry["stations"]))
         station.select_option(str(len(geometry["stations"]) - 1))
         tip = geometry["stations"][-1]["name"]
@@ -38,7 +38,7 @@ with sync_playwright() as pw:
     page.get_by_role("button", name="Inspect blade assembly").click()
     expect(page.get_by_role("heading", name="Blade", exact=True)).to_be_visible()
     page.get_by_role("button", name="Source library", exact=True).click()
-    page.get_by_label("Collection", exact=True).select_option("grc")
+    page.get_by_role("combobox", name="Collection", exact=True).select_option("grc")
     page.get_by_label("Search sources and passages").fill("axial cracking")
     expect(page.get_by_role("heading", name="Gearbox instrumentation for the investigation of bearing axial cracking")).to_be_visible()
     expect(page.get_by_text("Abstract · NREL/TP-5000-70639")).to_be_visible()
@@ -53,7 +53,7 @@ with sync_playwright() as pw:
     for width in (768, 390):
         page.set_viewport_size({"width":width,"height":844})
         page.goto(base + "/engineering?view=blades&model=iea15")
-        expect(page.get_by_label("Reference section", exact=True)).to_be_visible()
+        expect(page.get_by_role("combobox", name="Reference section", exact=True)).to_be_visible()
         expect(page.get_by_label("Reference design")).to_have_value("iea15")
         assert page.evaluate("document.documentElement.scrollWidth <= innerWidth")
         page.screenshot(path=out / ("blade-sections-" + str(width) + ".png"),full_page=True)
