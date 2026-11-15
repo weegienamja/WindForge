@@ -1,0 +1,10 @@
+[Unit]
+Description=Encrypted off-server WindForge database snapshot
+After=postgresql.service network-online.target
+[Service]
+Type=oneshot
+ExecStart=/bin/bash /opt/windforge/backup.sh
+Nice=10
+IOSchedulingClass=idle
+PrivateTmp=yes
+UMask=0077

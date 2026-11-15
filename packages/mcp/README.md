@@ -47,6 +47,17 @@ This format works in clients that support local stdio MCP servers, including Cla
 
 The server's `analyse_site` tool deliberately does not accept a CDS credential or start reanalysis jobs. This keeps secrets out of LLM tool arguments and matches the core's explicit reanalysis contract. Missing required evidence can suppress the composite score; clients should inspect `metadata.completeness` rather than assuming every successful tool call is complete.
 
+## Engineering workspace tools
+
+The current checkout adds four live tools. Run the locally built packages/mcp/dist/server.js with Node over stdio after pnpm install --frozen-lockfile and pnpm build. Use this checkout for the engineering tools; an older npm release may contain only the original seven. Each local server process holds its own temporary private workspace cookie in memory. The local server does not import a browser cookie or expose another person's private work.
+
+| Tool | Result |
+| --- | --- |
+| engineering_catalogue | List the three sourced IEA records, or inspect a model's components, fields and complete published performance table. |
+| engineering_compare | Analyse a coordinate and run two configurations, optionally with a parcel, sector, receptor, acoustic source and costs. Returns a saved report ID and evidence snapshot. |
+| engineering_question | Ask about a selected component, a separate GRC test assembly, model methods or a report from this process. |
+| engineering_recalculate | Recalculate counts for a prior comparison in the same process. Returns a new snapshot. |
+
 ## CLI
 
 ```bash

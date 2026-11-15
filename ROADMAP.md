@@ -32,3 +32,7 @@ WindForge is an open-source screening toolkit. This roadmap distinguishes implem
 - Claims that public gridded data replace mast or lidar measurements.
 - Real-time SCADA, operational forecasting, accounts, billing, or a hosted MCP service.
 - Treating incomplete OpenStreetMap coverage as proof that a constraint is absent.
+
+## Engineering workspace delivered
+
+The engineering workspace now compares two reference designs at a signed point-analysis site and supports whole, west and east centre partitions of a supplied parcel using the existing spacing and OSM exclusion models. This is a midpoint partition, not a global optimisation or a cadastral split. See engineering/README.md for active knowledge and storage operations.

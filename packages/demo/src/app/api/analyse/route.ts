@@ -11,6 +11,8 @@ import type {
   AnalysisApiResponse,
 } from '../../../lib/analysis-api';
 
+import { signSite } from '../../../lib/engineering/ticket';
+
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60;
@@ -137,7 +139,12 @@ export async function POST(request: Request): Promise<Response> {
       energyYield,
       auxiliaryErrors,
     };
-    return Response.json(payload, { headers: { 'cache-control': 'private, no-store, max-age=0' } });
+    return Response.json(payload, {
+      headers: {
+        'cache-control': 'private, no-store, max-age=0',
+        'x-windforge-site': await signSite(payload.analysis),
+      },
+    });
   } catch {
     return apiError(
       controller.signal.aborted ? ScoringErrorCode.Timeout : ScoringErrorCode.Unknown,

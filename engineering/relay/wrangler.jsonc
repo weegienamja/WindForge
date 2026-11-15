@@ -1,0 +1,11 @@
+{
+  "name": "windforge-knowledge-link",
+  "account_id": "4ffe352f3009f36d6ecff8ef2901b915",
+  "main": "worker.js",
+  "compatibility_date": "2026-10-28",
+  "kv_namespaces": [{ "binding": "BACKUPS", "id": "90594d4e95c74336b2be0e4a9456f2b1" }],
+  "workers_dev": true,
+  "preview_urls": false,
+  "durable_objects": { "bindings": [{ "name": "HUB", "class_name": "KnowledgeLink" }] },
+  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["KnowledgeLink"] }]
+}

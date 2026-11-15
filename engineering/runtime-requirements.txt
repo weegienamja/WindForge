@@ -1,0 +1,4 @@
+# Application service on Ubuntu 24.04; use a venv with system site packages.
+# Ubuntu packages supply psycopg2, numpy, websockets and PyYAML.
+onnxruntime==1.23.2
+tokenizers==0.22.1

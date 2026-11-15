@@ -3,7 +3,7 @@
 // Integrates wake models (Jensen or Bastankhah) with the full wind rose
 // to compute directionally-weighted wake losses for a wind farm layout.
 
-import type { TurbineModel, PowerCurvePoint } from '../types/turbines.js';
+import type { EnergyTurbine, PowerCurvePoint } from '../types/turbines.js';
 import type { WindDataSummary } from '../types/datasources.js';
 import type {
   TurbinePosition,
@@ -138,7 +138,7 @@ function interpolatePower(powerCurve: PowerCurvePoint[], windSpeedMs: number): n
  */
 export function calculateDirectionalWakeLoss(
   layout: TurbinePosition[],
-  turbine: TurbineModel,
+  turbine: EnergyTurbine,
   windData: WindDataSummary,
   model: WakeModelType = 'jensen',
   options: WakeOptions = {},
@@ -269,7 +269,7 @@ export function calculateDirectionalWakeLoss(
  */
 export function layoutToTurbinePositions(
   positions: LatLng[],
-  turbine: TurbineModel,
+  turbine: EnergyTurbine,
   hubHeightM?: number,
 ): TurbinePosition[] {
   const height = hubHeightM ?? turbine.hubHeightOptionsM[0] ?? 80;
@@ -297,7 +297,7 @@ function emptyResult(model: WakeModelType): WakeLossResult {
 
 function singleTurbineResult(
   position: TurbinePosition,
-  turbine: TurbineModel,
+  turbine: EnergyTurbine,
   windData: WindDataSummary,
   model: WakeModelType,
 ): WakeLossResult {

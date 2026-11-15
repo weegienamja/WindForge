@@ -309,7 +309,7 @@ function AnalysePageInner() {
               ))}
             </select>
           </Field>
-          <Field label="Turbine">
+          <Field label="Turbine · illustrative curve">
             <select
               value={turbineId}
               onChange={(e) => setTurbineId(e.target.value)}
@@ -399,13 +399,21 @@ function AnalysePageInner() {
         >
           {coordinate ? <LocationBadge coordinate={coordinate} placeName={placeName} /> : null}
           {data ? (
-            <ResultActions
-              analysis={data}
-              aep={aep.data}
-              placeName={placeName}
-              pinned={activeId ? compare.has(activeId) : false}
-              onPin={pinCurrent}
-            />
+            <>
+              <Link
+                href={`/engineering?lat=${data.coordinate.lat}&lng=${data.coordinate.lng}`}
+                style={{ color: 'var(--accent-cool)' }}
+              >
+                Investigate turbine fit →
+              </Link>
+              <ResultActions
+                analysis={data}
+                aep={aep.data}
+                placeName={placeName}
+                pinned={activeId ? compare.has(activeId) : false}
+                onPin={pinCurrent}
+              />
+            </>
           ) : null}
           {status === 'idle' && !data && !error ? (
             <EmptyState onPickExample={(s) => runAt(s.lat, s.lng, hub)} />

@@ -1,3 +1,4 @@
+import { engineeringTools } from './engineering.js';
 import { pingTool } from './ping.js';
 import { analyseSiteTool } from './analyse-site.js';
 import { assessSitePolygonTool } from './assess-site-polygon.js';
@@ -15,6 +16,7 @@ export const tools: readonly RegisteredTool[] = [
   registerTool(listTurbinesTool),
   registerTool(fetchWindHistoryTool),
   registerTool(detectConstraintsTool),
+  ...engineeringTools,
 ];
 
 export {

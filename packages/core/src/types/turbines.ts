@@ -42,3 +42,6 @@ export interface TurbineLayoutEstimate {
   viableAreaSqKm: number;
   estimatedInstalledCapacityMw: number;
 }
+
+/** Inputs actually used by energy and layout models; a rated wind speed is not required. */
+export type EnergyTurbine = Omit<TurbineModel, 'cutInSpeedMs' | 'cutOutSpeedMs' | 'ratedSpeedMs'>;

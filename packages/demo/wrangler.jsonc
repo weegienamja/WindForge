@@ -6,12 +6,14 @@
   "compatibility_date": "2026-10-28",
   "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
   "workers_dev": true,
+  "version_metadata": { "binding": "WF_VERSION" },
   "preview_urls": false,
   "assets": {
     "directory": ".open-next/assets",
     "binding": "ASSETS"
   },
   "services": [
+    { "binding": "WF_KNOWLEDGE", "service": "windforge-knowledge-link" },
     {
       "binding": "WORKER_SELF_REFERENCE",
       "service": "windforge"

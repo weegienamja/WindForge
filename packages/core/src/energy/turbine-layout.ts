@@ -1,6 +1,6 @@
 import type { LatLng } from '../types/analysis.js';
 import type { SiteBoundary } from '../types/site.js';
-import type { TurbineModel, TurbineLayoutEstimate } from '../types/turbines.js';
+import type { EnergyTurbine, TurbineLayoutEstimate } from '../types/turbines.js';
 import type { ExclusionZone } from '../types/constraints.js';
 import type { WindDataSummary } from '../types/datasources.js';
 import { rotateGrid, isPointInPolygon, polygonCentroid } from '../utils/geometry.js';
@@ -18,7 +18,7 @@ import { pointInPolygonWithHoles } from '../utils/feature-geometry.js';
  */
 export function estimateTurbineCapacity(
   boundary: SiteBoundary,
-  turbine: TurbineModel,
+  turbine: EnergyTurbine,
   windData: WindDataSummary,
   exclusionZones: ExclusionZone[] = [],
 ): TurbineLayoutEstimate {

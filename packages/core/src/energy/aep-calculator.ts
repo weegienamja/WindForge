@@ -1,4 +1,4 @@
-import type { TurbineModel, PowerCurvePoint } from '../types/turbines.js';
+import type { EnergyTurbine, PowerCurvePoint } from '../types/turbines.js';
 import type {
   EnergyYieldResult,
   LossStack,
@@ -46,7 +46,7 @@ const DEFAULT_LOSSES: LossOverrides = {
  */
 export function calculateAep(
   windData: WindDataSummary,
-  turbine: TurbineModel,
+  turbine: EnergyTurbine,
   options: AepOptions = {},
 ): Result<EnergyYieldResult, ScoringError> {
   const hubHeightM = options.hubHeightM ?? turbine.hubHeightOptionsM[0] ?? 80;
@@ -538,7 +538,7 @@ function buildSensitivityScenario(
 
 function computeMonthlyProduction(
   windData: WindDataSummary,
-  turbine: TurbineModel,
+  turbine: EnergyTurbine,
   hubHeightM: number,
   alpha: number,
   netMultiplier: number,

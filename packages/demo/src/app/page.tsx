@@ -115,6 +115,12 @@ export default function LandingPage() {
               Run an analysis
             </Link>
             <Link
+              href="/engineering"
+              style={{ color: 'var(--text-primary)', padding: '14px 12px' }}
+            >
+              Engineering workspace
+            </Link>
+            <Link
               href="/map"
               style={{
                 display: 'inline-flex',

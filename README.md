@@ -29,6 +29,12 @@ Provider failures are recorded as missing evidence. If a required factor is unav
 
 The public demo uses raw NASA POWER wind data by default. The core library has an ERA5 monthly-history adapter for callers that deliberately retrieve and supply a reanalysis series. Automated CERRA correction is disabled because the former request did not create a defensible monthly climatology. See [Data sources](docs/DATA-SOURCES.md) and [Bias correction](docs/BIAS-CORRECTION.md).
 
+## Engineering workspace
+
+[Open the engineering workspace](https://windforge.khmer-iq.workers.dev/engineering), or select **Investigate turbine fit** after a point analysis to carry its signed evidence into a comparison. Explore three IEA reference designs and their component records, compare counts and hub heights, supply a real parcel/receptor or deliberate cost and sound-power assumptions, and save/export versioned investigations. Missing wind, source, receptor or placement evidence remains explicit. A legacy commercial model name in the point analyser uses an illustrative curve; it is not a verified manufacturer power table.
+
+The [knowledge service and recovery runbook](engineering/README.md) describes the source releases, self-hosted PostgreSQL/pgvector, CPU retrieval model, access controls, maintenance and tested backup route. The [engineering MCP tools](packages/mcp/README.md#engineering-workspace-tools) use the same live calculations and evidence as the browser.
+
 ## Quick start
 
 Requirements: Node.js 22–24 and pnpm 9.
@@ -86,7 +92,7 @@ reproducible `pnpm benchmark:layouts` comparison.
 }
 ```
 
-The MCP server runs locally over stdio and exposes seven tools. See the [MCP setup guide](packages/mcp/README.md).
+The MCP server runs locally over stdio and exposes eleven tools in the current source checkout. See the [MCP setup guide](packages/mcp/README.md).
 
 ### Optional CDS access
 

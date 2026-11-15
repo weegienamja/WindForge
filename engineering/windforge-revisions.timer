@@ -1,0 +1,8 @@
+[Unit]
+Description=Weekly WindForge revision review
+[Timer]
+OnCalendar=Sun *-*-* 04:30:00 UTC
+RandomizedDelaySec=900
+Persistent=true
+[Install]
+WantedBy=timers.target

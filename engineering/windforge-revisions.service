@@ -1,0 +1,10 @@
+[Unit]
+Description=Check pinned engineering source revisions
+After=network-online.target postgresql.service
+[Service]
+User=postgres
+WorkingDirectory=/opt/windforge
+Environment=OPENBLAS_NUM_THREADS=1
+ExecStart=/opt/windforge/venv/bin/python /opt/windforge/refresh.py --check
+Nice=15
+MemoryMax=180M

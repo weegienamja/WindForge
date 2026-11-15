@@ -1,0 +1,3118 @@
+{
+  "version": 1,
+  "models": [
+    {
+      "id": "iea34",
+      "name": "IEA-3.4-130-RWT",
+      "kind": "Reference design",
+      "setting": "onshore",
+      "revision": "aacff396f46b35f7104d83be095f859684013405",
+      "schema": "2.1.1",
+      "definition": "iea34-definition",
+      "performance": "iea34-performance",
+      "curveLocator": "CCBlade columns 1, 4 (electrical W), 11 (Ct)",
+      "ratedKw": 3370.0,
+      "rotorM": 129.82183952,
+      "hubM": 110.0,
+      "drive": "Geared",
+      "cutIn": 3.0,
+      "cutOut": 25.0,
+      "curve": [
+        [
+          3.0,
+          51.62032741107885,
+          0.8140283854894109
+        ],
+        [
+          3.539159827293725,
+          123.3681588270536,
+          0.8041771483638767
+        ],
+        [
+          4.048452625194753,
+          213.24150896684407,
+          0.7982113770373608
+        ],
+        [
+          4.526747636329809,
+          318.83799804162174,
+          0.7945189424815273
+        ],
+        [
+          4.9729829261640415,
+          435.9564866552072,
+          0.791309102845844
+        ],
+        [
+          5.386167740761253,
+          560.8983051702807,
+          0.786112395855186
+        ],
+        [
+          5.76538470650541,
+          688.9063120444216,
+          0.7760330855568125
+        ],
+        [
+          6.109791866899474,
+          819.1257759492757,
+          0.766405559051694
+        ],
+        [
+          6.418624551919384,
+          949.7236726117025,
+          0.766405559051694
+        ],
+        [
+          6.691197075772739,
+          1075.9270053539633,
+          0.7664055590516942
+        ],
+        [
+          6.9269042592927175,
+          1193.6826991650053,
+          0.7664055590516942
+        ],
+        [
+          7.125222773587183,
+          1299.1721023790926,
+          0.766405559051694
+        ],
+        [
+          7.285712301959686,
+          1388.9525126573405,
+          0.766405559051694
+        ],
+        [
+          7.408016517522657,
+          1460.0817421910087,
+          0.7664055590516939
+        ],
+        [
+          7.491863874332182,
+          1510.222643086181,
+          0.7664055590516942
+        ],
+        [
+          7.537068210287934,
+          1537.725021604565,
+          0.766405559051694
+        ],
+        [
+          7.543529160459564,
+          1541.6829334421686,
+          0.7664055590516943
+        ],
+        [
+          7.575825940997163,
+          1561.569464604508,
+          0.766405559051694
+        ],
+        [
+          7.646808745314545,
+          1605.8760783232499,
+          0.7664055590516939
+        ],
+        [
+          7.756319973835029,
+          1675.8629312955707,
+          0.7664055590516939
+        ],
+        [
+          7.9041164842451614,
+          1773.5006008375758,
+          0.766405559051694
+        ],
+        [
+          8.089870131331459,
+          1901.4985288963755,
+          0.7664055590516943
+        ],
+        [
+          8.313168495544858,
+          2063.3414064218114,
+          0.7664055590516939
+        ],
+        [
+          8.57351579867522,
+          2263.3316767377655,
+          0.7664055590516944
+        ],
+        [
+          8.870334004602977,
+          2506.635947707123,
+          0.766405559051694
+        ],
+        [
+          9.202964102683834,
+          2799.3327706450036,
+          0.7664055590516939
+        ],
+        [
+          9.570667570917234,
+          3148.4589781415348,
+          0.7664055590516942
+        ],
+        [
+          9.812675420388173,
+          3370.0,
+          0.8067632947740724
+        ],
+        [
+          10.407952984173718,
+          3370.0000346740712,
+          0.5306091101592825
+        ],
+        [
+          10.875675946194342,
+          3370.0007165301445,
+          0.4466865448824549
+        ],
+        [
+          11.374758439769723,
+          3370.0000854759965,
+          0.3801106706360693
+        ],
+        [
+          11.904092376955541,
+          3370.000017637093,
+          0.3254312907353938
+        ],
+        [
+          12.462502504037497,
+          3370.011452535517,
+          0.2798429968252726
+        ],
+        [
+          13.048749010888468,
+          3370.000029677732,
+          0.2414778385628342
+        ],
+        [
+          13.661530283657028,
+          3370.0017277769066,
+          0.20904693927376936
+        ],
+        [
+          14.299485794675704,
+          3370.008640539756,
+          0.1815926995732083
+        ],
+        [
+          14.96119912317263,
+          3370.033668826342,
+          0.1582789238889643
+        ],
+        [
+          15.645201100079884,
+          3370.000060891253,
+          0.13843565625820317
+        ],
+        [
+          16.349973069956214,
+          3370.0002381995296,
+          0.12141358275643703
+        ],
+        [
+          17.0739502627819,
+          3370.0015017681208,
+          0.10691750603387402
+        ],
+        [
+          17.815525268139492,
+          3370.002288241702,
+          0.09454669711591918
+        ],
+        [
+          18.57305160406695,
+          3370.0022844286373,
+          0.08392954309933542
+        ],
+        [
+          19.344847372659316,
+          3370.0182327993907,
+          0.07479548070995087
+        ],
+        [
+          20.12919899430266,
+          3370.0340114198884,
+          0.06691762496259271
+        ],
+        [
+          20.924365012249385,
+          3370.004589076559,
+          0.060104597639619645
+        ],
+        [
+          21.728579959087647,
+          3369.999956219075,
+          0.05418408689005904
+        ],
+        [
+          22.54005827652058,
+          3370.0006673084904,
+          0.04906125901748401
+        ],
+        [
+          23.356998279752162,
+          3370.003948322402,
+          0.044599887927284615
+        ],
+        [
+          24.177586157678096,
+          3370.00008977868,
+          0.04063092405931261
+        ],
+        [
+          25.0,
+          3370.104924710258,
+          0.03722282641218611
+        ]
+      ],
+      "fullCurve": true,
+      "nodes": [
+        {
+          "id": "assembly",
+          "parent": null,
+          "label": "Turbine assembly",
+          "facts": [
+            {
+              "field": "turbine_class",
+              "value": "III",
+              "unit": "",
+              "path": "assembly.turbine_class",
+              "line": 4
+            },
+            {
+              "field": "turbulence_class",
+              "value": "A",
+              "unit": "",
+              "path": "assembly.turbulence_class",
+              "line": 5
+            },
+            {
+              "field": "drivetrain",
+              "value": "Geared",
+              "unit": "",
+              "path": "assembly.drivetrain",
+              "line": 6
+            },
+            {
+              "field": "rotor_orientation",
+              "value": "Upwind",
+              "unit": "",
+              "path": "assembly.rotor_orientation",
+              "line": 7
+            },
+            {
+              "field": "number_of_blades",
+              "value": 3,
+              "unit": "blades",
+              "path": "assembly.number_of_blades",
+              "line": 8
+            },
+            {
+              "field": "hub_height",
+              "value": 110.0,
+              "unit": "m",
+              "path": "assembly.hub_height",
+              "line": 9
+            },
+            {
+              "field": "rotor_diameter",
+              "value": 129.82183952,
+              "unit": "m",
+              "path": "assembly.rotor_diameter",
+              "line": 10
+            },
+            {
+              "field": "rated_power",
+              "value": 3370000.0,
+              "unit": "W",
+              "path": "assembly.rated_power",
+              "line": 11
+            },
+            {
+              "field": "cut_in_wind_speed",
+              "value": 3.0,
+              "unit": "m/s",
+              "path": "assembly.cut_in_wind_speed",
+              "line": 12
+            },
+            {
+              "field": "cut_out_wind_speed",
+              "value": 25.0,
+              "unit": "m/s",
+              "path": "assembly.cut_out_wind_speed",
+              "line": 13
+            }
+          ],
+          "path": "assembly",
+          "source": "iea34-definition",
+          "line": 4,
+          "description": "The field assembly includes nine entries that aim at describing the overall configuration of the wind turbine",
+          "function": "The rotor captures mechanical power from the wind and drives a generator."
+        },
+        {
+          "id": "blade",
+          "parent": "assembly",
+          "label": "Blade",
+          "facts": [],
+          "path": "components.blade",
+          "source": "iea34-definition",
+          "line": 16,
+          "description": "The component `blade` includes three subcomponents, namely `reference_axis`, `outer_shape`, and `structure`. All distributed quantities, such as blade chord or the thickness of a structural component, are expressed in terms of pair arrays `grid` and `values`, which must have a minimum length of two elements and the same size. `grid` is defined nondimensional between 0 (root) and 1 (tip) along the, usually curved, `reference_axis`.",
+          "function": "Aerodynamic forces on the blade turn the rotor."
+        },
+        {
+          "id": "blade-structure",
+          "parent": "blade",
+          "label": "Structure",
+          "facts": [
+            {
+              "field": "webs",
+              "value": 2,
+              "unit": "entries",
+              "path": "components.blade.structure.webs",
+              "line": 87
+            },
+            {
+              "field": "layers",
+              "value": 17,
+              "unit": "entries",
+              "path": "components.blade.structure.layers",
+              "line": 122
+            }
+          ],
+          "path": "components.blade.structure",
+          "source": "iea34-definition",
+          "line": 86,
+          "description": "The field `structure` contains the data to describe the internal structure of standard wind turbine blades. This is a fairly sophisticated process and the ontology proposed in this work supports different definitions. On the top level, the field `structure` has two sub-components, namely the `webs`, where the positions of the shear webs are defined, and the `layers`, which describe all internal layers in terms of `name`, `material`, `thickness`, number of plies `n_plies`, `fiber_orientation` (for composites), and position in the two-dimensional sections. Recently, the fields `joint` and `root` were added to support blades that are segmented spanwise and details about the blade root bolting."
+        },
+        {
+          "id": "blade-outer_shape",
+          "parent": "blade",
+          "label": "Outer Shape",
+          "facts": [
+            {
+              "field": "chord minimum",
+              "value": 0.2,
+              "unit": "m",
+              "path": "components.blade.outer_shape.chord.values",
+              "line": 29
+            },
+            {
+              "field": "chord maximum",
+              "value": 4.297823268772448,
+              "unit": "m",
+              "path": "components.blade.outer_shape.chord.values",
+              "line": 29
+            },
+            {
+              "field": "rthick minimum",
+              "value": 0.21,
+              "unit": "fraction",
+              "path": "components.blade.outer_shape.rthick.values",
+              "line": 84
+            },
+            {
+              "field": "rthick maximum",
+              "value": 1.0,
+              "unit": "fraction",
+              "path": "components.blade.outer_shape.rthick.values",
+              "line": 84
+            }
+          ],
+          "path": "components.blade.outer_shape",
+          "source": "iea34-definition",
+          "line": 27,
+          "description": "The field `outer_shape` consists of a dictionary containing the data describing the outer shape of the blade."
+        },
+        {
+          "id": "hub",
+          "parent": "assembly",
+          "label": "Hub",
+          "facts": [
+            {
+              "field": "diameter",
+              "value": 4.0,
+              "unit": "m",
+              "path": "components.hub.diameter",
+              "line": 589
+            },
+            {
+              "field": "hub_material",
+              "value": "steel",
+              "unit": "",
+              "path": "components.hub.hub_material",
+              "line": 602
+            },
+            {
+              "field": "spinner_material",
+              "value": "ud",
+              "unit": "",
+              "path": "components.hub.spinner_material",
+              "line": 603
+            }
+          ],
+          "path": "components.hub",
+          "source": "iea34-definition",
+          "line": 589,
+          "description": ""
+        },
+        {
+          "id": "tower",
+          "parent": "assembly",
+          "label": "Tower",
+          "facts": [],
+          "path": "components.tower",
+          "source": "iea34-definition",
+          "line": 606,
+          "description": "Data describing the wind turbine tower."
+        },
+        {
+          "id": "tower-structure",
+          "parent": "tower",
+          "label": "Structure",
+          "facts": [
+            {
+              "field": "layers",
+              "value": 1,
+              "unit": "entries",
+              "path": "components.tower.structure.layers",
+              "line": 616
+            }
+          ],
+          "path": "components.tower.structure",
+          "source": "iea34-definition",
+          "line": 614,
+          "description": ""
+        },
+        {
+          "id": "tower-outer_shape",
+          "parent": "tower",
+          "label": "Outer Shape",
+          "facts": [
+            {
+              "field": "outer_diameter minimum",
+              "value": 3.0,
+              "unit": "m",
+              "path": "components.tower.outer_shape.outer_diameter.values",
+              "line": 609
+            },
+            {
+              "field": "outer_diameter maximum",
+              "value": 5.99,
+              "unit": "m",
+              "path": "components.tower.outer_shape.outer_diameter.values",
+              "line": 609
+            }
+          ],
+          "path": "components.tower.outer_shape",
+          "source": "iea34-definition",
+          "line": 607,
+          "description": ""
+        },
+        {
+          "id": "drivetrain",
+          "parent": "assembly",
+          "label": "Drivetrain",
+          "facts": [],
+          "path": "components.drivetrain",
+          "source": "iea34-definition",
+          "line": 632,
+          "description": "",
+          "function": "The drivetrain transmits rotor rotation to the generator. The speed conversion depends on whether the design is geared or direct-drive."
+        },
+        {
+          "id": "gearbox",
+          "parent": "drivetrain",
+          "label": "Gearbox",
+          "facts": [
+            {
+              "field": "gear_ratio",
+              "value": 97,
+              "unit": "ratio",
+              "path": "components.drivetrain.gearbox.gear_ratio",
+              "line": 637
+            },
+            {
+              "field": "efficiency",
+              "value": 0.955,
+              "unit": "fraction",
+              "path": "components.drivetrain.gearbox.efficiency",
+              "line": 638
+            },
+            {
+              "field": "gear_configuration",
+              "value": "eep",
+              "unit": "",
+              "path": "components.drivetrain.gearbox.gear_configuration",
+              "line": 640
+            },
+            {
+              "field": "planet_numbers",
+              "value": [
+                3,
+                3,
+                0
+              ],
+              "unit": "count",
+              "path": "components.drivetrain.gearbox.planet_numbers",
+              "line": 641
+            }
+          ],
+          "path": "components.drivetrain.gearbox",
+          "source": "iea34-definition",
+          "line": 637,
+          "description": "Inputs describing the gearbox, when present",
+          "function": "Gears increase rotational speed between the rotor and the generator."
+        },
+        {
+          "id": "generator",
+          "parent": "drivetrain",
+          "label": "Generator",
+          "facts": [
+            {
+              "field": "rated_rpm",
+              "value": 1200.0,
+              "unit": "rpm",
+              "path": "components.drivetrain.generator.rated_rpm",
+              "line": 662
+            },
+            {
+              "field": "length",
+              "value": 2.0,
+              "unit": "m",
+              "path": "components.drivetrain.generator.length",
+              "line": 708
+            }
+          ],
+          "path": "components.drivetrain.generator",
+          "source": "iea34-definition",
+          "line": 662,
+          "description": "",
+          "function": "The generator converts rotational mechanical power into electricity."
+        },
+        {
+          "id": "lss",
+          "parent": "drivetrain",
+          "label": "Low-speed shaft",
+          "facts": [
+            {
+              "field": "diameter",
+              "value": [
+                0.577,
+                0.577
+              ],
+              "unit": "m",
+              "path": "components.drivetrain.lss.diameter",
+              "line": 643
+            },
+            {
+              "field": "wall_thickness",
+              "value": [
+                0.288,
+                0.288
+              ],
+              "unit": "m",
+              "path": "components.drivetrain.lss.wall_thickness",
+              "line": 644
+            },
+            {
+              "field": "material",
+              "value": "steel",
+              "unit": "",
+              "path": "components.drivetrain.lss.material",
+              "line": 645
+            }
+          ],
+          "path": "components.drivetrain.lss",
+          "source": "iea34-definition",
+          "line": 643,
+          "description": "Inputs describing the low speed shaft"
+        },
+        {
+          "id": "hss",
+          "parent": "drivetrain",
+          "label": "High-speed shaft",
+          "facts": [
+            {
+              "field": "length",
+              "value": 1.5,
+              "unit": "m",
+              "path": "components.drivetrain.hss.length",
+              "line": 647
+            },
+            {
+              "field": "diameter",
+              "value": [
+                0.288,
+                0.288
+              ],
+              "unit": "m",
+              "path": "components.drivetrain.hss.diameter",
+              "line": 648
+            },
+            {
+              "field": "wall_thickness",
+              "value": [
+                0.144,
+                0.144
+              ],
+              "unit": "m",
+              "path": "components.drivetrain.hss.wall_thickness",
+              "line": 649
+            },
+            {
+              "field": "material",
+              "value": "steel",
+              "unit": "",
+              "path": "components.drivetrain.hss.material",
+              "line": 650
+            }
+          ],
+          "path": "components.drivetrain.hss",
+          "source": "iea34-definition",
+          "line": 647,
+          "description": "Inputs describing the high speed shaft, when present"
+        },
+        {
+          "id": "bedplate",
+          "parent": "drivetrain",
+          "label": "Bedplate",
+          "facts": [
+            {
+              "field": "material",
+              "value": "steel",
+              "unit": "",
+              "path": "components.drivetrain.bedplate.material",
+              "line": 656
+            }
+          ],
+          "path": "components.drivetrain.bedplate",
+          "source": "iea34-definition",
+          "line": 653,
+          "description": "Inputs describing the hollow elliptical bedplate used in direct drive configurations"
+        },
+        {
+          "id": "other_components",
+          "parent": "drivetrain",
+          "label": "Bearing design fields",
+          "facts": [
+            {
+              "field": "mb1Type",
+              "value": "CARB",
+              "unit": "",
+              "path": "components.drivetrain.other_components.mb1Type",
+              "line": 658
+            },
+            {
+              "field": "mb2Type",
+              "value": "SRB",
+              "unit": "",
+              "path": "components.drivetrain.other_components.mb2Type",
+              "line": 659
+            }
+          ],
+          "path": "components.drivetrain.other_components",
+          "source": "iea34-definition",
+          "line": 658,
+          "description": "Inputs describing all other drivetrain components, the assembly of brake, hvac, converter, transformer, and main bearings"
+        },
+        {
+          "id": "control",
+          "parent": "assembly",
+          "label": "Controller",
+          "facts": [
+            {
+              "field": "rated_rotor_speed",
+              "value": 11.633938548501897,
+              "unit": "rpm",
+              "path": "control.rated_rotor_speed",
+              "line": 987
+            }
+          ],
+          "path": "control",
+          "source": "iea34-definition",
+          "line": 986,
+          "description": "Dictionary reporting the data describing the wind turbine controller"
+        }
+      ]
+    },
+    {
+      "id": "iea15",
+      "name": "IEA-15-240-RWT",
+      "kind": "Reference design",
+      "setting": "offshore",
+      "revision": "28ae083f6e4d2e2e4ea35ac9100fcab104940484",
+      "schema": "2.0",
+      "definition": "iea15-definition",
+      "performance": "iea15-performance",
+      "curveLocator": "Rotor Performance!A,C,I; Overview!B9:B11",
+      "ratedKw": 15000.0,
+      "rotorM": 241.35064632,
+      "hubM": 150.0,
+      "drive": "direct_drive",
+      "cutIn": 3.0,
+      "cutOut": 25.0,
+      "curve": [
+        [
+          3.0,
+          43.07617219392958,
+          0.8023236604458345
+        ],
+        [
+          3.549532370424901,
+          292.382162020966,
+          0.7806156107877091
+        ],
+        [
+          4.067900770958515,
+          607.1982614778482,
+          0.7779314914230434
+        ],
+        [
+          4.553906848103765,
+          980.088670568881,
+          0.7815053043629848
+        ],
+        [
+          5.006427062922798,
+          1401.054265604434,
+          0.7841764226353204
+        ],
+        [
+          5.424415288411413,
+          1858.137058168145,
+          0.786032714949161
+        ],
+        [
+          5.806905227914102,
+          2337.6141787816728,
+          0.7864950095168838
+        ],
+        [
+          6.153012648988982,
+          2824.714086984079,
+          0.7858990690302391
+        ],
+        [
+          6.461937427558305,
+          3304.245599124249,
+          0.7847283872018784
+        ],
+        [
+          6.732965397618989,
+          3760.917604268304,
+          0.7832844900214004
+        ],
+        [
+          6.965470002237022,
+          4180.242631472746,
+          0.7817855636352248
+        ],
+        [
+          7.158913742008995,
+          4541.466501338251,
+          0.778312621262605
+        ],
+        [
+          7.312849417642273,
+          4840.771895370973,
+          0.7783126212626051
+        ],
+        [
+          7.426921163781191,
+          5070.854718387589,
+          0.7783126212626047
+        ],
+        [
+          7.500865271689334,
+          5223.82742182143,
+          0.7783126212626051
+        ],
+        [
+          7.534510798886009,
+          5294.4384674810635,
+          0.778312621262605
+        ],
+        [
+          7.541241633444431,
+          5308.6402523121815,
+          0.778312621262605
+        ],
+        [
+          7.588333269551883,
+          5408.712723206546,
+          0.7783126212626051
+        ],
+        [
+          7.675676841724368,
+          5597.6375224968,
+          0.7783126212626051
+        ],
+        [
+          7.803070430872968,
+          5881.001726878735,
+          0.778312621262605
+        ],
+        [
+          7.970219531096269,
+          6267.084890317654,
+          0.7783126212626051
+        ],
+        [
+          8.17673773051311,
+          6766.9805791039835,
+          0.7783126212626051
+        ],
+        [
+          8.422147604561678,
+          7394.74618027103,
+          0.7783126212626049
+        ],
+        [
+          8.705881819699881,
+          8167.573069469222,
+          0.778312621262605
+        ],
+        [
+          9.027284444955459,
+          9105.967741028697,
+          0.778312621262605
+        ],
+        [
+          9.38561246829382,
+          10233.933272653021,
+          0.778312621262605
+        ],
+        [
+          9.780037514298128,
+          11579.139555486601,
+          0.7783126212626051
+        ],
+        [
+          10.20964775919068,
+          13173.070096070911,
+          0.7783126212626051
+        ],
+        [
+          10.65937063700931,
+          15000.0,
+          0.7717731726778625
+        ],
+        [
+          10.67345003876854,
+          14999.99999359636,
+          0.7457211689719806
+        ],
+        [
+          11.17037214438025,
+          15000.01971367551,
+          0.5600110328113046
+        ],
+        [
+          11.69926530163598,
+          15000.0094748299,
+          0.4615732229072211
+        ],
+        [
+          12.2589068261207,
+          15000.00057431189,
+          0.3875156745174536
+        ],
+        [
+          12.84800294997107,
+          15000.000086373,
+          0.328520414186622
+        ],
+        [
+          13.46519181278163,
+          14999.92129819003,
+          0.2803753602343336
+        ],
+        [
+          14.10904660992588,
+          15000.06216004941,
+          0.2405762892656267
+        ],
+        [
+          14.77807889101415,
+          15000.03655089297,
+          0.2074015257161399
+        ],
+        [
+          15.47074200086285,
+          15000.02324627609,
+          0.1795919201016876
+        ],
+        [
+          16.18543465502034,
+          15000.015757806921,
+          0.156175156496039
+        ],
+        [
+          16.92050464158374,
+          15000.011308186411,
+          0.1363825620287321
+        ],
+        [
+          17.67425264074866,
+          15000.00828119132,
+          0.1195961083875782
+        ],
+        [
+          18.44493615326207,
+          15000.00587900927,
+          0.1053134198256348
+        ],
+        [
+          19.23077352869659,
+          15000.003946602961,
+          0.09312336572797791
+        ],
+        [
+          20.02994808423354,
+          15000.00237037636,
+          0.08268768935460333
+        ],
+        [
+          20.8406123044333,
+          15000.001144204329,
+          0.07372699365159259
+        ],
+        [
+          21.66089211228376,
+          15000.00033260603,
+          0.06600980153472649
+        ],
+        [
+          22.48889120165342,
+          14999.88255549292,
+          0.05934337282215764
+        ],
+        [
+          23.32269542113314,
+          15000.000213112071,
+          0.05356872557569919
+        ],
+        [
+          24.16037719913241,
+          15000.00091415838,
+          0.04855089793195589
+        ],
+        [
+          25.0,
+          15000.00201805871,
+          0.04417841437873965
+        ]
+      ],
+      "fullCurve": true,
+      "nodes": [
+        {
+          "id": "assembly",
+          "parent": null,
+          "label": "Turbine assembly",
+          "facts": [
+            {
+              "field": "turbine_class",
+              "value": "I",
+              "unit": "",
+              "path": "assembly.turbine_class",
+              "line": 4
+            },
+            {
+              "field": "turbulence_class",
+              "value": "B",
+              "unit": "",
+              "path": "assembly.turbulence_class",
+              "line": 5
+            },
+            {
+              "field": "drivetrain",
+              "value": "direct_drive",
+              "unit": "",
+              "path": "assembly.drivetrain",
+              "line": 6
+            },
+            {
+              "field": "rotor_orientation",
+              "value": "Upwind",
+              "unit": "",
+              "path": "assembly.rotor_orientation",
+              "line": 7
+            },
+            {
+              "field": "number_of_blades",
+              "value": 3,
+              "unit": "blades",
+              "path": "assembly.number_of_blades",
+              "line": 8
+            },
+            {
+              "field": "hub_height",
+              "value": 150.0,
+              "unit": "m",
+              "path": "assembly.hub_height",
+              "line": 9
+            },
+            {
+              "field": "rotor_diameter",
+              "value": 241.35064632,
+              "unit": "m",
+              "path": "assembly.rotor_diameter",
+              "line": 10
+            },
+            {
+              "field": "rated_power",
+              "value": 15000000.0,
+              "unit": "W",
+              "path": "assembly.rated_power",
+              "line": 11
+            },
+            {
+              "field": "lifetime",
+              "value": 25.0,
+              "unit": "years",
+              "path": "assembly.lifetime",
+              "line": 12
+            }
+          ],
+          "path": "assembly",
+          "source": "iea15-definition",
+          "line": 4,
+          "description": "The field assembly includes nine entries that aim at describing the overall configuration of the wind turbine",
+          "function": "The rotor captures mechanical power from the wind and drives a generator."
+        },
+        {
+          "id": "blade",
+          "parent": "assembly",
+          "label": "Blade",
+          "facts": [],
+          "path": "components.blade",
+          "source": "iea15-definition",
+          "line": 15,
+          "description": "The component `blade` includes three subcomponents, namely `reference_axis`, `outer_shape`, and `structure`. All distributed quantities, such as blade chord or the thickness of a structural component, are expressed in terms of pair arrays `grid` and `values`, which must have a minimum length of two elements and the same size. `grid` is defined nondimensional between 0 (root) and 1 (tip) along the, usually curved, `reference_axis`.",
+          "function": "Aerodynamic forces on the blade turn the rotor."
+        },
+        {
+          "id": "blade-structure",
+          "parent": "blade",
+          "label": "Structure",
+          "facts": [
+            {
+              "field": "webs",
+              "value": 2,
+              "unit": "entries",
+              "path": "components.blade.structure.webs",
+              "line": 91
+            },
+            {
+              "field": "layers",
+              "value": 18,
+              "unit": "entries",
+              "path": "components.blade.structure.layers",
+              "line": 126
+            }
+          ],
+          "path": "components.blade.structure",
+          "source": "iea15-definition",
+          "line": 90,
+          "description": "The field `structure` contains the data to describe the internal structure of standard wind turbine blades. This is a fairly sophisticated process and the ontology proposed in this work supports different definitions. On the top level, the field `structure` has two sub-components, namely the `webs`, where the positions of the shear webs are defined, and the `layers`, which describe all internal layers in terms of `name`, `material`, `thickness`, number of plies `n_plies`, `fiber_orientation` (for composites), and position in the two-dimensional sections. Recently, the fields `joint` and `root` were added to support blades that are segmented spanwise and details about the blade root bolting."
+        },
+        {
+          "id": "blade-outer_shape",
+          "parent": "blade",
+          "label": "Outer Shape",
+          "facts": [
+            {
+              "field": "chord minimum",
+              "value": 0.5000000000000001,
+              "unit": "m",
+              "path": "components.blade.outer_shape.chord.values",
+              "line": 28
+            },
+            {
+              "field": "chord maximum",
+              "value": 5.764836827022541,
+              "unit": "m",
+              "path": "components.blade.outer_shape.chord.values",
+              "line": 28
+            },
+            {
+              "field": "rthick minimum",
+              "value": 0.211,
+              "unit": "fraction",
+              "path": "components.blade.outer_shape.rthick.values",
+              "line": 88
+            },
+            {
+              "field": "rthick maximum",
+              "value": 1.0,
+              "unit": "fraction",
+              "path": "components.blade.outer_shape.rthick.values",
+              "line": 88
+            }
+          ],
+          "path": "components.blade.outer_shape",
+          "source": "iea15-definition",
+          "line": 26,
+          "description": "The field `outer_shape` consists of a dictionary containing the data describing the outer shape of the blade."
+        },
+        {
+          "id": "hub",
+          "parent": "assembly",
+          "label": "Hub",
+          "facts": [
+            {
+              "field": "diameter",
+              "value": 7.94,
+              "unit": "m",
+              "path": "components.hub.diameter",
+              "line": 625
+            },
+            {
+              "field": "hub_material",
+              "value": "cast_iron",
+              "unit": "",
+              "path": "components.hub.hub_material",
+              "line": 638
+            },
+            {
+              "field": "spinner_material",
+              "value": "glass_uni",
+              "unit": "",
+              "path": "components.hub.spinner_material",
+              "line": 639
+            }
+          ],
+          "path": "components.hub",
+          "source": "iea15-definition",
+          "line": 625,
+          "description": ""
+        },
+        {
+          "id": "drivetrain",
+          "parent": "assembly",
+          "label": "Drivetrain",
+          "facts": [],
+          "path": "components.drivetrain",
+          "source": "iea15-definition",
+          "line": 642,
+          "description": "",
+          "function": "The drivetrain transmits rotor rotation to the generator. The speed conversion depends on whether the design is geared or direct-drive."
+        },
+        {
+          "id": "generator",
+          "parent": "drivetrain",
+          "label": "Generator",
+          "facts": [
+            {
+              "field": "length",
+              "value": 2.15,
+              "unit": "m",
+              "path": "components.drivetrain.generator.length",
+              "line": 670
+            },
+            {
+              "field": "radius",
+              "value": 5.309,
+              "unit": "m",
+              "path": "components.drivetrain.generator.radius",
+              "line": 671
+            },
+            {
+              "field": "mass",
+              "value": 368839.0,
+              "unit": "kg",
+              "path": "components.drivetrain.generator.mass",
+              "line": 672
+            }
+          ],
+          "path": "components.drivetrain.generator",
+          "source": "iea15-definition",
+          "line": 670,
+          "description": "",
+          "function": "The generator converts rotational mechanical power into electricity."
+        },
+        {
+          "id": "lss",
+          "parent": "drivetrain",
+          "label": "Low-speed shaft",
+          "facts": [
+            {
+              "field": "diameter",
+              "value": [
+                3.0,
+                3.0
+              ],
+              "unit": "m",
+              "path": "components.drivetrain.lss.diameter",
+              "line": 653
+            },
+            {
+              "field": "wall_thickness",
+              "value": [
+                0.1,
+                0.1
+              ],
+              "unit": "m",
+              "path": "components.drivetrain.lss.wall_thickness",
+              "line": 654
+            },
+            {
+              "field": "material",
+              "value": "steel_drive",
+              "unit": "",
+              "path": "components.drivetrain.lss.material",
+              "line": 655
+            }
+          ],
+          "path": "components.drivetrain.lss",
+          "source": "iea15-definition",
+          "line": 653,
+          "description": "Inputs describing the low speed shaft"
+        },
+        {
+          "id": "bedplate",
+          "parent": "drivetrain",
+          "label": "Bedplate",
+          "facts": [
+            {
+              "field": "material",
+              "value": "steel_drive",
+              "unit": "",
+              "path": "components.drivetrain.bedplate.material",
+              "line": 664
+            }
+          ],
+          "path": "components.drivetrain.bedplate",
+          "source": "iea15-definition",
+          "line": 661,
+          "description": "Inputs describing the hollow elliptical bedplate used in direct drive configurations"
+        },
+        {
+          "id": "nose",
+          "parent": "drivetrain",
+          "label": "Nose",
+          "facts": [
+            {
+              "field": "diameter",
+              "value": [
+                2.2,
+                2.2
+              ],
+              "unit": "m",
+              "path": "components.drivetrain.nose.diameter",
+              "line": 658
+            },
+            {
+              "field": "wall_thickness",
+              "value": [
+                0.1,
+                0.1
+              ],
+              "unit": "m",
+              "path": "components.drivetrain.nose.wall_thickness",
+              "line": 659
+            }
+          ],
+          "path": "components.drivetrain.nose",
+          "source": "iea15-definition",
+          "line": 658,
+          "description": "Inputs describing the nose/turret at beginning (bedplate) and end (main bearing) points"
+        },
+        {
+          "id": "other_components",
+          "parent": "drivetrain",
+          "label": "Bearing design fields",
+          "facts": [
+            {
+              "field": "mb1Type",
+              "value": "CARB",
+              "unit": "",
+              "path": "components.drivetrain.other_components.mb1Type",
+              "line": 666
+            },
+            {
+              "field": "mb2Type",
+              "value": "SRB",
+              "unit": "",
+              "path": "components.drivetrain.other_components.mb2Type",
+              "line": 667
+            }
+          ],
+          "path": "components.drivetrain.other_components",
+          "source": "iea15-definition",
+          "line": 666,
+          "description": "Inputs describing all other drivetrain components, the assembly of brake, hvac, converter, transformer, and main bearings"
+        },
+        {
+          "id": "tower",
+          "parent": "assembly",
+          "label": "Tower",
+          "facts": [],
+          "path": "components.tower",
+          "source": "iea15-definition",
+          "line": 677,
+          "description": "Data describing the wind turbine tower."
+        },
+        {
+          "id": "tower-structure",
+          "parent": "tower",
+          "label": "Structure",
+          "facts": [
+            {
+              "field": "layers",
+              "value": 1,
+              "unit": "entries",
+              "path": "components.tower.structure.layers",
+              "line": 687
+            }
+          ],
+          "path": "components.tower.structure",
+          "source": "iea15-definition",
+          "line": 685,
+          "description": ""
+        },
+        {
+          "id": "tower-outer_shape",
+          "parent": "tower",
+          "label": "Outer Shape",
+          "facts": [
+            {
+              "field": "outer_diameter minimum",
+              "value": 6.5,
+              "unit": "m",
+              "path": "components.tower.outer_shape.outer_diameter.values",
+              "line": 680
+            },
+            {
+              "field": "outer_diameter maximum",
+              "value": 10.0,
+              "unit": "m",
+              "path": "components.tower.outer_shape.outer_diameter.values",
+              "line": 680
+            }
+          ],
+          "path": "components.tower.outer_shape",
+          "source": "iea15-definition",
+          "line": 678,
+          "description": ""
+        },
+        {
+          "id": "monopile",
+          "parent": "assembly",
+          "label": "Monopile",
+          "facts": [
+            {
+              "field": "transition_piece_mass",
+              "value": 100000.0,
+              "unit": "kg",
+              "path": "components.monopile.transition_piece_mass",
+              "line": 703
+            }
+          ],
+          "path": "components.monopile",
+          "source": "iea15-definition",
+          "line": 703,
+          "description": ""
+        },
+        {
+          "id": "monopile-structure",
+          "parent": "monopile",
+          "label": "Structure",
+          "facts": [
+            {
+              "field": "layers",
+              "value": 1,
+              "unit": "entries",
+              "path": "components.monopile.structure.layers",
+              "line": 716
+            }
+          ],
+          "path": "components.monopile.structure",
+          "source": "iea15-definition",
+          "line": 714,
+          "description": ""
+        },
+        {
+          "id": "monopile-outer_shape",
+          "parent": "monopile",
+          "label": "Outer Shape",
+          "facts": [
+            {
+              "field": "outer_diameter minimum",
+              "value": 10.0,
+              "unit": "m",
+              "path": "components.monopile.outer_shape.outer_diameter.values",
+              "line": 709
+            },
+            {
+              "field": "outer_diameter maximum",
+              "value": 10.0,
+              "unit": "m",
+              "path": "components.monopile.outer_shape.outer_diameter.values",
+              "line": 709
+            }
+          ],
+          "path": "components.monopile.outer_shape",
+          "source": "iea15-definition",
+          "line": 707,
+          "description": ""
+        },
+        {
+          "id": "control",
+          "parent": "assembly",
+          "label": "Controller",
+          "facts": [
+            {
+              "field": "rated_rotor_speed",
+              "value": 7.559987120819503,
+              "unit": "rpm",
+              "path": "control.rated_rotor_speed",
+              "line": 1102
+            },
+            {
+              "field": "rated_power",
+              "value": 15000000.0,
+              "unit": "W",
+              "path": "control.rated_power",
+              "line": 1103
+            }
+          ],
+          "path": "control",
+          "source": "iea15-definition",
+          "line": 1101,
+          "description": "Dictionary reporting the data describing the wind turbine controller"
+        }
+      ]
+    },
+    {
+      "id": "iea22",
+      "name": "IEA-22-280-RWT",
+      "kind": "Reference design",
+      "setting": "offshore",
+      "revision": "7c3cf5df656774bafc6909a92dae8d12f734b122",
+      "schema": "2.0",
+      "definition": "iea22-definition",
+      "performance": "iea22-wisdem",
+      "curveLocator": "Rotor Performance - WISDEM!A,C,I; separate from OpenFAST steady states",
+      "ratedKw": 22000.0,
+      "rotorM": 284.0,
+      "hubM": 170.0,
+      "drive": "direct_drive",
+      "cutIn": 3.0,
+      "cutOut": 25.0,
+      "curve": [
+        [
+          3.0,
+          375.5386489226223,
+          0.7813304621479027
+        ],
+        [
+          3.549532370424901,
+          635.6445191606541,
+          0.8569866769273048
+        ],
+        [
+          4.067900770958515,
+          1014.237244279814,
+          0.8569866769273045
+        ],
+        [
+          4.553906848103765,
+          1473.497283993472,
+          0.8569866769273043
+        ],
+        [
+          5.006427062922798,
+          1996.315117799086,
+          0.8569866769273045
+        ],
+        [
+          5.424415288411413,
+          2571.170921810308,
+          0.8569866769273041
+        ],
+        [
+          5.806905227914102,
+          3179.901342438452,
+          0.8569866769273042
+        ],
+        [
+          6.153012648988982,
+          3803.3801077058542,
+          0.8569866769273045
+        ],
+        [
+          6.461937427558305,
+          4421.435885734273,
+          0.8569866769273046
+        ],
+        [
+          6.732965397618989,
+          5013.265683087456,
+          0.8569866769273043
+        ],
+        [
+          6.965470002237022,
+          5559.920779928205,
+          0.8569866769273046
+        ],
+        [
+          7.158913742008995,
+          6043.266596094157,
+          0.8569866769273045
+        ],
+        [
+          7.312849417642273,
+          6446.694085964323,
+          0.8569866769273042
+        ],
+        [
+          7.426921163781191,
+          6756.659289177314,
+          0.8569866769273045
+        ],
+        [
+          7.500865271689334,
+          6962.663346035635,
+          0.8569866769273043
+        ],
+        [
+          7.534510798886009,
+          7057.78173884063,
+          0.8569866769273046
+        ],
+        [
+          7.541241633444431,
+          7076.914762404762,
+          0.8569866769273043
+        ],
+        [
+          7.588333269551883,
+          7211.728425549818,
+          0.8569866769273046
+        ],
+        [
+          7.675676841724368,
+          7466.186180998737,
+          0.8569866769273041
+        ],
+        [
+          7.803070430872968,
+          7847.828143616506,
+          0.8569866769273046
+        ],
+        [
+          7.970219531096269,
+          8367.545594024677,
+          0.8569866769273046
+        ],
+        [
+          8.17673773051311,
+          9039.659134866182,
+          0.8569866769273043
+        ],
+        [
+          8.422147604561678,
+          9882.192126316508,
+          0.8569866769273041
+        ],
+        [
+          8.705881819699881,
+          10918.830415632801,
+          0.8569866769273046
+        ],
+        [
+          9.027284444955459,
+          12176.33053962046,
+          0.8569866769273045
+        ],
+        [
+          9.38561246829382,
+          13684.38107841013,
+          0.8569866769273046
+        ],
+        [
+          9.780037514298128,
+          15971.52541098381,
+          0.7748312787537827
+        ],
+        [
+          10.20964775919068,
+          18121.24994355012,
+          0.7512373866661053
+        ],
+        [
+          10.67345003876854,
+          20200.10629184961,
+          0.6873653705919145
+        ],
+        [
+          11.13492727948751,
+          22000.0,
+          0.6315736399712507
+        ],
+        [
+          11.17037214438025,
+          21999.98265263249,
+          0.6202853751297848
+        ],
+        [
+          11.69926530163598,
+          21999.98772194027,
+          0.5007074153880238
+        ],
+        [
+          12.2589068261207,
+          22000.00215018138,
+          0.4174187672215832
+        ],
+        [
+          12.84800294997107,
+          22000.00020348089,
+          0.3524966264273877
+        ],
+        [
+          13.46519181278163,
+          21999.90198616311,
+          0.3000205933978818
+        ],
+        [
+          14.10904660992588,
+          22000.08648108723,
+          0.2568571310642664
+        ],
+        [
+          14.77807889101415,
+          22000.04450001979,
+          0.2209802205791095
+        ],
+        [
+          15.47074200086285,
+          22000.02469583412,
+          0.1909562343139703
+        ],
+        [
+          16.18543465502034,
+          22000.01502589051,
+          0.1657023751423323
+        ],
+        [
+          16.92050464158374,
+          22000.00987998824,
+          0.1443745876289151
+        ],
+        [
+          17.67425264074866,
+          22000.00672981739,
+          0.1262990061000482
+        ],
+        [
+          18.44493615326207,
+          22000.004635583948,
+          0.1109304620884137
+        ],
+        [
+          19.23077352869659,
+          22000.00305175491,
+          0.09782423009334525
+        ],
+        [
+          20.02994808423354,
+          22000.00173100655,
+          0.08661485369700589
+        ],
+        [
+          20.8406123044333,
+          22000.00067712477,
+          0.0770003102543795
+        ],
+        [
+          21.66089211228376,
+          22000.39599692601,
+          0.0687311764617581
+        ],
+        [
+          22.48889120165342,
+          21999.89366692158,
+          0.06159549138660367
+        ],
+        [
+          23.32269542113314,
+          22000.00109028803,
+          0.05542403780832075
+        ],
+        [
+          24.16037719913241,
+          22000.002823721443,
+          0.0500699389157151
+        ],
+        [
+          25.0,
+          22000.00530772446,
+          0.04541212608172228
+        ]
+      ],
+      "fullCurve": true,
+      "nodes": [
+        {
+          "id": "assembly",
+          "parent": null,
+          "label": "Turbine assembly",
+          "facts": [
+            {
+              "field": "turbine_class",
+              "value": "I",
+              "unit": "",
+              "path": "assembly.turbine_class",
+              "line": 4
+            },
+            {
+              "field": "turbulence_class",
+              "value": "B",
+              "unit": "",
+              "path": "assembly.turbulence_class",
+              "line": 5
+            },
+            {
+              "field": "drivetrain",
+              "value": "direct_drive",
+              "unit": "",
+              "path": "assembly.drivetrain",
+              "line": 6
+            },
+            {
+              "field": "rotor_orientation",
+              "value": "Upwind",
+              "unit": "",
+              "path": "assembly.rotor_orientation",
+              "line": 7
+            },
+            {
+              "field": "number_of_blades",
+              "value": 3,
+              "unit": "blades",
+              "path": "assembly.number_of_blades",
+              "line": 8
+            },
+            {
+              "field": "hub_height",
+              "value": 170.0,
+              "unit": "m",
+              "path": "assembly.hub_height",
+              "line": 9
+            },
+            {
+              "field": "rotor_diameter",
+              "value": 284.0,
+              "unit": "m",
+              "path": "assembly.rotor_diameter",
+              "line": 10
+            },
+            {
+              "field": "rated_power",
+              "value": 22000000.0,
+              "unit": "W",
+              "path": "assembly.rated_power",
+              "line": 11
+            },
+            {
+              "field": "lifetime",
+              "value": 25.0,
+              "unit": "years",
+              "path": "assembly.lifetime",
+              "line": 12
+            },
+            {
+              "field": "cut_in_wind_speed",
+              "value": 3.0,
+              "unit": "m/s",
+              "path": "assembly.cut_in_wind_speed",
+              "line": 13
+            },
+            {
+              "field": "cut_out_wind_speed",
+              "value": 25.0,
+              "unit": "m/s",
+              "path": "assembly.cut_out_wind_speed",
+              "line": 14
+            }
+          ],
+          "path": "assembly",
+          "source": "iea22-definition",
+          "line": 4,
+          "description": "The field assembly includes nine entries that aim at describing the overall configuration of the wind turbine",
+          "function": "The rotor captures mechanical power from the wind and drives a generator."
+        },
+        {
+          "id": "blade",
+          "parent": "assembly",
+          "label": "Blade",
+          "facts": [],
+          "path": "components.blade",
+          "source": "iea22-definition",
+          "line": 17,
+          "description": "The component `blade` includes three subcomponents, namely `reference_axis`, `outer_shape`, and `structure`. All distributed quantities, such as blade chord or the thickness of a structural component, are expressed in terms of pair arrays `grid` and `values`, which must have a minimum length of two elements and the same size. `grid` is defined nondimensional between 0 (root) and 1 (tip) along the, usually curved, `reference_axis`.",
+          "function": "Aerodynamic forces on the blade turn the rotor."
+        },
+        {
+          "id": "blade-structure",
+          "parent": "blade",
+          "label": "Structure",
+          "facts": [
+            {
+              "field": "webs",
+              "value": 3,
+              "unit": "entries",
+              "path": "components.blade.structure.webs",
+              "line": 123
+            },
+            {
+              "field": "layers",
+              "value": 21,
+              "unit": "entries",
+              "path": "components.blade.structure.layers",
+              "line": 175
+            }
+          ],
+          "path": "components.blade.structure",
+          "source": "iea22-definition",
+          "line": 122,
+          "description": "The field `structure` contains the data to describe the internal structure of standard wind turbine blades. This is a fairly sophisticated process and the ontology proposed in this work supports different definitions. On the top level, the field `structure` has two sub-components, namely the `webs`, where the positions of the shear webs are defined, and the `layers`, which describe all internal layers in terms of `name`, `material`, `thickness`, number of plies `n_plies`, `fiber_orientation` (for composites), and position in the two-dimensional sections. Recently, the fields `joint` and `root` were added to support blades that are segmented spanwise and details about the blade root bolting."
+        },
+        {
+          "id": "blade-outer_shape",
+          "parent": "blade",
+          "label": "Outer Shape",
+          "facts": [
+            {
+              "field": "chord minimum",
+              "value": 0.4,
+              "unit": "m",
+              "path": "components.blade.outer_shape.chord.values",
+              "line": 30
+            },
+            {
+              "field": "chord maximum",
+              "value": 7.2197891152632225,
+              "unit": "m",
+              "path": "components.blade.outer_shape.chord.values",
+              "line": 30
+            },
+            {
+              "field": "rthick minimum",
+              "value": 0.211,
+              "unit": "fraction",
+              "path": "components.blade.outer_shape.rthick.values",
+              "line": 36
+            },
+            {
+              "field": "rthick maximum",
+              "value": 1.0,
+              "unit": "fraction",
+              "path": "components.blade.outer_shape.rthick.values",
+              "line": 36
+            }
+          ],
+          "path": "components.blade.outer_shape",
+          "source": "iea22-definition",
+          "line": 28,
+          "description": "The field `outer_shape` consists of a dictionary containing the data describing the outer shape of the blade."
+        },
+        {
+          "id": "hub",
+          "parent": "assembly",
+          "label": "Hub",
+          "facts": [
+            {
+              "field": "diameter",
+              "value": 8.4,
+              "unit": "m",
+              "path": "components.hub.diameter",
+              "line": 716
+            },
+            {
+              "field": "hub_material",
+              "value": "cast_iron",
+              "unit": "",
+              "path": "components.hub.hub_material",
+              "line": 729
+            },
+            {
+              "field": "spinner_material",
+              "value": "glass_uniax",
+              "unit": "",
+              "path": "components.hub.spinner_material",
+              "line": 730
+            }
+          ],
+          "path": "components.hub",
+          "source": "iea22-definition",
+          "line": 716,
+          "description": ""
+        },
+        {
+          "id": "tower",
+          "parent": "assembly",
+          "label": "Tower",
+          "facts": [],
+          "path": "components.tower",
+          "source": "iea22-definition",
+          "line": 736,
+          "description": "Data describing the wind turbine tower."
+        },
+        {
+          "id": "tower-structure",
+          "parent": "tower",
+          "label": "Structure",
+          "facts": [
+            {
+              "field": "layers",
+              "value": 1,
+              "unit": "entries",
+              "path": "components.tower.structure.layers",
+              "line": 745
+            }
+          ],
+          "path": "components.tower.structure",
+          "source": "iea22-definition",
+          "line": 744,
+          "description": ""
+        },
+        {
+          "id": "tower-outer_shape",
+          "parent": "tower",
+          "label": "Outer Shape",
+          "facts": [
+            {
+              "field": "outer_diameter minimum",
+              "value": 6.000000000000001,
+              "unit": "m",
+              "path": "components.tower.outer_shape.outer_diameter.values",
+              "line": 739
+            },
+            {
+              "field": "outer_diameter maximum",
+              "value": 10.0,
+              "unit": "m",
+              "path": "components.tower.outer_shape.outer_diameter.values",
+              "line": 739
+            }
+          ],
+          "path": "components.tower.outer_shape",
+          "source": "iea22-definition",
+          "line": 737,
+          "description": ""
+        },
+        {
+          "id": "monopile",
+          "parent": "assembly",
+          "label": "Monopile",
+          "facts": [
+            {
+              "field": "transition_piece_mass",
+              "value": 100000.0,
+              "unit": "kg",
+              "path": "components.monopile.transition_piece_mass",
+              "line": 761
+            }
+          ],
+          "path": "components.monopile",
+          "source": "iea22-definition",
+          "line": 761,
+          "description": ""
+        },
+        {
+          "id": "monopile-structure",
+          "parent": "monopile",
+          "label": "Structure",
+          "facts": [
+            {
+              "field": "layers",
+              "value": 1,
+              "unit": "entries",
+              "path": "components.monopile.structure.layers",
+              "line": 771
+            }
+          ],
+          "path": "components.monopile.structure",
+          "source": "iea22-definition",
+          "line": 770,
+          "description": ""
+        },
+        {
+          "id": "monopile-outer_shape",
+          "parent": "monopile",
+          "label": "Outer Shape",
+          "facts": [
+            {
+              "field": "outer_diameter minimum",
+              "value": 10.0,
+              "unit": "m",
+              "path": "components.monopile.outer_shape.outer_diameter.values",
+              "line": 765
+            },
+            {
+              "field": "outer_diameter maximum",
+              "value": 10.0,
+              "unit": "m",
+              "path": "components.monopile.outer_shape.outer_diameter.values",
+              "line": 765
+            }
+          ],
+          "path": "components.monopile.outer_shape",
+          "source": "iea22-definition",
+          "line": 763,
+          "description": ""
+        },
+        {
+          "id": "drivetrain",
+          "parent": "assembly",
+          "label": "Drivetrain",
+          "facts": [],
+          "path": "components.drivetrain",
+          "source": "iea22-definition",
+          "line": 787,
+          "description": "",
+          "function": "The drivetrain transmits rotor rotation to the generator. The speed conversion depends on whether the design is geared or direct-drive."
+        },
+        {
+          "id": "generator",
+          "parent": "drivetrain",
+          "label": "Generator",
+          "facts": [
+            {
+              "field": "length",
+              "value": 3.047,
+              "unit": "m",
+              "path": "components.drivetrain.generator.length",
+              "line": 818
+            },
+            {
+              "field": "radius",
+              "value": 4.89,
+              "unit": "m",
+              "path": "components.drivetrain.generator.radius",
+              "line": 819
+            },
+            {
+              "field": "mass",
+              "value": 508040.0,
+              "unit": "kg",
+              "path": "components.drivetrain.generator.mass",
+              "line": 820
+            }
+          ],
+          "path": "components.drivetrain.generator",
+          "source": "iea22-definition",
+          "line": 818,
+          "description": "",
+          "function": "The generator converts rotational mechanical power into electricity."
+        },
+        {
+          "id": "lss",
+          "parent": "drivetrain",
+          "label": "Low-speed shaft",
+          "facts": [
+            {
+              "field": "diameter",
+              "value": [
+                3.1,
+                3.1
+              ],
+              "unit": "m",
+              "path": "components.drivetrain.lss.diameter",
+              "line": 797
+            },
+            {
+              "field": "wall_thickness",
+              "value": [
+                0.02,
+                0.02
+              ],
+              "unit": "m",
+              "path": "components.drivetrain.lss.wall_thickness",
+              "line": 798
+            },
+            {
+              "field": "material",
+              "value": "steel_drive",
+              "unit": "",
+              "path": "components.drivetrain.lss.material",
+              "line": 799
+            }
+          ],
+          "path": "components.drivetrain.lss",
+          "source": "iea22-definition",
+          "line": 797,
+          "description": "Inputs describing the low speed shaft"
+        },
+        {
+          "id": "bedplate",
+          "parent": "drivetrain",
+          "label": "Bedplate",
+          "facts": [
+            {
+              "field": "material",
+              "value": "steel",
+              "unit": "",
+              "path": "components.drivetrain.bedplate.material",
+              "line": 808
+            }
+          ],
+          "path": "components.drivetrain.bedplate",
+          "source": "iea22-definition",
+          "line": 805,
+          "description": "Inputs describing the hollow elliptical bedplate used in direct drive configurations"
+        },
+        {
+          "id": "nose",
+          "parent": "drivetrain",
+          "label": "Nose",
+          "facts": [
+            {
+              "field": "diameter",
+              "value": [
+                2.1,
+                2.1
+              ],
+              "unit": "m",
+              "path": "components.drivetrain.nose.diameter",
+              "line": 802
+            },
+            {
+              "field": "wall_thickness",
+              "value": [
+                0.035,
+                0.035
+              ],
+              "unit": "m",
+              "path": "components.drivetrain.nose.wall_thickness",
+              "line": 803
+            }
+          ],
+          "path": "components.drivetrain.nose",
+          "source": "iea22-definition",
+          "line": 802,
+          "description": "Inputs describing the nose/turret at beginning (bedplate) and end (main bearing) points"
+        },
+        {
+          "id": "other_components",
+          "parent": "drivetrain",
+          "label": "Bearing design fields",
+          "facts": [
+            {
+              "field": "mb1Type",
+              "value": "CARB",
+              "unit": "",
+              "path": "components.drivetrain.other_components.mb1Type",
+              "line": 814
+            },
+            {
+              "field": "mb2Type",
+              "value": "SRB",
+              "unit": "",
+              "path": "components.drivetrain.other_components.mb2Type",
+              "line": 815
+            }
+          ],
+          "path": "components.drivetrain.other_components",
+          "source": "iea22-definition",
+          "line": 810,
+          "description": "Inputs describing all other drivetrain components, the assembly of brake, hvac, converter, transformer, and main bearings"
+        },
+        {
+          "id": "control",
+          "parent": "assembly",
+          "label": "Controller",
+          "facts": [
+            {
+              "field": "rated_rotor_speed",
+              "value": 7.061131867192266,
+              "unit": "rpm",
+              "path": "control.rated_rotor_speed",
+              "line": 1506
+            },
+            {
+              "field": "rated_power",
+              "value": 22000000.0,
+              "unit": "W",
+              "path": "control.rated_power",
+              "line": 1507
+            }
+          ],
+          "path": "control",
+          "source": "iea22-definition",
+          "line": 1505,
+          "description": "Dictionary reporting the data describing the wind turbine controller"
+        }
+      ]
+    }
+  ],
+  "sources": {
+    "iea34-license": {
+      "id": "iea34-license",
+      "title": "IEA-3.4-130-RWT · LICENSE",
+      "url": "https://github.com/IEAWindSystems/IEA-3.4-130-RWT/blob/aacff396f46b35f7104d83be095f859684013405/LICENSE",
+      "revision": "aacff396f46b35f7104d83be095f859684013405",
+      "scope": "iea34",
+      "sha256": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4",
+      "terms": "Apache-2.0",
+      "license": "https://github.com/IEAWindSystems/IEA-3.4-130-RWT/blob/aacff396f46b35f7104d83be095f859684013405/LICENSE"
+    },
+    "iea34-definition": {
+      "id": "iea34-definition",
+      "title": "IEA-3.4-130-RWT · IEA-3.4-130-RWT.yaml",
+      "url": "https://github.com/IEAWindSystems/IEA-3.4-130-RWT/blob/aacff396f46b35f7104d83be095f859684013405/yaml/IEA-3.4-130-RWT.yaml",
+      "revision": "aacff396f46b35f7104d83be095f859684013405",
+      "scope": "iea34",
+      "sha256": "2a25f800fadb2b78c518445fdd9afefa108502ccbcf8ea06872ab50f37247ac1",
+      "terms": "Apache-2.0",
+      "license": "https://github.com/IEAWindSystems/IEA-3.4-130-RWT/blob/aacff396f46b35f7104d83be095f859684013405/LICENSE"
+    },
+    "iea34-performance": {
+      "id": "iea34-performance",
+      "title": "IEA-3.4-130-RWT · performance_ccblade.dat",
+      "url": "https://github.com/IEAWindSystems/IEA-3.4-130-RWT/blob/aacff396f46b35f7104d83be095f859684013405/performance/performance_ccblade.dat",
+      "revision": "aacff396f46b35f7104d83be095f859684013405",
+      "scope": "iea34",
+      "sha256": "cc4df837e0cae5dc03f774dc4d42d019fb98064ae7ad8d1c133ef7701d47e329",
+      "terms": "Apache-2.0",
+      "license": "https://github.com/IEAWindSystems/IEA-3.4-130-RWT/blob/aacff396f46b35f7104d83be095f859684013405/LICENSE"
+    },
+    "iea34-readme": {
+      "id": "iea34-readme",
+      "title": "IEA-3.4-130-RWT · README.md",
+      "url": "https://github.com/IEAWindSystems/IEA-3.4-130-RWT/blob/aacff396f46b35f7104d83be095f859684013405/README.md",
+      "revision": "aacff396f46b35f7104d83be095f859684013405",
+      "scope": "iea34",
+      "sha256": "475f13cf20888aaddf6ddbfe60f27bc70330a8ac9d831e726030ca3a606c1d2b",
+      "terms": "Apache-2.0",
+      "license": "https://github.com/IEAWindSystems/IEA-3.4-130-RWT/blob/aacff396f46b35f7104d83be095f859684013405/LICENSE"
+    },
+    "iea15-license": {
+      "id": "iea15-license",
+      "title": "IEA-15-240-RWT · LICENSE",
+      "url": "https://github.com/IEAWindSystems/IEA-15-240-RWT/blob/28ae083f6e4d2e2e4ea35ac9100fcab104940484/LICENSE",
+      "revision": "28ae083f6e4d2e2e4ea35ac9100fcab104940484",
+      "scope": "iea15",
+      "sha256": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4",
+      "terms": "Apache-2.0",
+      "license": "https://github.com/IEAWindSystems/IEA-15-240-RWT/blob/28ae083f6e4d2e2e4ea35ac9100fcab104940484/LICENSE"
+    },
+    "iea15-definition": {
+      "id": "iea15-definition",
+      "title": "IEA-15-240-RWT · IEA-15-240-RWT.yaml",
+      "url": "https://github.com/IEAWindSystems/IEA-15-240-RWT/blob/28ae083f6e4d2e2e4ea35ac9100fcab104940484/WT_Ontology/IEA-15-240-RWT.yaml",
+      "revision": "28ae083f6e4d2e2e4ea35ac9100fcab104940484",
+      "scope": "iea15",
+      "sha256": "af51499e4d4b35293f9c6bca7701a9af6df0b3884c532891b1cc133efd420978",
+      "terms": "Apache-2.0",
+      "license": "https://github.com/IEAWindSystems/IEA-15-240-RWT/blob/28ae083f6e4d2e2e4ea35ac9100fcab104940484/LICENSE"
+    },
+    "iea15-performance": {
+      "id": "iea15-performance",
+      "title": "IEA-15-240-RWT · IEA-15-240-RWT_tabular.xlsx",
+      "url": "https://github.com/IEAWindSystems/IEA-15-240-RWT/blob/28ae083f6e4d2e2e4ea35ac9100fcab104940484/Documentation/IEA-15-240-RWT_tabular.xlsx",
+      "revision": "28ae083f6e4d2e2e4ea35ac9100fcab104940484",
+      "scope": "iea15",
+      "sha256": "9ed6ee219a97c443d0b900498e3ef4fefa12d855d9a7c9e4c5b9bc0702b9078a",
+      "terms": "Apache-2.0",
+      "license": "https://github.com/IEAWindSystems/IEA-15-240-RWT/blob/28ae083f6e4d2e2e4ea35ac9100fcab104940484/LICENSE"
+    },
+    "iea15-readme": {
+      "id": "iea15-readme",
+      "title": "IEA-15-240-RWT · README.md",
+      "url": "https://github.com/IEAWindSystems/IEA-15-240-RWT/blob/28ae083f6e4d2e2e4ea35ac9100fcab104940484/README.md",
+      "revision": "28ae083f6e4d2e2e4ea35ac9100fcab104940484",
+      "scope": "iea15",
+      "sha256": "faf5fd7d3ddf2780b718d677f267ece1f2fbb429ca8f434f2d60adbac4ccbf21",
+      "terms": "Apache-2.0",
+      "license": "https://github.com/IEAWindSystems/IEA-15-240-RWT/blob/28ae083f6e4d2e2e4ea35ac9100fcab104940484/LICENSE"
+    },
+    "iea22-license": {
+      "id": "iea22-license",
+      "title": "IEA-22-280-RWT · LICENSE",
+      "url": "https://github.com/IEAWindSystems/IEA-22-280-RWT/blob/7c3cf5df656774bafc6909a92dae8d12f734b122/LICENSE",
+      "revision": "7c3cf5df656774bafc6909a92dae8d12f734b122",
+      "scope": "iea22",
+      "sha256": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4",
+      "terms": "Apache-2.0",
+      "license": "https://github.com/IEAWindSystems/IEA-22-280-RWT/blob/7c3cf5df656774bafc6909a92dae8d12f734b122/LICENSE"
+    },
+    "iea22-definition": {
+      "id": "iea22-definition",
+      "title": "IEA-22-280-RWT · IEA-22-280-RWT.yaml",
+      "url": "https://github.com/IEAWindSystems/IEA-22-280-RWT/blob/7c3cf5df656774bafc6909a92dae8d12f734b122/windIO/IEA-22-280-RWT.yaml",
+      "revision": "7c3cf5df656774bafc6909a92dae8d12f734b122",
+      "scope": "iea22",
+      "sha256": "6b844389cdf34df398a51d201efb849c4317b8e84b977af2a788b2c61f95231a",
+      "terms": "Apache-2.0",
+      "license": "https://github.com/IEAWindSystems/IEA-22-280-RWT/blob/7c3cf5df656774bafc6909a92dae8d12f734b122/LICENSE"
+    },
+    "iea22-performance": {
+      "id": "iea22-performance",
+      "title": "IEA-22-280-RWT · iea-22-280-rwt-steady-states-of.yaml",
+      "url": "https://github.com/IEAWindSystems/IEA-22-280-RWT/blob/7c3cf5df656774bafc6909a92dae8d12f734b122/outputs/01_steady_states/OpenFAST/iea-22-280-rwt-steady-states-of.yaml",
+      "revision": "7c3cf5df656774bafc6909a92dae8d12f734b122",
+      "scope": "iea22",
+      "sha256": "ccd711807cdcd27b1b82aada68d2408c65bf5d315f9ac02ee3950cac6a834021",
+      "terms": "Apache-2.0",
+      "license": "https://github.com/IEAWindSystems/IEA-22-280-RWT/blob/7c3cf5df656774bafc6909a92dae8d12f734b122/LICENSE"
+    },
+    "iea22-wisdem": {
+      "id": "iea22-wisdem",
+      "title": "IEA-22-280-RWT · IEA-22-280-RWT_tabular.xlsx",
+      "url": "https://github.com/IEAWindSystems/IEA-22-280-RWT/blob/7c3cf5df656774bafc6909a92dae8d12f734b122/Documentation/IEA-22-280-RWT_tabular.xlsx",
+      "revision": "7c3cf5df656774bafc6909a92dae8d12f734b122",
+      "scope": "iea22",
+      "sha256": "8cf9a552a955982b210e8bc77702adc85c8ee0f1d1e10b5f717b3d29e95b4f84",
+      "terms": "Apache-2.0",
+      "license": "https://github.com/IEAWindSystems/IEA-22-280-RWT/blob/7c3cf5df656774bafc6909a92dae8d12f734b122/LICENSE"
+    },
+    "iea22-readme": {
+      "id": "iea22-readme",
+      "title": "IEA-22-280-RWT · README.md",
+      "url": "https://github.com/IEAWindSystems/IEA-22-280-RWT/blob/7c3cf5df656774bafc6909a92dae8d12f734b122/README.md",
+      "revision": "7c3cf5df656774bafc6909a92dae8d12f734b122",
+      "scope": "iea22",
+      "sha256": "6ca5b7d9a4748031c456eb1001d6778da77ba89a768c40a48fbe3ea1eb66d2c8",
+      "terms": "Apache-2.0",
+      "license": "https://github.com/IEAWindSystems/IEA-22-280-RWT/blob/7c3cf5df656774bafc6909a92dae8d12f734b122/LICENSE"
+    },
+    "windio-license": {
+      "id": "windio-license",
+      "title": "windIO · LICENSE",
+      "url": "https://github.com/IEAWindSystems/windIO/blob/63dcad638a9ac41d24f7a68172e24bde378c23e6/LICENSE",
+      "revision": "63dcad638a9ac41d24f7a68172e24bde378c23e6",
+      "scope": "schema",
+      "sha256": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4",
+      "terms": "Apache-2.0",
+      "license": "https://github.com/IEAWindSystems/windIO/blob/63dcad638a9ac41d24f7a68172e24bde378c23e6/LICENSE"
+    },
+    "windio": {
+      "id": "windio",
+      "title": "windIO · README.rst",
+      "url": "https://github.com/IEAWindSystems/windIO/blob/63dcad638a9ac41d24f7a68172e24bde378c23e6/README.rst",
+      "revision": "63dcad638a9ac41d24f7a68172e24bde378c23e6",
+      "scope": "schema",
+      "sha256": "b1a689cebdcd37978768b6694659a91154846a4236ffacf5226b664e38f7edf9",
+      "terms": "Apache-2.0",
+      "license": "https://github.com/IEAWindSystems/windIO/blob/63dcad638a9ac41d24f7a68172e24bde378c23e6/LICENSE"
+    },
+    "beamdyn-license": {
+      "id": "beamdyn-license",
+      "title": "openfast · LICENSE",
+      "url": "https://github.com/OpenFAST/openfast/blob/2895884d2be01862173c88d70f86b358d2f1a50a/LICENSE",
+      "revision": "2895884d2be01862173c88d70f86b358d2f1a50a",
+      "scope": "method",
+      "sha256": "b40930bbcf80744c86c46a12bc9da056641d722716c378f5659b9e555ef833e1",
+      "terms": "Apache-2.0",
+      "license": "https://github.com/OpenFAST/openfast/blob/2895884d2be01862173c88d70f86b358d2f1a50a/LICENSE"
+    },
+    "beamdyn": {
+      "id": "beamdyn",
+      "title": "openfast · theory.rst",
+      "url": "https://github.com/OpenFAST/openfast/blob/2895884d2be01862173c88d70f86b358d2f1a50a/docs/source/user/beamdyn/theory.rst",
+      "revision": "2895884d2be01862173c88d70f86b358d2f1a50a",
+      "scope": "method",
+      "sha256": "829a203db245d8b5fbe0c58c16b33ca086675a086e61645c52fb118284270fd1",
+      "terms": "Apache-2.0",
+      "license": "https://github.com/OpenFAST/openfast/blob/2895884d2be01862173c88d70f86b358d2f1a50a/LICENSE"
+    },
+    "windio-schema": {
+      "id": "windio-schema",
+      "title": "windIO · turbine_schema.yaml",
+      "url": "https://github.com/IEAWindSystems/windIO/blob/63dcad638a9ac41d24f7a68172e24bde378c23e6/windIO/schemas/turbine/turbine_schema.yaml",
+      "revision": "63dcad638a9ac41d24f7a68172e24bde378c23e6",
+      "scope": "schema",
+      "sha256": "bd1326e87c4a56dd5cc671b155441050ca2592c9da22bd712c1db15a8f776f66",
+      "terms": "Apache-2.0",
+      "license": "https://github.com/IEAWindSystems/windIO/blob/63dcad638a9ac41d24f7a68172e24bde378c23e6/LICENSE"
+    },
+    "grc-benchmark": {
+      "id": "grc-benchmark",
+      "title": "Wind turbine gearbox condition monitoring vibration analysis benchmarking datasets - Shawn Sheng (2014)",
+      "url": "https://data.openei.org/submissions/738",
+      "revision": "DOI 10.25984/1844194 - dataset description",
+      "scope": "grc",
+      "sha256": "d8f134c896d6a9f9b698191a4261be86c9bc9b14803312df84e54866318ae640",
+      "terms": "WindForge factual annotation; link only to upstream work",
+      "license": "https://data.openei.org/submissions/738"
+    },
+    "grc-round": {
+      "id": "grc-round",
+      "title": "Gearbox condition monitoring round robin – vibration analysis",
+      "url": "https://wdh.energy.gov/publication/447",
+      "revision": "Abstract",
+      "scope": "grc",
+      "sha256": "a267472722210ae3f8eecb1f5641527faba3e8d93318a1e32a41a1fc17b1b752",
+      "terms": "WindForge factual annotation; link only to upstream work",
+      "license": "https://wdh.energy.gov/publication/447"
+    },
+    "grc-cracks": {
+      "id": "grc-cracks",
+      "title": "Gearbox instrumentation for the investigation of bearing axial cracking",
+      "url": "https://research-hub.nlr.gov/en/publications/gearbox-instrumentation-for-the-investigation-of-bearing-axial-cr/",
+      "revision": "Abstract · NREL/TP-5000-70639",
+      "scope": "grc",
+      "sha256": "cef5516d22eabd49f7ce2db3b82c3874284b41a63e642bf25b6a0856910e3f80",
+      "terms": "WindForge factual annotation; link only to upstream work",
+      "license": "https://research-hub.nlr.gov/en/publications/gearbox-instrumentation-for-the-investigation-of-bearing-axial-cr/"
+    },
+    "doe-functions": {
+      "id": "doe-functions",
+      "title": "U.S. Department of Energy · How do wind turbines work?",
+      "url": "https://www.energy.gov/cmei/systems/how-do-wind-turbines-work",
+      "revision": "Reviewed 2026-11-15",
+      "scope": "method",
+      "sha256": "53d032916d9967e01ef0e6a565eba18be4ac1667df026ee3697b654a4b3feb3c",
+      "terms": "WindForge factual annotations; no third-party images or text redistributed",
+      "license": "https://www.energy.gov/cmei/systems/how-do-wind-turbines-work"
+    }
+  },
+  "passages": [
+    {
+      "scope": "iea15",
+      "source": "iea15-readme",
+      "locator": "README paragraph 2",
+      "text": "# IEA-15-240-RWT v1.1\nThis repository contains the model data for the 15-MW offshore reference turbine developed within IEA Wind Task 37.",
+      "id": "5323b3a2d6a63d5efe5b7957"
+    },
+    {
+      "scope": "iea15",
+      "source": "iea15-readme",
+      "locator": "README paragraph 3",
+      "text": "The documentation for the turbine is accessible here: https://docs.nlr.gov/docs/fy20osti/75698.pdf\nand the semisubmersible floating support structure is documented here: https://docs.nlr.gov/docs/fy20osti/76773.pdf",
+      "id": "bbe416b31fb6d96a92867a7e"
+    },
+    {
+      "scope": "iea15",
+      "source": "iea15-readme",
+      "locator": "README paragraph 4",
+      "text": "Data in this repository includes:\n* Documentation, including tabular data used in the figures from the technical report\n* OpenFAST aeroelastic model inputs\n* HAWC2 aeroelastic model inputs\n* WISDEM optimization files\n* Wind turbine ontology .yaml files\n* CAD modeling of turbine where available",
+      "id": "fbafd8c80a1b6d478e4cca02"
+    },
+    {
+      "scope": "iea15",
+      "source": "iea15-readme",
+      "locator": "README paragraph 6",
+      "text": "*OpenFAST*:\n* Please check the release notes for OpenFAST version compatability.  OpenFAST can be compiled [from source here](https://github.com/OpenFAST/openfast.git) or precompiled Windows binaries are [available for download](https://github.com/OpenFAST/openfast/releases/latest/download/windows_openfast_binaries.zip). More information on installing and running OpenFAST is available in [OpenFAST documention](https://openfast.readthedocs.io/en/master/).\n* NREL's Reference OpenSource Controller (ROSCO) is required.  This can be compiled [from source here](https://github.com/nrel/rosco) or precompiled binaries for all platforms are [available for download](https://github.com/NREL/ROSCO/releases/).  The version of the ROSCO controller can be found in the header of the [DISCON.IN](https://github.com/IEAWindSystems/IEA-15-240-RWT/blob/3a00f7f38a6373f6b026aef5878b671ca7af3605/OpenFAST/IEA-15-240-RWT-UMaineSemi/IEA-15-240-RWT-UMaineSemi_DISCON.IN#L2)",
+      "id": "7646b1c0a70fb3e70649a890"
+    },
+    {
+      "scope": "iea15",
+      "source": "iea15-readme",
+      "locator": "README paragraph 7",
+      "text": "*HAWC2*:\n* HAWC2 can be acquired from its [homepage](https://www.hawc2.dk/).  The DTU Basic Controller can be obtained from its [repository](https://gitlab.windenergy.dtu.dk/OpenLAC/BasicDTUController).",
+      "id": "fcdbd49e05e875c6eb43dbfc"
+    },
+    {
+      "scope": "iea15",
+      "source": "iea15-readme",
+      "locator": "README paragraph 8",
+      "text": "*WISDEM*:\n * WISDEM can be installed from its Github [repository](https://github.com/WISDEM/WISDEM).\n * See the [documentation](https://wisdem.readthedocs.io) for installation and usage guides.",
+      "id": "e7c76c91a0e9a0401e3d0ef9"
+    },
+    {
+      "scope": "iea15",
+      "source": "iea15-readme",
+      "locator": "README paragraph 10",
+      "text": "The IEA Wind Task 37 authors endeavor to keep the model input decks current with the latest releases and API changes.  Errors and other issues pointed out by the community are also addressed to the extent that available resources make that possible.  See the [Release Notes](blob/master/ReleaseNotes.md) for a detailed description of changes.",
+      "id": "2c29b51edab1b8e8344c1d3c"
+    },
+    {
+      "scope": "iea15",
+      "source": "iea15-readme",
+      "locator": "README paragraph 13",
+      "text": "For a list of academic papers that use or cite this turbine, please see [here (fixed-bottom)](https://scholar.google.com/scholar?cites=11739673662820715884&as_sdt=4005&sciodt=0,6&hl=en) and [here (floating)](https://scholar.google.com/scholar?cites=17665986740213390479&as_sdt=4005&sciodt=0,6&hl=en).",
+      "id": "2dafd02d95904c4fe383aaba"
+    },
+    {
+      "scope": "iea15",
+      "source": "iea15-readme",
+      "locator": "README paragraph 14",
+      "text": "If you use this model in your research or publications, please cite the appropriate report as:",
+      "id": "4ffa0b83cb25351b634787cc"
+    },
+    {
+      "scope": "iea15",
+      "source": "iea15-readme",
+      "locator": "README paragraph 15",
+      "text": "@techreport{IEA15MW_ORWT,\n    author = {Evan Gaertner and Jennifer Rinker and Latha Sethuraman and Frederik Zahle and Benjamin Anderson and Garrett Barter and Nikhar Abbas and Fanzhong Meng and Pietro Bortolotti and Witold Skrzypinski and George Scott and Roland Feil and Henrik Bredmose and Katherine Dykes and Matt Sheilds and Christopher Allen and Anthony Viselli},\n    Howpublished = {NREL/TP-75698},\n    institution = {International Energy Agency},\n    title = {Definition of the {IEA} 15-Megawatt Offshore Reference Wind Turbine},\n    URL = {https://www.nrel.gov/docs/fy20osti/75698.pdf},\n    Year = {2020}\n    }",
+      "id": "aa35c067c060c440a21858d7"
+    },
+    {
+      "scope": "iea15",
+      "source": "iea15-readme",
+      "locator": "README paragraph 16",
+      "text": "@techreport{IEA15MW_ORWT_Floating,\n    author = {Christopher Allen and Anthony Viselli and Habib Dagher and Andrew Goupee and Evan Gaertner and Nikhar Abbas and Matthew Hall and Garrett Barter},\n    Howpublished = {NREL/TP-76773},\n    institution = {International Energy Agency},\n    title = {Definition of the {UMaine} {VolturnUS-S} Reference Platform Developed for the {IEA Wind} 15-Megawatt Offshore Reference Wind Turbine}},\n    URL = {https://www.nrel.gov/docs/fy20osti/76773.pdf},\n    Year = {2020}\n    }",
+      "id": "3889a20871f1dc809c1795d1"
+    },
+    {
+      "scope": "iea15",
+      "source": "iea15-readme",
+      "locator": "README paragraph 18",
+      "text": "Before reaching out to NREL or DTU authors with questions on the model or reports, please see our frequently asked questions (FAQ) on our [Github Wiki](https://github.com/IEAWindSystems/IEA-15-240-RWT/wiki/Frequently-Asked-Questions-(FAQ)) and current or prior [Issues](https://github.com/IEAWindSystems/IEA-15-240-RWT/issues).",
+      "id": "54e98dcee6dac7151ed94076"
+    },
+    {
+      "scope": "iea15",
+      "source": "iea15-readme",
+      "locator": "README paragraph 19",
+      "text": "If neither the FAQ or Issues address your need, please create a new Issue on this repository so that the dialogue is archived for others that might have similar questions. You can also reach out to the authors directly if that is your preference.  The technical report lists the contributions of individual authors if you have a specific question.  Otherwise, you can contact Garrett Barter (garrett.barter@nrel.gov).",
+      "id": "0d0b8576455b7184370e6f1a"
+    },
+    {
+      "scope": "iea22",
+      "source": "iea22-performance",
+      "locator": "OpenFAST cases[].configuration.wind_speed and outputs.integrated.electrical_power (W)",
+      "text": "The OpenFAST steady-state cases cover 3.0 to 24.0 m/s. WindForge uses the separate WISDEM curve for AEP; it does not extrapolate the missing interval.",
+      "id": "41f851223661d75a1efaf376"
+    },
+    {
+      "scope": "iea22",
+      "source": "iea22-readme",
+      "locator": "README paragraph 2",
+      "text": "# IEA-22-280-RWT\nThis repository contains the model data for the 22-MW offshore reference turbine developed within IEA Wind Task 55 [REFWIND](https://iea-wind.org/task55/).",
+      "id": "52764cc6838d5ee1ac11fd52"
+    },
+    {
+      "scope": "iea22",
+      "source": "iea22-readme",
+      "locator": "README paragraph 3",
+      "text": "The documentation for the turbine is available here: https://doi.org/10.11581/DTU.00000317.",
+      "id": "b5044ed14e772de388ec3745"
+    },
+    {
+      "scope": "iea22",
+      "source": "iea22-readme",
+      "locator": "README paragraph 4",
+      "text": "Data in this repository includes:\n* Documentation, including tabular data used in the figures from the technical report\n* [OpenFAST](https://github.com/OpenFAST/openfast.git) aeroelastic model inputs\n* [HAWC2](https://www.hawc2.dk/) aeroelastic model inputs\n* [WISDEM](https://github.com/WISDEM/WISDEM) optimization files\n* [WindIO](https://windio.readthedocs.io/en/latest/) turbine ontology .yaml files\n* CAD modeling of turbine where available",
+      "id": "a72ce5019c7a4e4eb8dc8a58"
+    },
+    {
+      "scope": "iea22",
+      "source": "iea22-readme",
+      "locator": "README paragraph 6",
+      "text": "*OpenFAST*:\n* Please check the release notes for OpenFAST version compatibility.  OpenFAST can be compiled [from source here](https://github.com/OpenFAST/openfast.git) or precompiled Windows binaries are [available for download](https://github.com/OpenFAST/openfast/releases/latest/download/windows_openfast_binaries.zip). More information on installing and running OpenFAST is available in [OpenFAST documention](https://openfast.readthedocs.io/en/master/).\n* NREL's Reference OpenSource Controller (ROSCO) is required.  This can be compiled [from source here](https://github.com/nrel/rosco) or precompiled binaries for all platforms are [available for download](https://github.com/NREL/ROSCO/releases/).  The version of the ROSCO controller can be found in the header of the [DISCON.IN](https://github.com/IEAWindTask37/IEA-22-280-RWT/blob/e76514e59c8a152c35a46248559e3787693a5ff5/OpenFAST/IEA-22-280-RWT-Monopile/IEA-22-280-RWT_DISCON.IN#L2)",
+      "id": "6acd40fa532db87ea8885a9a"
+    },
+    {
+      "scope": "iea22",
+      "source": "iea22-readme",
+      "locator": "README paragraph 7",
+      "text": "*HAWC2*:\n* HAWC2 can be acquired from its [homepage](https://www.hawc2.dk/).  The DTU Basic Controller can be obtained from its [repository](https://gitlab.windenergy.dtu.dk/OpenLAC/BasicDTUController).",
+      "id": "c1933ce295a8f516dcdefad1"
+    },
+    {
+      "scope": "iea22",
+      "source": "iea22-readme",
+      "locator": "README paragraph 8",
+      "text": "*WISDEM*:\n * WISDEM can be installed from its Github [repository](https://github.com/WISDEM/WISDEM).\n * See the [documentation](https://wisdem.readthedocs.io) for installation and usage guides.",
+      "id": "fcb2268ce606c48d92865e2b"
+    },
+    {
+      "scope": "iea22",
+      "source": "iea22-readme",
+      "locator": "README paragraph 10",
+      "text": "If you use this model in your research or publications, please cite:",
+      "id": "2155ca1a52c410958a7479da"
+    },
+    {
+      "scope": "iea22",
+      "source": "iea22-readme",
+      "locator": "README paragraph 11",
+      "text": "Zahle, F., Barlas, A., Lønbæk, K., Bortolotti, P., Zalkind, D., Wang, L., Labuschagne, C., Sethuraman, L., & Barter, G. (2024). Definition of the IEA Wind 22-Megawatt Offshore Reference Wind Turbine. Technical University of Denmark, International Energy Agency. DTU Wind Report E-0243, https://doi.org/10.11581/DTU.00000317",
+      "id": "ec0979810fe21b8c219580d8"
+    },
+    {
+      "scope": "iea22",
+      "source": "iea22-readme",
+      "locator": "README paragraph 12",
+      "text": "```\n@techreport{iea22mwrwt,\n    author = {Zahle, Frederik and Barlas, Athanasios and Lønbæk, Kenneth and Bortolotti, Pietro and Zalkind, Daniel and Wang, Lu and Labuschagne, Casper and Sethuraman, Latha and Barter, Garrett},\n    title = \"{Definition of the IEA Wind 22-Megawatt Offshore Reference Wind Turbine}\",\n    institution = \"Technical University of Denmark, International Energy Agency\",\n    number = {DTU Wind Report E-0243, https://doi.org/10.11581/DTU.00000317},\n    isbn = {978-87-87335-71-3},\n    year = 2024\n}",
+      "id": "938100749615445198d8a0fd"
+    },
+    {
+      "scope": "iea22",
+      "source": "iea22-readme",
+      "locator": "README paragraph 13",
+      "text": "@dataset{iea22mwrwt-dataset,\n  author       = {Zahle, Frederik and\n                  Barlas, Thanasis and\n                  Lønbæk, Kenneth and\n                  Bortolotti, Pietro and\n                  Zalkind, Daniel and\n                  Lu Wang and\n                  Labuschagne, Casper and\n                  Sethuraman, Latha and\n                  Garrett Barter and\n                  Marten, David},\n  title        = {IEAWindTask37/IEA-22-280-RWT: v1.0.1},\n  month        = apr,\n  year         = 2024,\n  publisher    = {Zenodo},\n  version      = {v1.0.1},\n  doi          = {10.5281/zenodo.10944127},\n  url          = {https://doi.org/10.5281/zenodo.10944127}\n}",
+      "id": "5f420006d3991c2fe3bd4159"
+    },
+    {
+      "scope": "iea22",
+      "source": "iea22-readme",
+      "locator": "README paragraph 15",
+      "text": "Studies using the floating variant of the reference as of v1.1 should also cite [this work](https://arxiv.org/abs/2601.01657), which is mentioned in the next section.",
+      "id": "a5494eae7dfaaad6740f18cf"
+    },
+    {
+      "scope": "iea22",
+      "source": "iea22-readme",
+      "locator": "README paragraph 17",
+      "text": "Large data files are not stored in the present repository, since Git LFS is not free on GitHub.\nFiles are therefore stored in the following repository:\nhttps://gitlab.windenergy.dtu.dk/iea-22-280-rwt/iea-22-280-rwt-data",
+      "id": "b8439b571b60c03f23aaff7a"
+    },
+    {
+      "scope": "iea22",
+      "source": "iea22-readme",
+      "locator": "README paragraph 19",
+      "text": "* structural_models/BECAS: BECAS cross-sectional meshes for 2D structural modelling of the blade.",
+      "id": "9984957daee2b9544896bf56"
+    },
+    {
+      "scope": "iea22",
+      "source": "iea22-readme",
+      "locator": "README paragraph 21",
+      "text": "The authors of the IEA 22 MW RWT hope that the turbine is used widely. Notable studies adopting the turbine will be listed here, together with models of the turbine implemented in other codes:",
+      "id": "e53ce4aab12765cba784643b"
+    },
+    {
+      "scope": "iea22",
+      "source": "iea22-readme",
+      "locator": "README paragraph 24",
+      "text": "The IEA 22 offshore reference wind turbine was made possible thanks to countless inputs from a long list of collaborators. A non exhaustive list includes Mayank Chetan and Emmanuel Branlard at NREL, William Collier and Dilek Ors at DNVGL, David Marten at TU Berlin, and Georg Pirrung, David Verelst and Katherine Dykes at DTU.\nDTU's participation in IEA Wind Task 37 and Task 55 is sponsored by the Danish Energy Agency under contract no. EUDP-64019-0588 and EUDP-134234-512032.\nWe also wish to acknowledge Equinor for sponsoring a co-financed research project, which formed the basis for the IEA 22 MW RWT rotor design.\nA portion of this research was performed using computational resources sponsored by the Department of Energy's Office of Energy Efficiency and Renewable Energy and located at the National Renewable Energy Laboratory. This work was authored in part by the National Renewable Energy Laboratory, operated by Alliance for Sustainable Energy, LLC, for the U.S. Department of Energy (DOE) under Contract No. DE-AC36-08GO28308. Funding provided by the U.S. Department of Energy Office of Energy Efficiency and Renewable Energy, Wind Energy Technologies Office.",
+      "id": "9a401fb89a52600d8408ac9b"
+    },
+    {
+      "scope": "schema",
+      "source": "windio",
+      "locator": "line 14",
+      "text": "Historically, it has focused on systems engineering models, but it has been adopted in other\ntopic areas of wind energy modeling, as well.\nThe windIO data format is a community-focused effort to standardize the data format for wind energy\nsystem models, and we encourage collaboration.\nThe github repository is at https://github.com/IEAWindSystems/windIO and the\nonline documentation is at https://ieawindsystems.github.io/windIO.",
+      "id": "b3d4f2d8f9c9c144f09836a7"
+    },
+    {
+      "scope": "schema",
+      "source": "windio",
+      "locator": "line 27",
+      "text": "Reference wind turbines designed within the IEA Wind Systems Engineering Task\nare available at the following links:",
+      "id": "6e6170e743720e4728e26be2"
+    },
+    {
+      "scope": "schema",
+      "source": "windio",
+      "locator": "line 36",
+      "text": "If you use this model in your research or publications, please cite the DOI from Zenodo:",
+      "id": "df366990867cacaaf8917b2d"
+    },
+    {
+      "scope": "schema",
+      "source": "windio",
+      "locator": "line 40",
+      "text": "Alternatively, you can cite this older `IEA technical report <https://doi.org/10.2172/1868328>`_:",
+      "id": "112eb7221927241182ac30e5"
+    },
+    {
+      "scope": "schema",
+      "source": "windio",
+      "locator": "line 58",
+      "text": "However, it can be useful to install the windIO package to access version converters or during\nintegration into a software package.\nIn that case, windIO can be installed from PyPI with the following command:",
+      "id": "94e8db72b0400fb194dabc15"
+    },
+    {
+      "scope": "schema",
+      "source": "windio",
+      "locator": "line 69",
+      "text": "The windIO data format is defined by the schemas included in this repository.\nIn order for a software to support windIO, it must support the data as described in the schemas\nand use the included functions to validate the data.\nwindIO should be included as a dependency.\nIt is distributed through PyPI and can be installed as a package with pip.\nThe suggested method of incorporating windIO into your code is:",
+      "id": "592281ddfb4465d8a71d0064"
+    },
+    {
+      "scope": "schema",
+      "source": "windio",
+      "locator": "line 86",
+      "text": "Note that an optional argument to populate the input file with default values from the schema is available:",
+      "id": "1eb60fa48fba7da192b8e15d"
+    },
+    {
+      "scope": "method",
+      "source": "beamdyn",
+      "locator": "line 6",
+      "text": "This section focuses on the theory behind the BeamDyn module. The\ntheoretical foundation, numerical tools, and some special handling in\nthe implementation will be introduced. References will be provided in\neach section detailing the theories and numerical tools.",
+      "id": "35d9e7c5fee797483d6e5f3a"
+    },
+    {
+      "scope": "method",
+      "source": "beamdyn",
+      "locator": "line 11",
+      "text": "In this chapter, matrix notation is used to denote vectorial or\nvectorial-like quantities. For example, an underline denotes a vector\n:math:`\\underline{u}`, an over bar denotes unit vector :math:`\\bar{n}`,\nand a double underline denotes a tensor\n:math:`\\underline{\\underline{\\Delta}}`. Note that sometimes the\nunderlines only denote the dimension of the corresponding matrix.",
+      "id": "9e01852ef261ece8663d026b"
+    },
+    {
+      "scope": "method",
+      "source": "beamdyn",
+      "locator": "line 36",
+      "text": "The global coordinate system is denoted as ``X``, ``Y``, and ``Z``\nin :numref:`bd-frame`. This is an inertial frame and in FAST its\norigin is usually placed at the bottom of the tower as shown.",
+      "id": "2b4a5d3130a4f29bb7a698f2"
+    },
+    {
+      "scope": "method",
+      "source": "beamdyn",
+      "locator": "line 43",
+      "text": "The BD coordinate system is denoted as :math:`x_1`, :math:`x_2`, and\n:math:`x_3` respectively in :numref:`bd-frame`. This is an inertial\nframe used internally in BeamDyn (i.e., doesn’t rotate with the rotor)\nand its origin is placed at the initial position of the blade root\npoint.",
+      "id": "f61e22177fc665c9c802519b"
+    },
+    {
+      "scope": "method",
+      "source": "beamdyn",
+      "locator": "line 52",
+      "text": "The blade reference coordinate system is denoted as\n:math:`X_{rt}`, :math:`Y_{rt}`, and\n:math:`Z_{rt}` in :numref:`bd-frame` at initialization\n(:math:`t = 0`). The blade reference coordinate system is a floating\nframe that attaches at the blade root and is rotating with the blade.\nIts origin is at the blade root and the directions of axes following the\nIEC standard, i.e., :math:`Z_r` is pointing along the blade axis\nfrom root to tip; :math:`Y_r` pointing nominally towards the\ntrailing edge of the blade and parallel with the chord line at the\nzero-twist blade station; and :math:`X_r` is orthogonal with the\n:math:`Y_r` and :math:`Z_r` axes, such that they form a\nright-handed coordinate system (pointing nominally downwind). We note\nthat the initial blade reference coordinate system, denoted by subscript\n:math:`r0`, coincides with the BD coordinate system, which is used\ninternally in BeamDyn and introduced in the previous section. The axis\nconvention relations between the initial blade reference coordinate\nsystem and the BD coordinate system can be found in :numref:`IECBD`.",
+      "id": "4bf4e238666d9aa4e70dbf93"
+    },
+    {
+      "scope": "method",
+      "source": "beamdyn",
+      "locator": "line 83",
+      "text": "The local blade coordinate system is used for some input and output\nquantities, for example, the cross-sectional mass and stiffness matrices\nand the sectional force and moment resultants. This coordinate\nsystem is different from the blade reference coordinate system in that\nits :math:`Z_l` axis is always tangent to the blade axis as the blade\ndeflects. Note that a subscript :math:`l` denotes the local blade\ncoordinate system.",
+      "id": "7436d6902b8028c281e39f08"
+    },
+    {
+      "scope": "method",
+      "source": "beamdyn",
+      "locator": "line 94",
+      "text": "The theoretical foundation of BeamDyn is the geometrically exact beam\ntheory. This theory features the capability of beams that are initially\ncurved and twisted and subjected to large displacement and rotations.\nAlong with a proper two-dimensional (2D) cross-sectional analysis, the\ncoupling effects between all six DOFs, including extension, bending,\nshear, and torsion, can be captured by GEBT as well . The term,\n“geometrically exact” refer to the fact that there is no approximation\nmade on the geometries, including both initial and deformed geometries,\nin formulating the equations :cite:`HodgesBeamBook`.",
+      "id": "1d9604247b9e592c8b98b6ae"
+    },
+    {
+      "scope": "method",
+      "source": "beamdyn",
+      "locator": "line 104",
+      "text": "The governing equations of motion for geometrically exact beam theory\ncan be written as :cite:`Bauchau:2010`",
+      "id": "1cce10eb54a70ba867de2164"
+    },
+    {
+      "scope": "method",
+      "source": "beamdyn",
+      "locator": "line 138",
+      "text": "The constitutive equations relate the velocities to the momenta and the\n1D strain measures to the sectional resultants as",
+      "id": "c741c0fbe8b65540b113ecfd"
+    },
+    {
+      "scope": "method",
+      "source": "beamdyn",
+      "locator": "line 210",
+      "text": "Numerical Implementation with Legendre Spectral Finite Elements\n---------------------------------------------------------------",
+      "id": "292da3068b245b9ba8165f61"
+    },
+    {
+      "scope": "method",
+      "source": "beamdyn",
+      "locator": "line 213",
+      "text": "For a displacement-based finite element implementation, there are six\ndegree-of-freedoms at each node: three displacement components and three\nrotation components. Here we use :math:`{\\underline{q}}` to denote the\nelemental displacement array as :math:`\\underline{q}=\\left[\n\\underline{u}^T~~\\underline{c}^T\\right]` where :math:`{\\underline{u}}`\nis the displacement and :math:`{\\underline{c}}` is the\nrotation-parameter vector. The acceleration array can thus be defined as\n:math:`\\underline{a}=\\left[ \\ddot{\\underline{u}}^T~~ \\dot{\\underline{\\omega}}^T \\right]`.\nFor nonlinear finite-element analysis, the discretized and incremental\nforms of displacement, velocity, and acceleration are written as",
+      "id": "4312077714c9471366105783"
+    },
+    {
+      "scope": "method",
+      "source": "beamdyn",
+      "locator": "line 265",
+      "text": "Therefore, we adopt the more robust interpolation approach\nproposed by :cite:`Crisfield1999` to deal with the finite\nrotations. Our approach is described as follows",
+      "id": "704450ba4465ed161586bd0f"
+    },
+    {
+      "scope": "method",
+      "source": "beamdyn",
+      "locator": "line 269",
+      "text": "Step 1:\n    Compute the nodal relative rotations,\n    :math:`{\\underline{\\hat{r}}}^k`, by removing the reference rotation,\n    :math:`{\\underline{\\hat{c}}}^1`, from the finite rotation at each\n    node,\n    :math:`{\\underline{\\hat{r}}}^k = ({\\underline{\\hat{c}}}^{1-}) \\oplus\n    {\\underline{\\hat{c}}}^k`. It is noted that the minus sign on\n    :math:`{\\underline{\\hat{c}}}^1` denotes that the relative rotation\n    is calculated by removing the reference rotation from each node. The\n    composition in that equation is an equivalent of\n    :math:`{\\underline{\\underline{R}}}({\\underline{\\hat{r}}}^k) = {\\underline{\\underline{R}}}^T({\\underline{\\hat{c}}}^1)~{\\underline{\\underline{R}}}({\\underline{{\\underline{c}}}}^k).`",
+      "id": "279c5c285803e794dd1cc3be"
+    },
+    {
+      "scope": "method",
+      "source": "beamdyn",
+      "locator": "line 281",
+      "text": "Step 2:\n    Interpolate the relative-rotation field:\n    :math:`{\\underline{r}}(\\xi) = h^k(\\xi) {\\underline{\\hat{r}}}^k` and\n    :math:`{\\underline{r}}^\\prime(\\xi) = h^{k \\prime}(\\xi) {\\underline{\\hat{r}}}^k`.\n    Find the curvature field\n    :math:`{\\underline{\\kappa}}(\\xi) = {\\underline{\\underline{R}}}({\\underline{\\hat{c}}}^1) {\\underline{\\underline{H}}}({\\underline{r}}) {\\underline{r}}^\\prime`,\n    where :math:`{\\underline{\\underline{H}}}` is the tangent tensor that\n    relates the curvature vector :math:`{\\underline{k}}` and rotation\n    vector :math:`{\\underline{c}}` as",
+      "id": "b9d91694258b1bef82ddafaa"
+    },
+    {
+      "scope": "method",
+      "source": "beamdyn",
+      "locator": "line 296",
+      "text": "Step 3:\n    Restore the rigid-body rotation removed in Step 1:\n    :math:`{\\underline{c}}(\\xi) = {\\underline{\\hat{c}}}^1 \\oplus {\\underline{r}}(\\xi)`.",
+      "id": "8106efab9dd1a889eb3ed9ae"
+    },
+    {
+      "scope": "method",
+      "source": "beamdyn",
+      "locator": "line 300",
+      "text": "Note that the relative-rotation field can be computed with respect to\nany of the nodes of the element; we choose node 1 as the reference node\nfor convenience. In the LSFE approach, shape functions (i.e., those\ncomposing :math:`{\\underline{\\underline{N}}}`) are :math:`p^{th}`-order\nLagrangian interpolants, where nodes are located at the :math:`p+1`\nGauss-Lobatto-Legendre (GLL) points in the :math:`[-1,1]` element\nnatural-coordinate domain. :numref:`N4_lsfe` shows representative\nLSFE basis functions for fourth- and eighth-order elements. Note that\nnodes are clustered near element endpoints. More details on the LSFE and\nits applications can be found in\nReferences :cite:`Patera:1984,Ronquist:1987,Sprague:2003,Sprague:2004`.",
+      "id": "5542d3fbf9aff996a87df0c0"
+    },
+    {
+      "scope": "method",
+      "source": "beamdyn",
+      "locator": "line 334",
+      "text": "In BeamDyn, the 3D rotations are represented as Wiener-Milenković\nparameters defined in the following equation:",
+      "id": "26368c1b887761a86eb68ee7"
+    },
+    {
+      "scope": "method",
+      "source": "beamdyn",
+      "locator": "line 382",
+      "text": "Wiener-Milenković parameter and\n:math:`c_0 = 2 - \\frac{1}{8}{\\underline{c}}^T {\\underline{c}}`. The\nrelation between rotation tensor and direction cosine matrix (DCM) is",
+      "id": "5ebf62605a82921062c5c96b"
+    },
+    {
+      "scope": "method",
+      "source": "beamdyn",
+      "locator": "line 391",
+      "text": "Interested users are referred to :cite:`Bauchau-etal:2008`\nand :cite:`Wang:GEBT2013` for more details on the rotation\nparameter and its implementation with GEBT.",
+      "id": "5e178ec3f807a4c93224c0c4"
+    },
+    {
+      "scope": "method",
+      "source": "beamdyn",
+      "locator": "line 398",
+      "text": "The nonlinear governing equations introduced in the previous section are\nsolved by Newton-Raphson method, where a linearization process is\nneeded. The linearization of each term in the governing equations are\npresented in this section.",
+      "id": "6c9a9b74aabc447e45b2d2b7"
+    },
+    {
+      "scope": "method",
+      "source": "beamdyn",
+      "locator": "line 403",
+      "text": "According to :cite:`Bauchau:2010`, the linearized governing\nequations in Eq.  :eq:`GovernGEBT-1-2` are in the form of",
+      "id": "718b9b9d8a04cf3c423684cc"
+    },
+    {
+      "scope": "method",
+      "source": "beamdyn",
+      "locator": "line 502",
+      "text": "A viscous damping model has been implemented into BeamDyn to account for\nthe structural damping effect. The damping force is defined as",
+      "id": "9d48ca1bccfbb598fb661fcd"
+    },
+    {
+      "scope": "method",
+      "source": "beamdyn",
+      "locator": "line 611",
+      "text": "In addition to the stiffness-proportional viscous damping described above, BeamDyn\nalso supports modal damping. This is currently only supported when run in tight coupling\nwith OpenFAST. When modal damping is selected (``damp_flag = 2``), \nBeamDyn computes the natural frequencies and mode shapes of the blade and applies \ndamping in the modal coordinates.",
+      "id": "6ec80823adfaf97b2b87642d"
+    },
+    {
+      "scope": "method",
+      "source": "beamdyn",
+      "locator": "line 617",
+      "text": "The modal damping approach constructs a damping matrix :math:`{\\underline{\\underline{C}}}_{modal}` \nbased on user-specified modal damping ratios :math:`\\zeta_i` for modes :math:`i = 1, 2, \\ldots, n_{modes}`.\nPast the user-specified :math:`n_{modes}`, BeamDyn assigns :math:`\\zeta_i` to grow proportional to the\nmodal natural frequency and match the last prescribed :math:`\\zeta_i` value.\nThe modal damping matrix is defined in terms of the modal properties:",
+      "id": "d3010a168a3c7982d3811776"
+    },
+    {
+      "scope": "method",
+      "source": "beamdyn",
+      "locator": "line 632",
+      "text": "Additionally, :math:`\\underline{\\underline{\\Phi}}` is the matrix of mass-normalized mode shapes\n(each as a column).\n:math:`\\underline{\\underline{M}}` is the mass matrix after the quasi-static initialization.",
+      "id": "d3780848237624c056145918"
+    },
+    {
+      "scope": "method",
+      "source": "beamdyn",
+      "locator": "line 636",
+      "text": "At each time step, a vector of nodal velocities is calculated subtracting off the rigid body motion of the root.\nThis vector of velocities is rotated at each node to be aligned with the beam as initialized.\nDamping forces at nodes are then simply the product of the damping matrix and the vector of velocities.\nThese forces are then rotated back to the global coordinates with the inverse of the velocity rotation.\nThe extra rotations appear to give better modal damping results than fixing the damping matrix in the\nroot frame.",
+      "id": "7769655098de553851e999bc"
+    },
+    {
+      "scope": "method",
+      "source": "beamdyn",
+      "locator": "line 643",
+      "text": "Modal damping gives the user mode-specific control of damping levels to better match\nexperiments or theoretical damping predictions.\nFurthermore, modal damping need not grow proportional to frequency (as prescribed by\nstiffness proportional damping). Rather, more constant damping factors across frequency\ncan be used as have been observed in some experiments and model predictions.",
+      "id": "f71ca9869b1b15b1a4b7de61"
+    },
+    {
+      "scope": "method",
+      "source": "beamdyn",
+      "locator": "line 651",
+      "text": "Convergence Criterion and Generalized-\\ :math:`\\alpha` Time Integrator\n----------------------------------------------------------------------",
+      "id": "2ff899e79bd170f363477656"
+    },
+    {
+      "scope": "method",
+      "source": "beamdyn",
+      "locator": "line 654",
+      "text": "The system of nonlinear equations in Eqs. :eq:`GovernGEBT-1-2` are solved using the\nNewton-Raphson method with the linearized form in Eq. :eq:`LinearizedEqn`. In the present\nimplementation, an energy-like stopping criterion has been chosen, which\nis calculated as",
+      "id": "df85bc7fe22795d84beaca81"
+    },
+    {
+      "scope": "method",
+      "source": "beamdyn",
+      "locator": "line 676",
+      "text": "Time integration is performed using the generalized-\\ :math:`\\alpha`\nscheme in BeamDyn, which is an unconditionally stable (for linear\nsystems), second-order accurate algorithm. The scheme allows for users\nto choose integration parameters that introduce high-frequency numerical\ndissipation. The amount of numerical dissipation is controlled by the user-specified\nspectral radius at infinity, :math:`\\rho_{\\infty}`. More details regarding the generalized-\\ :math:`\\alpha`\nmethod can be found in :cite:`Chung-Hulbert:1993,Bauchau:2010`.",
+      "id": "93cbe2d71f0d1d0166f80114"
+    },
+    {
+      "scope": "method",
+      "source": "beamdyn",
+      "locator": "line 687",
+      "text": "Since the root motion of the wind turbine blade, including displacements\nand rotations, translational and angular velocities, and translational\nand angular accelerates, are prescribed as inputs to BeamDyn either by\nthe driver (in stand-alone mode) or by FAST glue code (in FAST-coupled\nmode), the reaction loads at the root are needed to satisfy equality of\nthe governing equations. The reaction loads at the root are also the\nloads passing from blade to hub in a full turbine analysis.",
+      "id": "9f94886902127f618695d758"
+    },
+    {
+      "scope": "method",
+      "source": "beamdyn",
+      "locator": "line 695",
+      "text": "The governing equations in Eq. :eq:`GovernGEBT-1-2` can be recast in a compact form",
+      "id": "dd2b8152be03c2e5bba6c4bb"
+    },
+    {
+      "scope": "method",
+      "source": "beamdyn",
+      "locator": "line 712",
+      "text": "Eq. :eq:`CompactGovernRoot` given that the motion fields are known at this\npoint.",
+      "id": "4c070aea496d94f48bb0de1d"
+    },
+    {
+      "scope": "method",
+      "source": "beamdyn",
+      "locator": "line 718",
+      "text": "BeamDyn can also calculate the blade loads at each finite element node\nalong the blade axis. The governing equation in Eq. :eq:`CompactGovern` are\nrecast as",
+      "id": "f75d04baa3e522e601cbadce"
+    },
+    {
+      "scope": "method",
+      "source": "beamdyn",
+      "locator": "line 749",
+      "text": "We note that if structural damping is considered in the analysis, the\n:math:`{\\underline{\\mathcal{F}}}^{C}_d` and\n:math:`{\\underline{\\mathcal{F}}}^D_d` are incorporated into the internal\nelastic forces, :math:`{\\underline{\\mathcal{F}}}^C` and\n:math:`{\\underline{\\mathcal{F}}}^D`, for calculation.",
+      "id": "524a4c3796102392fd5b80b2"
+    },
+    {
+      "scope": "schema",
+      "source": "windio-schema",
+      "locator": "assembly",
+      "text": "The field assembly includes nine entries that aim at describing the overall configuration of the wind turbine",
+      "id": "ac6e1ea72b2499e9c75ce27b"
+    },
+    {
+      "scope": "schema",
+      "source": "windio-schema",
+      "locator": "components.blade",
+      "text": "The component `blade` includes three subcomponents, namely `reference_axis`, `outer_shape`, and `structure`. All distributed quantities, such as blade chord or the thickness of a structural component, are expressed in terms of pair arrays `grid` and `values`, which must have a minimum length of two elements and the same size. `grid` is defined nondimensional between 0 (root) and 1 (tip) along the, usually curved, `reference_axis`.",
+      "id": "e89b7453a3b32aa992dfe446"
+    },
+    {
+      "scope": "schema",
+      "source": "windio-schema",
+      "locator": "components.blade.structure",
+      "text": "The field `structure` contains the data to describe the internal structure of standard wind turbine blades. This is a fairly sophisticated process and the ontology proposed in this work supports different definitions. On the top level, the field `structure` has two sub-components, namely the `webs`, where the positions of the shear webs are defined, and the `layers`, which describe all internal layers in terms of `name`, `material`, `thickness`, number of plies `n_plies`, `fiber_orientation` (for composites), and position in the two-dimensional sections. Recently, the fields `joint` and `root` were added to support blades that are segmented spanwise and details about the blade root bolting.",
+      "id": "5465dcea21b04bb872330a56"
+    },
+    {
+      "scope": "schema",
+      "source": "windio-schema",
+      "locator": "components.blade.outer_shape",
+      "text": "The field `outer_shape` consists of a dictionary containing the data describing the outer shape of the blade.",
+      "id": "86f53500c72dee7236ab4558"
+    },
+    {
+      "scope": "schema",
+      "source": "windio-schema",
+      "locator": "components.tower",
+      "text": "Data describing the wind turbine tower.",
+      "id": "8344c574372b72cbd6817a4b"
+    },
+    {
+      "scope": "schema",
+      "source": "windio-schema",
+      "locator": "components.drivetrain.gearbox",
+      "text": "Inputs describing the gearbox, when present",
+      "id": "49833992cfa6069347bda6a7"
+    },
+    {
+      "scope": "schema",
+      "source": "windio-schema",
+      "locator": "components.drivetrain.lss",
+      "text": "Inputs describing the low speed shaft",
+      "id": "0a6af648518231af35eb7189"
+    },
+    {
+      "scope": "schema",
+      "source": "windio-schema",
+      "locator": "components.drivetrain.hss",
+      "text": "Inputs describing the high speed shaft, when present",
+      "id": "edbe25fe69ab8f6724a5990d"
+    },
+    {
+      "scope": "schema",
+      "source": "windio-schema",
+      "locator": "components.drivetrain.bedplate",
+      "text": "Inputs describing the hollow elliptical bedplate used in direct drive configurations",
+      "id": "3873759c035ab67fe6f6d30b"
+    },
+    {
+      "scope": "schema",
+      "source": "windio-schema",
+      "locator": "components.drivetrain.other_components",
+      "text": "Inputs describing all other drivetrain components, the assembly of brake, hvac, converter, transformer, and main bearings",
+      "id": "6c7e9d6ea4de83eec1189fdd"
+    },
+    {
+      "scope": "schema",
+      "source": "windio-schema",
+      "locator": "control",
+      "text": "Dictionary reporting the data describing the wind turbine controller",
+      "id": "6715a9ca5a8e06d6a59ed8e9"
+    },
+    {
+      "scope": "schema",
+      "source": "windio-schema",
+      "locator": "components.drivetrain.nose",
+      "text": "Inputs describing the nose/turret at beginning (bedplate) and end (main bearing) points",
+      "id": "95e5ee6507dd86d580e0f49e"
+    },
+    {
+      "scope": "grc",
+      "source": "grc-benchmark",
+      "locator": "DOI 10.25984/1844194 - dataset description",
+      "text": "Accelerometers and high-speed shaft RPM were recorded under controlled dynamometer loads. The benchmark distinguishes healthy and damaged research gearboxes of the same design. Compare records at matched shaft speed and load before attributing vibration changes to an internal fault.",
+      "id": "8665c80a6ec72b278a343780"
+    },
+    {
+      "scope": "grc",
+      "source": "grc-round",
+      "locator": "Abstract",
+      "text": "GRC researchers compared two gearboxes. The field test gearbox experienced oil loss; subsequent inspection found damage in bearings and gears. The study used vibration data from dynamometer testing.",
+      "id": "d1649b171a75087b4b178644"
+    },
+    {
+      "scope": "grc",
+      "source": "grc-cracks",
+      "locator": "Abstract · NREL/TP-5000-70639",
+      "text": "This investigation instrumented a gearbox to study bearing axial cracking. It concerns the research drivetrain and does not establish the condition of another gearbox.",
+      "id": "f9a0ab954c7ff68619971222"
+    },
+    {
+      "scope": "method",
+      "source": "doe-functions",
+      "locator": "How turbines work · blade",
+      "text": "Aerodynamic forces on the blade turn the rotor.",
+      "id": "0fd018475c7780fbeb85ac1f"
+    },
+    {
+      "scope": "method",
+      "source": "doe-functions",
+      "locator": "How turbines work · gearbox",
+      "text": "Gears increase rotational speed between the rotor and the generator.",
+      "id": "b65aa74983b50337390b76c8"
+    },
+    {
+      "scope": "method",
+      "source": "doe-functions",
+      "locator": "How turbines work · generator",
+      "text": "The generator converts rotational mechanical power into electricity.",
+      "id": "ebafbdb79c2b8898856c2cd5"
+    },
+    {
+      "scope": "method",
+      "source": "doe-functions",
+      "locator": "How turbines work · drivetrain",
+      "text": "The drivetrain transmits rotor rotation to the generator. The speed conversion depends on whether the design is geared or direct-drive.",
+      "id": "2a4239dc306c3074b4722f76"
+    },
+    {
+      "scope": "method",
+      "source": "doe-functions",
+      "locator": "How turbines work · assembly",
+      "text": "The rotor captures mechanical power from the wind and drives a generator.",
+      "id": "f462d5c0ab854db8e9b06d2a"
+    }
+  ],
+  "release": "d37bdc3aa29f99c2"
+}

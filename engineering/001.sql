@@ -1,0 +1,17 @@
+BEGIN;
+CREATE TABLE IF NOT EXISTS releases(id text PRIMARY KEY, manifest jsonb NOT NULL, loaded timestamptz DEFAULT now());
+CREATE TABLE IF NOT EXISTS active(singleton boolean PRIMARY KEY DEFAULT true CHECK(singleton), release text REFERENCES releases);
+CREATE TABLE IF NOT EXISTS source(release text REFERENCES releases, id text, record jsonb NOT NULL, PRIMARY KEY(release,id));
+CREATE TABLE IF NOT EXISTS turbine(release text REFERENCES releases, id text, record jsonb NOT NULL, PRIMARY KEY(release,id));
+CREATE TABLE IF NOT EXISTS component(release text, model text, id text, parent text, record jsonb NOT NULL, PRIMARY KEY(release,model,id), FOREIGN KEY(release,model) REFERENCES turbine, FOREIGN KEY(release,model,parent) REFERENCES component DEFERRABLE INITIALLY DEFERRED);
+CREATE TABLE IF NOT EXISTS evidence(release text, id text, scope text NOT NULL, source text NOT NULL, locator text NOT NULL, body text NOT NULL, embedding vector(384) NOT NULL, PRIMARY KEY(release,id), FOREIGN KEY(release,source) REFERENCES source);
+CREATE INDEX IF NOT EXISTS evidence_fts ON evidence USING gin(to_tsvector('english',body));
+CREATE TABLE IF NOT EXISTS ingestion(id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY, release text, started timestamptz DEFAULT now(), status text NOT NULL, detail text);
+CREATE TABLE IF NOT EXISTS work(id uuid PRIMARY KEY, owner text NOT NULL, kind text NOT NULL CHECK(kind IN ('site','comparison','record')), title text NOT NULL, content jsonb NOT NULL, created timestamptz DEFAULT now());
+CREATE INDEX IF NOT EXISTS work_owner ON work(owner,kind,created DESC);
+ALTER TABLE work ENABLE ROW LEVEL SECURITY;
+ALTER TABLE work FORCE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS owner_only ON work;
+CREATE POLICY owner_only ON work USING(owner=current_setting('wf.owner',true)) WITH CHECK(owner=current_setting('wf.owner',true));
+CREATE TABLE IF NOT EXISTS quota(bucket text PRIMARY KEY, hits integer NOT NULL, expires timestamptz NOT NULL);
+COMMIT;
