@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
-import LandingPage from '../src/app/page';
+import LandingPage from '../src/app/about/page';
 
 // Stub matchMedia for the ParticleField branch.
 Object.defineProperty(window, 'matchMedia', {
@@ -19,11 +19,11 @@ Object.defineProperty(window, 'matchMedia', {
 
 vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true, json: () => Promise.resolve([]) }));
 
-describe('Landing page', () => {
+describe('Site screening guide', () => {
   it('renders the hero copy and primary CTAs', () => {
     render(<LandingPage />);
     expect(
-      screen.getByRole('heading', { level: 1, name: /Wind site suitability, computed\./ }),
+      screen.getByRole('heading', { level: 1, name: /Wind site screening/ }),
     ).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /Run an analysis/ })).toHaveAttribute(
       'href',

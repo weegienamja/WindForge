@@ -49,6 +49,14 @@ def main(path):
                         "INSERT INTO component VALUES(%s,%s,%s,%s,%s)",
                         (rel, m["id"], n["id"], n["parent"], Json(n)),
                     )
+                if digest := m.get("bladeAsset"):
+                    raw = (Path(path).parent / "geometry" / (digest + ".json")).read_bytes()
+                    if hashlib.sha256(raw).hexdigest() != digest:
+                        raise ValueError("Blade geometry digest mismatch")
+                    c.execute(
+                        "INSERT INTO blade_geometry VALUES(%s,%s,%s)",
+                        (rel, m["id"], Json(json.loads(raw))),
+                    )
             enc = Encoder()
             for p in data["passages"]:
                 c.execute(

@@ -89,8 +89,21 @@ async function body(req: Request) {
 }
 export async function GET(req: Request) {
   try {
-    const status = new URL(req.url).searchParams.has('status');
-    return reply(await rpc(status ? 'status' : 'catalogue'));
+    const params = new URL(req.url).searchParams;
+    if (params.has('library') || params.has('blade')) {
+      const release = params.get('release') ?? '';
+      if (!/^[a-f0-9]{16}$/.test(release))
+        return reply({ error: 'Invalid library revision.' }, 400);
+      if (params.has('library')) return reply(await rpc('library', { release }));
+      const model = params.get('blade');
+      if (!['iea34', 'iea15', 'iea22'].includes(model ?? ''))
+        return reply({ error: 'Unknown blade.' }, 400);
+      const geometry = await rpc('blade', { model, release });
+      return geometry
+        ? reply(geometry)
+        : reply({ error: 'No blade geometry in this revision.' }, 404);
+    }
+    return reply(await rpc(params.has('status') ? 'status' : 'catalogue'));
   } catch {
     return reply({ error: 'Engineering library temporarily unavailable.' }, 503);
   }

@@ -8,7 +8,7 @@ import { SectionHeading } from '../src/components/primitives/SectionHeading';
 import { ConfidenceBadge } from '../src/components/primitives/ConfidenceBadge';
 import { NumberTicker } from '../src/components/primitives/NumberTicker';
 import { ParticleField } from '../src/components/primitives/ParticleField';
-import LandingPage from '../src/app/page';
+import LandingPage from '../src/app/about/page';
 
 vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true, json: () => Promise.resolve([]) }));
 

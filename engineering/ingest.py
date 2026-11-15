@@ -4,6 +4,7 @@ import hashlib, io, json, math, os, re, urllib.request, zipfile
 from pathlib import Path
 from xml.etree import ElementTree as ET
 import yaml
+from blade_sections import extract as extract_blade
 
 ROOT = Path(__file__).resolve().parent
 CACHE = Path(os.environ.get("WINDFORGE_SOURCE_CACHE", ROOT / ".cache"))
@@ -333,6 +334,7 @@ def build():
                 revision=rev,
                 schema=str(doc["windIO_version"]),
                 definition=sid,
+                bladeAsset=extract_blade(doc, sid, rev, line("components.blade.outer_shape"), ROOT / "geometry"),
                 performance=cs,
                 curveLocator=where,
                 ratedKw=a["rated_power"] / 1000,

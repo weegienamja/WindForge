@@ -3,7 +3,7 @@ import { join } from 'node:path';
 import { ImageResponse } from 'next/og';
 
 export const runtime = 'nodejs';
-export const alt = 'WindForge - screening-level wind site evidence.';
+export const alt = 'WindForge turbine engineering workspace.';
 export const size = { width: 1200, height: 630 };
 export const contentType = 'image/png';
 
@@ -68,7 +68,7 @@ export default function OgImage() {
             maxWidth: 980,
           }}
         >
-          Wind site screening, explained.
+          Wind turbine engineering.
         </div>
         <div
           style={{
@@ -80,9 +80,9 @@ export default function OgImage() {
             gap: 16,
           }}
         >
-          <span>Screening evidence</span>
+          <span>Turbine components</span>
           <span>·</span>
-          <span>Explicit completeness</span>
+          <span>Blade sections</span>
           <span>·</span>
           <span>Open source</span>
         </div>
@@ -100,9 +100,9 @@ export default function OgImage() {
         }}
       >
         <div style={{ display: 'flex', gap: 16 }}>
-          <span>6 factors</span>
+          <span>IEA reference designs</span>
           <span>·</span>
-          <span>900+ tests</span>
+          <span>Engineering evidence</span>
           <span>·</span>
           <span>MCP-ready</span>
         </div>

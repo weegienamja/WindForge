@@ -4,10 +4,20 @@ import { useEffect, useState, useRef, type FormEvent } from 'react';
 import type { SiteAnalysis } from '@jamieblair/windforge-core';
 import type { Catalogue, Config, Report, Answer, Saved, Model } from '../../lib/engineering/types';
 import { Diagram } from './diagram';
+import { BladeSections } from './blades';
+import { SourceLibrary } from './library';
 import { download, markdown } from './report';
 import './engineering.css';
-type Tab = 'Turbine explorer' | 'Site comparison' | 'Evidence desk' | 'Saved work';
-const tabs: Tab[] = ['Turbine explorer', 'Site comparison', 'Evidence desk', 'Saved work'];
+const views = {
+  'Turbine explorer': 'turbines',
+  'Blade sections': 'blades',
+  'Source library': 'library',
+  'Evidence desk': 'evidence',
+  'Site comparison': 'compare',
+  'Saved work': 'saved',
+} as const;
+type Tab = keyof typeof views;
+const tabs = Object.keys(views) as Tab[];
 const initial = (model: string, count: number, hub: number): Config => ({
   model,
   count,
@@ -264,9 +274,9 @@ function Layout({ r }: { r: Report }) {
     </div>
   );
 }
-export default function Workspace() {
+export default function Workspace({ initialTab = 'Turbine explorer' }: { initialTab?: Tab }) {
   const [cat, setCat] = useState<Catalogue | null>(null),
-    [tab, T] = useState<Tab>('Turbine explorer'),
+    [tab, T] = useState<Tab>(initialTab),
     [model, M] = useState('iea34'),
     [part, P] = useState('assembly'),
     [scope, S] = useState('model');
@@ -328,12 +338,23 @@ export default function Workspace() {
     void act('Loading engineering library', async () => {
       const res = await fetch('/api/engineering');
       if (!res.ok) throw Error('Engineering library unavailable. Reload to retry.');
-      setCat(await res.json());
+      const catalogue: Catalogue = await res.json();
+      if (!Array.isArray(catalogue.models) || !catalogue.models.length)
+        throw Error('No reference designs are available. Reload to retry.');
+      setCat(catalogue);
       const u = new URL(location.href);
+      const requested = tabs.find((t) => views[t] === u.searchParams.get('view'));
+      if (requested) T(requested);
+      const entryModel = catalogue.models.find((v) => v.id === u.searchParams.get('model'));
+      if (entryModel) {
+        M(entryModel.id);
+        const entryPart = entryModel.nodes.find((v) => v.id === u.searchParams.get('component'));
+        if (entryPart) P(entryPart.id);
+      }
       if (u.searchParams.has('lat') && u.searchParams.has('lng')) {
         La(u.searchParams.get('lat')!);
         Lo(u.searchParams.get('lng')!);
-        T('Site comparison');
+        if (!requested) T('Site comparison');
         try {
           handoff.current = JSON.parse(sessionStorage.getItem('wf-handoff') ?? 'null') ?? undefined;
         } catch {}
@@ -507,6 +528,14 @@ export default function Workspace() {
     E('');
     G('');
   };
+  useEffect(() => {
+    if (!cat) return;
+    const url = new URL(location.href);
+    url.searchParams.set('view', views[tab]);
+    url.searchParams.set('model', model);
+    url.searchParams.set('component', part);
+    window.history.replaceState(window.history.state, '', url);
+  }, [cat, tab, model, part]);
   const formChanged =
     site && (Number(lat) !== site.coordinate.lat || Number(lng) !== site.coordinate.lng);
   const selectModel = (
@@ -554,19 +583,20 @@ export default function Workspace() {
           <Link className="wf-brand" href="/">
             WindForge
           </Link>
-          <Link href="/analyse">Site analysis ↗</Link>
+          <nav aria-label="Site tools">
+            <Link href="/analyse">Site analysis</Link> <Link href="/map">UK map</Link>
+          </nav>
         </div>
       </header>
       <div className="wf-frame">
         <div className="wf-intro">
           <div>
-            <div className="wf-kicker">Wind energy / Engineering</div>
-            <h1>Engineering workspace</h1>
+            <h1>Wind turbine engineering</h1>
           </div>
           <p>
             {site
               ? 'Site · ' + site.coordinate.lat.toFixed(3) + ', ' + site.coordinate.lng.toFixed(3)
-              : 'Reference turbines and site investigations'}
+              : 'Reference designs, component geometry and research evidence'}
           </p>
         </div>
         <nav className="wf-tabs" aria-label="Workspace sections">
@@ -593,6 +623,40 @@ export default function Workspace() {
         )}
         {cat && m && n && (
           <>
+            {tab === 'Blade sections' && (
+              <BladeSections
+                key={m.id}
+                m={m}
+                cat={cat}
+                modelPicker={selectModel}
+                inspect={() => {
+                  P('blade');
+                  RecordId('');
+                  move('Turbine explorer');
+                }}
+              />
+            )}
+            {tab === 'Source library' && (
+              <SourceLibrary
+                cat={cat}
+                investigate={(collection) => {
+                  if (cat.models.some((v) => v.id === collection)) {
+                    pick(collection);
+                    S('model');
+                  } else if (collection === 'grc') {
+                    pick('iea34');
+                    P('gearbox');
+                    S('grc');
+                    Q('Which measurements help investigate gearbox vibration?');
+                  } else {
+                    S(collection);
+                    RecordId('');
+                  }
+                  Choices([]);
+                  move('Evidence desk');
+                }}
+              />
+            )}
             {tab === 'Turbine explorer' && (
               <div className="wf-grid">
                 <section className="wf-panel">
@@ -617,8 +681,10 @@ export default function Workspace() {
                     Illustrative geometry. Select a system in the drawing or use the component list.
                   </small>
                   <div className="wf-actions">
+                    <button className="primary" onClick={() => move('Blade sections')}>
+                      Explore blade geometry
+                    </button>
                     <button
-                      className="primary"
                       onClick={() => {
                         A({ ...a, model: m.id, hub: m.hubM, soundDba: null, soundSource: '' });
                         move('Site comparison');
@@ -1064,8 +1130,14 @@ export default function Workspace() {
           </>
         )}
         <footer className="wf-foot">
-          Preliminary engineering investigation. Reference designs and research gearboxes do not
-          establish the condition or suitability of an installed machine.
+          <span>Reference designs for preliminary engineering investigation.</span>{' '}
+          <a href="https://github.com/weegienamja/WindForge">Repository</a>
+          {' · '}
+          <a href="https://github.com/weegienamja/WindForge/tree/main/packages/mcp">MCP setup</a>
+          {' · '}
+          <Link href="/reanalysis">Wind reanalysis</Link>
+          {' · '}
+          <Link href="/about">Site screening guide</Link>
         </footer>
       </div>
     </main>

@@ -25,9 +25,9 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: 'WindForge · Wind site screening',
+  title: 'WindForge · Wind turbine engineering',
   description:
-    'Open-source, six-factor pre-feasibility screening for wind-energy sites using public evidence and explicit completeness.',
+    'Explore wind turbine components, inspect published blade geometry and research evidence, and compare site configurations.',
   authors: [{ name: 'Jamie Blair', url: 'https://jamieblair.co.uk' }],
   keywords: [
     'wind energy',
@@ -41,18 +41,18 @@ export const metadata: Metadata = {
   ],
   alternates: { canonical: 'https://windforge.khmer-iq.workers.dev' },
   openGraph: {
-    title: 'WindForge · Wind site screening',
+    title: 'WindForge · Wind turbine engineering',
     description:
-      'Open-source, six-factor pre-feasibility screening with explicit evidence provenance and completeness.',
+      'Explore wind turbine components, inspect published blade geometry and research evidence, and compare site configurations.',
     type: 'website',
     url: 'https://windforge.khmer-iq.workers.dev',
     siteName: 'WindForge',
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'WindForge · Wind site screening',
+    title: 'WindForge · Wind turbine engineering',
     description:
-      'Open-source pre-feasibility screening with explicit evidence provenance and completeness.',
+      'Explore wind turbine components, inspect published blade geometry and research evidence, and compare site configurations.',
   },
   metadataBase: new URL('https://windforge.khmer-iq.workers.dev'),
 };

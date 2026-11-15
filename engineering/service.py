@@ -41,6 +41,15 @@ def execute(req):
                     c, "SELECT status FROM ingestion ORDER BY id DESC LIMIT 1"
                 ),
             )
+        if op == "library":
+            c.execute(
+                "SELECT id,source,locator,body FROM evidence WHERE release=%s ORDER BY source,locator,id",
+                (args["release"],),
+            )
+            return [dict(id=i, source=s, locator=l, text=b) for i, s, l, b in c.fetchall()]
+        if op == "blade":
+            return one(c, "SELECT record FROM blade_geometry WHERE release=%s AND model=%s",
+                       (args["release"], args["model"]))
         if op == "search":
             q = args["q"]
             scope = args["scope"]

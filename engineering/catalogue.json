@@ -9,6 +9,7 @@
       "revision": "aacff396f46b35f7104d83be095f859684013405",
       "schema": "2.1.1",
       "definition": "iea34-definition",
+      "bladeAsset": "2b0ad86b47f1c2745ef6d007a23ae92e60c025071f273cbd4dc3e75551bfa468",
       "performance": "iea34-performance",
       "curveLocator": "CCBlade columns 1, 4 (electrical W), 11 (Ct)",
       "ratedKw": 3370.0,
@@ -748,6 +749,7 @@
       "revision": "28ae083f6e4d2e2e4ea35ac9100fcab104940484",
       "schema": "2.0",
       "definition": "iea15-definition",
+      "bladeAsset": "3d8c06757b664c8c4bf9cc84ec140b5e284a10ea6062137972d7fd0a47157f86",
       "performance": "iea15-performance",
       "curveLocator": "Rotor Performance!A,C,I; Overview!B9:B11",
       "ratedKw": 15000.0,
@@ -1497,6 +1499,7 @@
       "revision": "7c3cf5df656774bafc6909a92dae8d12f734b122",
       "schema": "2.0",
       "definition": "iea22-definition",
+      "bladeAsset": "a59cb5674d339b6c01f608e4db44d534e26d99d26852a09650f36ed88b5466b4",
       "performance": "iea22-wisdem",
       "curveLocator": "Rotor Performance - WISDEM!A,C,I; separate from OpenFAST steady states",
       "ratedKw": 22000.0,
@@ -3114,5 +3117,5 @@
       "id": "f462d5c0ab854db8e9b06d2a"
     }
   ],
-  "release": "d37bdc3aa29f99c2"
+  "release": "9568233f23cea4cc"
 }
