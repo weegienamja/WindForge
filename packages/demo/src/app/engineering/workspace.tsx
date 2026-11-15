@@ -671,7 +671,7 @@ export default function Workspace({ initialTab = 'Turbine explorer' }: { initial
                   <MachineNav m={m} n={n} select={inspectPart} />
                   {n.machinery ? (
                     <MachineDiagram
-                      key={m.id + '-' + (n.id === 'gear-stages' ? 'gearbox' : n.id)}
+                      key={'diagram-' + m.id + '-' + (n.id === 'gear-stages' ? 'gearbox' : n.id)}
                       m={m}
                       n={n}
                       select={inspectPart}
@@ -685,7 +685,7 @@ export default function Workspace({ initialTab = 'Turbine explorer' }: { initial
                   </small>
                   {n.machinery && (
                     <Guide
-                      key={m.id + '-' + n.id}
+                      key={'guide-' + m.id + '-' + n.id}
                       m={m}
                       n={n}
                       cat={cat}

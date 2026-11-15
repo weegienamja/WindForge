@@ -18,6 +18,18 @@ it('opens on the turbine, provides access to the nacelle, blade viewer and site 
   vi.stubGlobal('fetch', requests);
   const { container } = render(<HomePage />);
   expect(await screen.findByRole('button', { name: 'Inspect nacelle' })).toBeVisible();
+  const choose = (name: string) => fireEvent.click(screen.getByRole('button', { name }));
+  choose('Inspect nacelle');
+  choose('Inspect main bearings');
+  choose('Main bearing 1 · CARB ›');
+  choose('Main bearings');
+  choose('Nacelle and drivetrain');
+  expect(screen.getAllByRole('button', { name: 'Inspect generator' })).toHaveLength(1);
+  choose('Inspect generator');
+  choose('Inspect stator and windings');
+  expect(
+    screen.getByText('Winding insulation or connection damage', { selector: 'h4' }),
+  ).toBeVisible();
   fireEvent.click(screen.getByRole('button', { name: 'Blade sections' }));
   expect(await screen.findByLabelText('Reference section', { exact: true })).toHaveValue('2');
   expect(

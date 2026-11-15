@@ -554,6 +554,10 @@
 }
 .wf-machine-plate .wf-hot {
   cursor: pointer;
+  pointer-events: bounding-box;
+}
+.wf-diagram [aria-label="Inspect nacelle"] {
+  pointer-events: bounding-box;
 }
 .wf-machine-plate .wf-hot:hover,
 .wf-machine-plate .wf-hot:focus-visible {
