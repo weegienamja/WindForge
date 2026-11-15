@@ -81,7 +81,11 @@ export function SourceLibrary({
             {sources.map(({ s }) => (
               <button key={s.id} aria-pressed={s.id === src?.id} onClick={() => select(s.id)}>
                 <small>{names[s.scope]}</small>
-                {s.title}
+                <span>
+                  {s.title.startsWith(names[s.scope] + ' · ')
+                    ? s.title.slice((names[s.scope] ?? '').length + 3)
+                    : s.title}
+                </span>
               </button>
             ))}
           </div>

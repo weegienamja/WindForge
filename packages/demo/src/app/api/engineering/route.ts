@@ -484,8 +484,7 @@ export async function POST(req: Request) {
       cases,
       models,
       sources: Object.values(cat.sources).filter(
-        (v) =>
-          models.some((m) => m.id === v.scope) || v.scope === 'schema' || v.id === 'doe-functions',
+        (v) => models.some((m) => m.id === v.scope) || !cat.models.some((m) => m.id === v.scope),
       ),
       deltaMwh: en[0] != null && en[1] != null ? en[1] - en[0] : null,
     };

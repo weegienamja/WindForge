@@ -22,6 +22,11 @@ export interface Fact {
   path: string;
 }
 export interface Part {
+  machinery?: {
+    basis: string;
+    how: EngineeringNote;
+    cases: MachineryCase[];
+  };
   line?: number;
   function?: string;
   id: string;
@@ -31,6 +36,16 @@ export interface Part {
   facts: Fact[];
   description: string;
   source: string;
+}
+export interface EngineeringNote {
+  source: string;
+  text: string;
+}
+export interface MachineryCase {
+  title: string;
+  finding: EngineeringNote;
+  inspect: EngineeringNote;
+  scope: string;
 }
 export interface Model {
   id: string;

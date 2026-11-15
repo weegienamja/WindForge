@@ -6,6 +6,7 @@ import type { Catalogue, Config, Report, Answer, Saved, Model } from '../../lib/
 import { Diagram } from './diagram';
 import { BladeSections } from './blades';
 import { SourceLibrary } from './library';
+import { Guide, MachineDiagram, MachineNav } from './machinery';
 import { download, markdown } from './report';
 import './engineering.css';
 const views = {
@@ -315,6 +316,13 @@ export default function Workspace({ initialTab = 'Turbine explorer' }: { initial
     S('model');
     Choices([]);
   }
+  function inspectPart(id: string) {
+    if (!m?.nodes.some((v) => v.id === id)) return;
+    P(id);
+    S('model');
+    RecordId('');
+    Choices([]);
+  }
   async function act(label: string, fn: () => Promise<void>) {
     B(label);
     E('');
@@ -553,14 +561,7 @@ export default function Workspace({ initialTab = 'Turbine explorer' }: { initial
   const selectPart = (
     <label>
       Assembly or component
-      <select
-        value={part}
-        onChange={(e) => {
-          P(e.target.value);
-          RecordId('');
-          Choices([]);
-        }}
-      >
+      <select value={part} onChange={(e) => inspectPart(e.target.value)}>
         {m?.nodes
           .slice()
           .sort((a, b) =>
@@ -667,19 +668,34 @@ export default function Workspace({ initialTab = 'Turbine explorer' }: { initial
                       <h2>{m.name}</h2>
                     </div>
                   </div>
-                  <Diagram
-                    model={m}
-                    part={n}
-                    select={(v) => {
-                      if (m.nodes.some((n) => n.id === v)) {
-                        P(v);
-                        RecordId('');
-                      }
-                    }}
-                  />
+                  <MachineNav m={m} n={n} select={inspectPart} />
+                  {n.machinery ? (
+                    <MachineDiagram
+                      key={m.id + '-' + (n.id === 'gear-stages' ? 'gearbox' : n.id)}
+                      m={m}
+                      n={n}
+                      select={inspectPart}
+                    />
+                  ) : (
+                    <Diagram model={m} part={n} select={inspectPart} />
+                  )}
                   <small>
-                    Illustrative geometry. Select a system in the drawing or use the component list.
+                    Functional schematic. Select a labelled part to inspect it. Shapes and spacing
+                    are illustrative.
                   </small>
+                  {n.machinery && (
+                    <Guide
+                      key={m.id + '-' + n.id}
+                      m={m}
+                      n={n}
+                      cat={cat}
+                      ask={(question) => {
+                        S('model');
+                        Q(question);
+                        move('Evidence desk');
+                      }}
+                    />
+                  )}
                   <div className="wf-actions">
                     <button className="primary" onClick={() => move('Blade sections')}>
                       Explore blade geometry
@@ -702,18 +718,19 @@ export default function Workspace({ initialTab = 'Turbine explorer' }: { initial
                     <a href={cat.sources[m.performance]?.url}>{m.curveLocator}</a>
                   </details>
                 </section>
-                <aside className="wf-panel">
+                <section className="wf-panel" aria-label="Component record">
                   {selectPart}
                   <h2>{n.label}</h2>
-                  {n.function && (
+                  {n.function && !n.machinery && (
                     <p>
                       {n.function} <a href={cat.sources['doe-functions']?.url}>Function source</a>
                     </p>
                   )}
-                  <p>
-                    {n.description ||
-                      'The selected reference file defines this component at ' + n.path + '.'}
-                  </p>
+                  {n.description ? (
+                    <p>{n.description}</p>
+                  ) : (
+                    <p>{n.machinery?.basis ?? 'Reference definition'}</p>
+                  )}
                   <dl className="wf-facts">
                     {n.facts.map((f) => (
                       <div key={f.path + f.field}>
@@ -733,22 +750,13 @@ export default function Workspace({ initialTab = 'Turbine explorer' }: { initial
                       </div>
                     ))}
                   </dl>
-                  {n.facts.length === 0 && <p>No scalar specification extracted at this level.</p>}
-                  <div className="wf-actions">
-                    {m.nodes
-                      .filter((v) => v.parent === n.id)
-                      .map((v) => (
-                        <button
-                          key={v.id}
-                          onClick={() => {
-                            P(v.id);
-                            RecordId('');
-                          }}
-                        >
-                          {v.label}
-                        </button>
-                      ))}
-                  </div>
+                  {n.facts.length === 0 && (
+                    <p>
+                      {n.source === m.definition
+                        ? 'No scalar specification extracted at this level.'
+                        : 'This source describes the mechanism. Asset dimensions and part numbers require a machine-specific record.'}
+                    </p>
+                  )}
                   {n.id === 'gearbox' && (
                     <button
                       onClick={() => {
@@ -762,15 +770,17 @@ export default function Workspace({ initialTab = 'Turbine explorer' }: { initial
                   )}
                   <p className="source">
                     <a href={cat.sources[n.source]?.url + (n.line ? '#L' + n.line : '')}>
-                      Definition · {n.path}
+                      {n.source === m.definition ? 'Definition' : 'Source'} · {n.path}
                     </a>
                     <br />
-                    <small>
-                      windIO {m.schema} · revision {m.revision.slice(0, 10)}.{' '}
-                      <a href={cat.sources['windio-schema']?.url}>Schema descriptions</a>
-                    </small>
+                    {n.source === m.definition && (
+                      <small>
+                        windIO {m.schema} · revision {m.revision.slice(0, 10)}.{' '}
+                        <a href={cat.sources['windio-schema']?.url}>Schema descriptions</a>
+                      </small>
+                    )}
                   </p>
-                </aside>
+                </section>
               </div>
             )}
             {tab === 'Site comparison' && (

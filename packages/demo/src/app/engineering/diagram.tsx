@@ -13,7 +13,7 @@ export function Diagram({
   const hot = (k: string) => ({
     role: 'button',
     tabIndex: 0,
-    'aria-label': 'Inspect ' + k,
+    'aria-label': 'Inspect ' + (k === 'drivetrain' ? 'nacelle' : k),
     onClick: () => select(k),
     onKeyDown: (e: React.KeyboardEvent) => {
       if (e.key === 'Enter' || e.key === ' ') {
@@ -42,6 +42,11 @@ export function Diagram({
       </g>
       <g {...hot('drivetrain')}>
         <path d="M134 100q10-8 38-1l7 8-4 9-36-2z" fill={active('drivetrain')} />
+        <path d="M164 101l29-47h48" fill="none" stroke="#42695e" />
+        <rect x="187" y="33" width="91" height="22" rx="3" fill="#d2e5da" />
+        <text x="197" y="49">
+          Nacelle ›
+        </text>
       </g>
       <g {...hot('blade')} fill={active('blade')}>
         {[0, 120, 240].map((deg) => (

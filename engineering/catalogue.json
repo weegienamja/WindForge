@@ -517,13 +517,34 @@
         {
           "id": "drivetrain",
           "parent": "assembly",
-          "label": "Drivetrain",
+          "label": "Nacelle and drivetrain",
           "facts": [],
           "path": "components.drivetrain",
           "source": "iea34-definition",
           "line": 632,
           "description": "",
-          "function": "The drivetrain transmits rotor rotation to the generator. The speed conversion depends on whether the design is geared or direct-drive."
+          "function": "The drivetrain transmits rotor rotation to the generator. The speed conversion depends on whether the design is geared or direct-drive.",
+          "machinery": {
+            "how": {
+              "source": "doe-nacelle",
+              "text": "The nacelle houses the shaft, gearbox and generator. The main bearings carry rotor loads while the gearbox raises shaft speed."
+            },
+            "cases": [
+              {
+                "title": "Yaw alignment",
+                "finding": {
+                  "source": "yaw-field",
+                  "text": "A biased wind-vane reading can make the reported alignment differ from the incoming wind direction."
+                },
+                "inspect": {
+                  "source": "yaw-field",
+                  "text": "Compare wind-vane direction with an independent inflow measurement. The field experiment also checked nacelle heading with a GNSS compass."
+                },
+                "scope": "Commercial wind plant field experiment. A heading discrepancy alone does not identify a failed yaw drive."
+              }
+            ],
+            "basis": "Reference assembly"
+          }
         },
         {
           "id": "gearbox",
@@ -567,7 +588,52 @@
           "source": "iea34-definition",
           "line": 637,
           "description": "Inputs describing the gearbox, when present",
-          "function": "Gears increase rotational speed between the rotor and the generator."
+          "function": "Gears increase rotational speed between the rotor and the generator.",
+          "machinery": {
+            "how": {
+              "source": "doe-nacelle",
+              "text": "The gearbox couples the slow main shaft to the faster generator shaft. The speed increase lets the generator operate at lower torque for a given power."
+            },
+            "cases": [
+              {
+                "title": "Gear tooth micropitting",
+                "finding": {
+                  "source": "gear-inspection",
+                  "text": "Repeated contact can fatigue small areas of a tooth flank. Load, sliding and lubricant conditions influence how micropitting develops."
+                },
+                "inspect": {
+                  "source": "gear-inspection",
+                  "text": "Compare the position and extent of flank damage in inspection photographs with the operating load, speed, temperature and lubricant history."
+                },
+                "scope": "Observed in a GE Transportation Systems gearbox. The IEA model supplies design fields only."
+              },
+              {
+                "title": "Axial cracking in gearbox bearings",
+                "finding": {
+                  "source": "grc-cracks",
+                  "text": "Cracks can develop along bearing raceways in intermediate- and high-speed stages. The NREL investigation focused on a high-speed shaft bearing."
+                },
+                "inspect": {
+                  "source": "grc-cracks",
+                  "text": "Identify the bearing and stage. The test rig instrumented shaft loads and sliding and monitored bearing and oil temperatures, water in the lubricant and electrical current."
+                },
+                "scope": "Instrumentation study on a separate 1.5 MW turbine. Conditions that accompanied cracking do not establish its cause."
+              },
+              {
+                "title": "Lubricant loss",
+                "finding": {
+                  "source": "grc-round",
+                  "text": "A GRC field gearbox lost oil. A subsequent inspection found damage to bearings and gears."
+                },
+                "inspect": {
+                  "source": "grc-benchmark",
+                  "text": "Compare accelerometer signals at matched shaft speed and load, keeping the sensor mounting position with the record."
+                },
+                "scope": "GRC test gearboxes. Localising damage requires inspection evidence as well as vibration records."
+              }
+            ],
+            "basis": "Reference assembly"
+          }
         },
         {
           "id": "generator",
@@ -593,7 +659,40 @@
           "source": "iea34-definition",
           "line": 662,
           "description": "",
-          "function": "The generator converts rotational mechanical power into electricity."
+          "function": "The generator converts rotational mechanical power into electricity.",
+          "machinery": {
+            "how": {
+              "source": "eia-induction",
+              "text": "The rotating and stationary parts move relative to a magnetic field. The changing magnetic flux through the windings induces voltage."
+            },
+            "cases": [
+              {
+                "title": "Reduced generator cooling",
+                "finding": {
+                  "source": "generator-thermal",
+                  "text": "A ventilation fault in a studied doubly fed generator changed the relationship between stator winding temperature and electrical output."
+                },
+                "inspect": {
+                  "source": "generator-thermal",
+                  "text": "Compare winding temperatures at similar output against the machine’s earlier healthy trend. Include ambient conditions and the recorded cooling state."
+                },
+                "scope": "Published 1.5 MW case study. Use its comparison method with the actual machine’s cooling design."
+              },
+              {
+                "title": "Winding insulation or connection damage",
+                "finding": {
+                  "source": "offshore-roadmap",
+                  "text": "The offshore roadmap identifies insulation damage, contamination and connection faults in permanent-magnet generator windings."
+                },
+                "inspect": {
+                  "source": "generator-thermal",
+                  "text": "Compare the winding-temperature channels against output and cooling operation. A hot winding can also reflect a ventilation problem."
+                },
+                "scope": "Generator-class evidence. A temperature trend alone cannot establish an electrical insulation fault."
+              }
+            ],
+            "basis": "Reference assembly"
+          }
         },
         {
           "id": "lss",
@@ -699,7 +798,7 @@
         {
           "id": "other_components",
           "parent": "drivetrain",
-          "label": "Bearing design fields",
+          "label": "Main bearings",
           "facts": [
             {
               "field": "mb1Type",
@@ -719,7 +818,28 @@
           "path": "components.drivetrain.other_components",
           "source": "iea34-definition",
           "line": 658,
-          "description": "Inputs describing all other drivetrain components, the assembly of brake, hvac, converter, transformer, and main bearings"
+          "description": "Inputs describing all other drivetrain components, the assembly of brake, hvac, converter, transformer, and main bearings",
+          "machinery": {
+            "how": {
+              "source": "doe-nacelle",
+              "text": "The main bearings support the low-speed shaft as the rotor turns and transfer rotor loads into the stationary structure."
+            },
+            "cases": [
+              {
+                "title": "Raceway spalling",
+                "finding": {
+                  "source": "main-bearing-field",
+                  "text": "Flakes of material can detach from a rolling contact surface. Spalling was the most frequently reported damage in this field study."
+                },
+                "inspect": {
+                  "source": "main-bearing-field",
+                  "text": "Record whether damage lies on the inner ring, outer ring or rollers. Inspection images and the damage location help distinguish observations from potential causes."
+                },
+                "scope": "Field data dominated by land-based, three-point spherical roller bearings. The authors could not resolve the initiation mechanism in every case."
+              }
+            ],
+            "basis": "Reference assembly"
+          }
         },
         {
           "id": "control",
@@ -738,6 +858,251 @@
           "source": "iea34-definition",
           "line": 986,
           "description": "Dictionary reporting the data describing the wind turbine controller"
+        },
+        {
+          "id": "mb1",
+          "parent": "other_components",
+          "label": "Main bearing 1 · CARB",
+          "source": "iea34-definition",
+          "path": "components.drivetrain.other_components.mb1Type",
+          "line": 658,
+          "facts": [
+            {
+              "field": "mb1Type",
+              "value": "CARB",
+              "unit": "",
+              "path": "components.drivetrain.other_components.mb1Type",
+              "line": 658
+            }
+          ],
+          "description": "",
+          "machinery": {
+            "how": {
+              "source": "skf-carb",
+              "text": "The CARB bearing uses toroidal rollers. It supports radial load and permits axial movement within the bearing as the shaft changes length."
+            },
+            "cases": [
+              {
+                "title": "Raceway spalling",
+                "finding": {
+                  "source": "main-bearing-field",
+                  "text": "Flakes of material can detach from a rolling contact surface. Spalling was the most frequently reported damage in this field study."
+                },
+                "inspect": {
+                  "source": "main-bearing-field",
+                  "text": "Record whether damage lies on the inner ring, outer ring or rollers. Inspection images and the damage location help distinguish observations from potential causes."
+                },
+                "scope": "Field data dominated by land-based, three-point spherical roller bearings. The authors could not resolve the initiation mechanism in every case."
+              }
+            ],
+            "basis": "Reference bearing type"
+          }
+        },
+        {
+          "id": "mb2",
+          "parent": "other_components",
+          "label": "Main bearing 2 · SRB",
+          "source": "iea34-definition",
+          "path": "components.drivetrain.other_components.mb2Type",
+          "line": 659,
+          "facts": [
+            {
+              "field": "mb2Type",
+              "value": "SRB",
+              "unit": "",
+              "path": "components.drivetrain.other_components.mb2Type",
+              "line": 659
+            }
+          ],
+          "description": "",
+          "machinery": {
+            "how": {
+              "source": "skf-srb",
+              "text": "A spherical roller bearing has two rows of rollers sharing a curved outer raceway. It can support radial load and axial load in either direction."
+            },
+            "cases": [
+              {
+                "title": "Raceway spalling",
+                "finding": {
+                  "source": "main-bearing-field",
+                  "text": "Flakes of material can detach from a rolling contact surface. Spalling was the most frequently reported damage in this field study."
+                },
+                "inspect": {
+                  "source": "main-bearing-field",
+                  "text": "Record whether damage lies on the inner ring, outer ring or rollers. Inspection images and the damage location help distinguish observations from potential causes."
+                },
+                "scope": "Field data dominated by land-based, three-point spherical roller bearings. The authors could not resolve the initiation mechanism in every case."
+              }
+            ],
+            "basis": "Reference bearing type"
+          }
+        },
+        {
+          "id": "gear-stages",
+          "parent": "gearbox",
+          "label": "Gear stages",
+          "source": "iea34-definition",
+          "path": "components.drivetrain.gearbox.gear_configuration",
+          "line": 640,
+          "facts": [
+            {
+              "field": "gear_configuration",
+              "value": "eep",
+              "unit": "",
+              "path": "components.drivetrain.gearbox.gear_configuration",
+              "line": 640
+            },
+            {
+              "field": "planet_numbers",
+              "value": [
+                3,
+                3,
+                0
+              ],
+              "unit": "count",
+              "path": "components.drivetrain.gearbox.planet_numbers",
+              "line": 641
+            }
+          ],
+          "description": "",
+          "machinery": {
+            "how": {
+              "source": "planetary-test",
+              "text": "In a fixed-ring planetary stage, the carrier turns the planet gears around the sun. Contact with the ring and sun transfers torque and increases the output speed."
+            },
+            "cases": [
+              {
+                "title": "Gear tooth micropitting",
+                "finding": {
+                  "source": "gear-inspection",
+                  "text": "Repeated contact can fatigue small areas of a tooth flank. Load, sliding and lubricant conditions influence how micropitting develops."
+                },
+                "inspect": {
+                  "source": "gear-inspection",
+                  "text": "Compare the position and extent of flank damage in inspection photographs with the operating load, speed, temperature and lubricant history."
+                },
+                "scope": "Observed in a GE Transportation Systems gearbox. The IEA model supplies design fields only."
+              }
+            ],
+            "basis": "Reference assembly"
+          }
+        },
+        {
+          "id": "gearbox-bearings",
+          "parent": "gearbox",
+          "label": "Gearbox bearings",
+          "source": "grc-cracks",
+          "path": "NREL/TP-5000-70639 · high-speed shaft bearings",
+          "line": null,
+          "facts": [],
+          "description": "",
+          "machinery": {
+            "how": {
+              "source": "grc-cracks",
+              "text": "These bearings support shafts rotating inside the gearbox. NREL’s instrumented example examined how bearing loads and sliding change during operation."
+            },
+            "cases": [
+              {
+                "title": "Axial cracking in gearbox bearings",
+                "finding": {
+                  "source": "grc-cracks",
+                  "text": "Cracks can develop along bearing raceways in intermediate- and high-speed stages. The NREL investigation focused on a high-speed shaft bearing."
+                },
+                "inspect": {
+                  "source": "grc-cracks",
+                  "text": "Identify the bearing and stage. The test rig instrumented shaft loads and sliding and monitored bearing and oil temperatures, water in the lubricant and electrical current."
+                },
+                "scope": "Instrumentation study on a separate 1.5 MW turbine. Conditions that accompanied cracking do not establish its cause."
+              },
+              {
+                "title": "Lubricant loss",
+                "finding": {
+                  "source": "grc-round",
+                  "text": "A GRC field gearbox lost oil. A subsequent inspection found damage to bearings and gears."
+                },
+                "inspect": {
+                  "source": "grc-benchmark",
+                  "text": "Compare accelerometer signals at matched shaft speed and load, keeping the sensor mounting position with the record."
+                },
+                "scope": "GRC test gearboxes. Localising damage requires inspection evidence as well as vibration records."
+              }
+            ],
+            "basis": "Separate research assembly"
+          }
+        },
+        {
+          "id": "generator-rotor",
+          "parent": "generator",
+          "label": "Generator rotor",
+          "source": "eia-induction",
+          "path": "Electromagnetic generators · rotor",
+          "line": null,
+          "facts": [],
+          "description": "",
+          "machinery": {
+            "how": {
+              "source": "eia-induction",
+              "text": "The generator rotor is the rotating electrical-machine element. Its motion relative to the stator produces a changing magnetic field at the windings."
+            },
+            "cases": [
+              {
+                "title": "Loss of magnetisation",
+                "finding": {
+                  "source": "offshore-roadmap",
+                  "text": "The roadmap lists demagnetisation among the failure modes of permanent-magnet synchronous generators."
+                },
+                "inspect": {
+                  "source": "offshore-roadmap",
+                  "text": "First identify the generator topology from an asset drawing or nameplate. This mechanism requires a permanent-magnet machine."
+                },
+                "scope": "Specific to permanent-magnet generators. The diagram illustrates relative motion independently of rotor construction."
+              }
+            ],
+            "basis": "Operating principle"
+          }
+        },
+        {
+          "id": "generator-stator",
+          "parent": "generator",
+          "label": "Stator and windings",
+          "source": "eia-induction",
+          "path": "Electromagnetic generators · stator",
+          "line": null,
+          "facts": [],
+          "description": "",
+          "machinery": {
+            "how": {
+              "source": "eia-induction",
+              "text": "The stator stays fixed to the frame. In the illustrated arrangement, magnetic flux changes through its insulated coils as the rotor turns."
+            },
+            "cases": [
+              {
+                "title": "Winding insulation or connection damage",
+                "finding": {
+                  "source": "offshore-roadmap",
+                  "text": "The offshore roadmap identifies insulation damage, contamination and connection faults in permanent-magnet generator windings."
+                },
+                "inspect": {
+                  "source": "generator-thermal",
+                  "text": "Compare the winding-temperature channels against output and cooling operation. A hot winding can also reflect a ventilation problem."
+                },
+                "scope": "Generator-class evidence. A temperature trend alone cannot establish an electrical insulation fault."
+              },
+              {
+                "title": "Reduced generator cooling",
+                "finding": {
+                  "source": "generator-thermal",
+                  "text": "A ventilation fault in a studied doubly fed generator changed the relationship between stator winding temperature and electrical output."
+                },
+                "inspect": {
+                  "source": "generator-thermal",
+                  "text": "Compare winding temperatures at similar output against the machine’s earlier healthy trend. Include ambient conditions and the recorded cooling state."
+                },
+                "scope": "Published 1.5 MW case study. Use its comparison method with the actual machine’s cooling design."
+              }
+            ],
+            "basis": "Operating principle"
+          }
         }
       ]
     },
@@ -1197,13 +1562,34 @@
         {
           "id": "drivetrain",
           "parent": "assembly",
-          "label": "Drivetrain",
+          "label": "Nacelle and drivetrain",
           "facts": [],
           "path": "components.drivetrain",
           "source": "iea15-definition",
           "line": 642,
           "description": "",
-          "function": "The drivetrain transmits rotor rotation to the generator. The speed conversion depends on whether the design is geared or direct-drive."
+          "function": "The drivetrain transmits rotor rotation to the generator. The speed conversion depends on whether the design is geared or direct-drive.",
+          "machinery": {
+            "how": {
+              "source": "doe-nacelle",
+              "text": "The nacelle houses the shaft, main bearings and generator. The turbine rotor drives the generator at rotor speed through a direct mechanical connection."
+            },
+            "cases": [
+              {
+                "title": "Yaw alignment",
+                "finding": {
+                  "source": "yaw-field",
+                  "text": "A biased wind-vane reading can make the reported alignment differ from the incoming wind direction."
+                },
+                "inspect": {
+                  "source": "yaw-field",
+                  "text": "Compare wind-vane direction with an independent inflow measurement. The field experiment also checked nacelle heading with a GNSS compass."
+                },
+                "scope": "Commercial wind plant field experiment. A heading discrepancy alone does not identify a failed yaw drive."
+              }
+            ],
+            "basis": "Reference assembly"
+          }
         },
         {
           "id": "generator",
@@ -1236,7 +1622,40 @@
           "source": "iea15-definition",
           "line": 670,
           "description": "",
-          "function": "The generator converts rotational mechanical power into electricity."
+          "function": "The generator converts rotational mechanical power into electricity.",
+          "machinery": {
+            "how": {
+              "source": "eia-induction",
+              "text": "The rotating and stationary parts move relative to a magnetic field. The changing magnetic flux through the windings induces voltage."
+            },
+            "cases": [
+              {
+                "title": "Reduced generator cooling",
+                "finding": {
+                  "source": "generator-thermal",
+                  "text": "A ventilation fault in a studied doubly fed generator changed the relationship between stator winding temperature and electrical output."
+                },
+                "inspect": {
+                  "source": "generator-thermal",
+                  "text": "Compare winding temperatures at similar output against the machine’s earlier healthy trend. Include ambient conditions and the recorded cooling state."
+                },
+                "scope": "Published 1.5 MW case study. Use its comparison method with the actual machine’s cooling design."
+              },
+              {
+                "title": "Winding insulation or connection damage",
+                "finding": {
+                  "source": "offshore-roadmap",
+                  "text": "The offshore roadmap identifies insulation damage, contamination and connection faults in permanent-magnet generator windings."
+                },
+                "inspect": {
+                  "source": "generator-thermal",
+                  "text": "Compare the winding-temperature channels against output and cooling operation. A hot winding can also reflect a ventilation problem."
+                },
+                "scope": "Generator-class evidence. A temperature trend alone cannot establish an electrical insulation fault."
+              }
+            ],
+            "basis": "Reference assembly"
+          }
         },
         {
           "id": "lss",
@@ -1328,7 +1747,7 @@
         {
           "id": "other_components",
           "parent": "drivetrain",
-          "label": "Bearing design fields",
+          "label": "Main bearings",
           "facts": [
             {
               "field": "mb1Type",
@@ -1348,7 +1767,28 @@
           "path": "components.drivetrain.other_components",
           "source": "iea15-definition",
           "line": 666,
-          "description": "Inputs describing all other drivetrain components, the assembly of brake, hvac, converter, transformer, and main bearings"
+          "description": "Inputs describing all other drivetrain components, the assembly of brake, hvac, converter, transformer, and main bearings",
+          "machinery": {
+            "how": {
+              "source": "doe-nacelle",
+              "text": "The main bearings support the low-speed shaft as the rotor turns and transfer rotor loads into the stationary structure."
+            },
+            "cases": [
+              {
+                "title": "Raceway spalling",
+                "finding": {
+                  "source": "main-bearing-field",
+                  "text": "Flakes of material can detach from a rolling contact surface. Spalling was the most frequently reported damage in this field study."
+                },
+                "inspect": {
+                  "source": "main-bearing-field",
+                  "text": "Record whether damage lies on the inner ring, outer ring or rollers. Inspection images and the damage location help distinguish observations from potential causes."
+                },
+                "scope": "Field data dominated by land-based, three-point spherical roller bearings. The authors could not resolve the initiation mechanism in every case."
+              }
+            ],
+            "basis": "Reference assembly"
+          }
         },
         {
           "id": "tower",
@@ -1488,6 +1928,158 @@
           "source": "iea15-definition",
           "line": 1101,
           "description": "Dictionary reporting the data describing the wind turbine controller"
+        },
+        {
+          "id": "mb1",
+          "parent": "other_components",
+          "label": "Main bearing 1 · CARB",
+          "source": "iea15-definition",
+          "path": "components.drivetrain.other_components.mb1Type",
+          "line": 666,
+          "facts": [
+            {
+              "field": "mb1Type",
+              "value": "CARB",
+              "unit": "",
+              "path": "components.drivetrain.other_components.mb1Type",
+              "line": 666
+            }
+          ],
+          "description": "",
+          "machinery": {
+            "how": {
+              "source": "skf-carb",
+              "text": "The CARB bearing uses toroidal rollers. It supports radial load and permits axial movement within the bearing as the shaft changes length."
+            },
+            "cases": [
+              {
+                "title": "Raceway spalling",
+                "finding": {
+                  "source": "main-bearing-field",
+                  "text": "Flakes of material can detach from a rolling contact surface. Spalling was the most frequently reported damage in this field study."
+                },
+                "inspect": {
+                  "source": "main-bearing-field",
+                  "text": "Record whether damage lies on the inner ring, outer ring or rollers. Inspection images and the damage location help distinguish observations from potential causes."
+                },
+                "scope": "Field data dominated by land-based, three-point spherical roller bearings. The authors could not resolve the initiation mechanism in every case."
+              }
+            ],
+            "basis": "Reference bearing type"
+          }
+        },
+        {
+          "id": "mb2",
+          "parent": "other_components",
+          "label": "Main bearing 2 · SRB",
+          "source": "iea15-definition",
+          "path": "components.drivetrain.other_components.mb2Type",
+          "line": 667,
+          "facts": [
+            {
+              "field": "mb2Type",
+              "value": "SRB",
+              "unit": "",
+              "path": "components.drivetrain.other_components.mb2Type",
+              "line": 667
+            }
+          ],
+          "description": "",
+          "machinery": {
+            "how": {
+              "source": "skf-srb",
+              "text": "A spherical roller bearing has two rows of rollers sharing a curved outer raceway. It can support radial load and axial load in either direction."
+            },
+            "cases": [
+              {
+                "title": "Raceway spalling",
+                "finding": {
+                  "source": "main-bearing-field",
+                  "text": "Flakes of material can detach from a rolling contact surface. Spalling was the most frequently reported damage in this field study."
+                },
+                "inspect": {
+                  "source": "main-bearing-field",
+                  "text": "Record whether damage lies on the inner ring, outer ring or rollers. Inspection images and the damage location help distinguish observations from potential causes."
+                },
+                "scope": "Field data dominated by land-based, three-point spherical roller bearings. The authors could not resolve the initiation mechanism in every case."
+              }
+            ],
+            "basis": "Reference bearing type"
+          }
+        },
+        {
+          "id": "generator-rotor",
+          "parent": "generator",
+          "label": "Generator rotor",
+          "source": "eia-induction",
+          "path": "Electromagnetic generators · rotor",
+          "line": null,
+          "facts": [],
+          "description": "",
+          "machinery": {
+            "how": {
+              "source": "eia-induction",
+              "text": "The generator rotor is the rotating electrical-machine element. Its motion relative to the stator produces a changing magnetic field at the windings."
+            },
+            "cases": [
+              {
+                "title": "Loss of magnetisation",
+                "finding": {
+                  "source": "offshore-roadmap",
+                  "text": "The roadmap lists demagnetisation among the failure modes of permanent-magnet synchronous generators."
+                },
+                "inspect": {
+                  "source": "offshore-roadmap",
+                  "text": "First identify the generator topology from an asset drawing or nameplate. This mechanism requires a permanent-magnet machine."
+                },
+                "scope": "Specific to permanent-magnet generators. The diagram illustrates relative motion independently of rotor construction."
+              }
+            ],
+            "basis": "Operating principle"
+          }
+        },
+        {
+          "id": "generator-stator",
+          "parent": "generator",
+          "label": "Stator and windings",
+          "source": "eia-induction",
+          "path": "Electromagnetic generators · stator",
+          "line": null,
+          "facts": [],
+          "description": "",
+          "machinery": {
+            "how": {
+              "source": "eia-induction",
+              "text": "The stator stays fixed to the frame. In the illustrated arrangement, magnetic flux changes through its insulated coils as the rotor turns."
+            },
+            "cases": [
+              {
+                "title": "Winding insulation or connection damage",
+                "finding": {
+                  "source": "offshore-roadmap",
+                  "text": "The offshore roadmap identifies insulation damage, contamination and connection faults in permanent-magnet generator windings."
+                },
+                "inspect": {
+                  "source": "generator-thermal",
+                  "text": "Compare the winding-temperature channels against output and cooling operation. A hot winding can also reflect a ventilation problem."
+                },
+                "scope": "Generator-class evidence. A temperature trend alone cannot establish an electrical insulation fault."
+              },
+              {
+                "title": "Reduced generator cooling",
+                "finding": {
+                  "source": "generator-thermal",
+                  "text": "A ventilation fault in a studied doubly fed generator changed the relationship between stator winding temperature and electrical output."
+                },
+                "inspect": {
+                  "source": "generator-thermal",
+                  "text": "Compare winding temperatures at similar output against the machine’s earlier healthy trend. Include ambient conditions and the recorded cooling state."
+                },
+                "scope": "Published 1.5 MW case study. Use its comparison method with the actual machine’s cooling design."
+              }
+            ],
+            "basis": "Operating principle"
+          }
         }
       ]
     },
@@ -2075,13 +2667,34 @@
         {
           "id": "drivetrain",
           "parent": "assembly",
-          "label": "Drivetrain",
+          "label": "Nacelle and drivetrain",
           "facts": [],
           "path": "components.drivetrain",
           "source": "iea22-definition",
           "line": 787,
           "description": "",
-          "function": "The drivetrain transmits rotor rotation to the generator. The speed conversion depends on whether the design is geared or direct-drive."
+          "function": "The drivetrain transmits rotor rotation to the generator. The speed conversion depends on whether the design is geared or direct-drive.",
+          "machinery": {
+            "how": {
+              "source": "doe-nacelle",
+              "text": "The nacelle houses the shaft, main bearings and generator. The turbine rotor drives the generator at rotor speed through a direct mechanical connection."
+            },
+            "cases": [
+              {
+                "title": "Yaw alignment",
+                "finding": {
+                  "source": "yaw-field",
+                  "text": "A biased wind-vane reading can make the reported alignment differ from the incoming wind direction."
+                },
+                "inspect": {
+                  "source": "yaw-field",
+                  "text": "Compare wind-vane direction with an independent inflow measurement. The field experiment also checked nacelle heading with a GNSS compass."
+                },
+                "scope": "Commercial wind plant field experiment. A heading discrepancy alone does not identify a failed yaw drive."
+              }
+            ],
+            "basis": "Reference assembly"
+          }
         },
         {
           "id": "generator",
@@ -2114,7 +2727,40 @@
           "source": "iea22-definition",
           "line": 818,
           "description": "",
-          "function": "The generator converts rotational mechanical power into electricity."
+          "function": "The generator converts rotational mechanical power into electricity.",
+          "machinery": {
+            "how": {
+              "source": "eia-induction",
+              "text": "The rotating and stationary parts move relative to a magnetic field. The changing magnetic flux through the windings induces voltage."
+            },
+            "cases": [
+              {
+                "title": "Reduced generator cooling",
+                "finding": {
+                  "source": "generator-thermal",
+                  "text": "A ventilation fault in a studied doubly fed generator changed the relationship between stator winding temperature and electrical output."
+                },
+                "inspect": {
+                  "source": "generator-thermal",
+                  "text": "Compare winding temperatures at similar output against the machine’s earlier healthy trend. Include ambient conditions and the recorded cooling state."
+                },
+                "scope": "Published 1.5 MW case study. Use its comparison method with the actual machine’s cooling design."
+              },
+              {
+                "title": "Winding insulation or connection damage",
+                "finding": {
+                  "source": "offshore-roadmap",
+                  "text": "The offshore roadmap identifies insulation damage, contamination and connection faults in permanent-magnet generator windings."
+                },
+                "inspect": {
+                  "source": "generator-thermal",
+                  "text": "Compare the winding-temperature channels against output and cooling operation. A hot winding can also reflect a ventilation problem."
+                },
+                "scope": "Generator-class evidence. A temperature trend alone cannot establish an electrical insulation fault."
+              }
+            ],
+            "basis": "Reference assembly"
+          }
         },
         {
           "id": "lss",
@@ -2206,7 +2852,7 @@
         {
           "id": "other_components",
           "parent": "drivetrain",
-          "label": "Bearing design fields",
+          "label": "Main bearings",
           "facts": [
             {
               "field": "mb1Type",
@@ -2226,7 +2872,28 @@
           "path": "components.drivetrain.other_components",
           "source": "iea22-definition",
           "line": 810,
-          "description": "Inputs describing all other drivetrain components, the assembly of brake, hvac, converter, transformer, and main bearings"
+          "description": "Inputs describing all other drivetrain components, the assembly of brake, hvac, converter, transformer, and main bearings",
+          "machinery": {
+            "how": {
+              "source": "doe-nacelle",
+              "text": "The main bearings support the low-speed shaft as the rotor turns and transfer rotor loads into the stationary structure."
+            },
+            "cases": [
+              {
+                "title": "Raceway spalling",
+                "finding": {
+                  "source": "main-bearing-field",
+                  "text": "Flakes of material can detach from a rolling contact surface. Spalling was the most frequently reported damage in this field study."
+                },
+                "inspect": {
+                  "source": "main-bearing-field",
+                  "text": "Record whether damage lies on the inner ring, outer ring or rollers. Inspection images and the damage location help distinguish observations from potential causes."
+                },
+                "scope": "Field data dominated by land-based, three-point spherical roller bearings. The authors could not resolve the initiation mechanism in every case."
+              }
+            ],
+            "basis": "Reference assembly"
+          }
         },
         {
           "id": "control",
@@ -2252,6 +2919,158 @@
           "source": "iea22-definition",
           "line": 1505,
           "description": "Dictionary reporting the data describing the wind turbine controller"
+        },
+        {
+          "id": "mb1",
+          "parent": "other_components",
+          "label": "Main bearing 1 · CARB",
+          "source": "iea22-definition",
+          "path": "components.drivetrain.other_components.mb1Type",
+          "line": 814,
+          "facts": [
+            {
+              "field": "mb1Type",
+              "value": "CARB",
+              "unit": "",
+              "path": "components.drivetrain.other_components.mb1Type",
+              "line": 814
+            }
+          ],
+          "description": "",
+          "machinery": {
+            "how": {
+              "source": "skf-carb",
+              "text": "The CARB bearing uses toroidal rollers. It supports radial load and permits axial movement within the bearing as the shaft changes length."
+            },
+            "cases": [
+              {
+                "title": "Raceway spalling",
+                "finding": {
+                  "source": "main-bearing-field",
+                  "text": "Flakes of material can detach from a rolling contact surface. Spalling was the most frequently reported damage in this field study."
+                },
+                "inspect": {
+                  "source": "main-bearing-field",
+                  "text": "Record whether damage lies on the inner ring, outer ring or rollers. Inspection images and the damage location help distinguish observations from potential causes."
+                },
+                "scope": "Field data dominated by land-based, three-point spherical roller bearings. The authors could not resolve the initiation mechanism in every case."
+              }
+            ],
+            "basis": "Reference bearing type"
+          }
+        },
+        {
+          "id": "mb2",
+          "parent": "other_components",
+          "label": "Main bearing 2 · SRB",
+          "source": "iea22-definition",
+          "path": "components.drivetrain.other_components.mb2Type",
+          "line": 815,
+          "facts": [
+            {
+              "field": "mb2Type",
+              "value": "SRB",
+              "unit": "",
+              "path": "components.drivetrain.other_components.mb2Type",
+              "line": 815
+            }
+          ],
+          "description": "",
+          "machinery": {
+            "how": {
+              "source": "skf-srb",
+              "text": "A spherical roller bearing has two rows of rollers sharing a curved outer raceway. It can support radial load and axial load in either direction."
+            },
+            "cases": [
+              {
+                "title": "Raceway spalling",
+                "finding": {
+                  "source": "main-bearing-field",
+                  "text": "Flakes of material can detach from a rolling contact surface. Spalling was the most frequently reported damage in this field study."
+                },
+                "inspect": {
+                  "source": "main-bearing-field",
+                  "text": "Record whether damage lies on the inner ring, outer ring or rollers. Inspection images and the damage location help distinguish observations from potential causes."
+                },
+                "scope": "Field data dominated by land-based, three-point spherical roller bearings. The authors could not resolve the initiation mechanism in every case."
+              }
+            ],
+            "basis": "Reference bearing type"
+          }
+        },
+        {
+          "id": "generator-rotor",
+          "parent": "generator",
+          "label": "Generator rotor",
+          "source": "eia-induction",
+          "path": "Electromagnetic generators · rotor",
+          "line": null,
+          "facts": [],
+          "description": "",
+          "machinery": {
+            "how": {
+              "source": "eia-induction",
+              "text": "The generator rotor is the rotating electrical-machine element. Its motion relative to the stator produces a changing magnetic field at the windings."
+            },
+            "cases": [
+              {
+                "title": "Loss of magnetisation",
+                "finding": {
+                  "source": "offshore-roadmap",
+                  "text": "The roadmap lists demagnetisation among the failure modes of permanent-magnet synchronous generators."
+                },
+                "inspect": {
+                  "source": "offshore-roadmap",
+                  "text": "First identify the generator topology from an asset drawing or nameplate. This mechanism requires a permanent-magnet machine."
+                },
+                "scope": "Specific to permanent-magnet generators. The diagram illustrates relative motion independently of rotor construction."
+              }
+            ],
+            "basis": "Operating principle"
+          }
+        },
+        {
+          "id": "generator-stator",
+          "parent": "generator",
+          "label": "Stator and windings",
+          "source": "eia-induction",
+          "path": "Electromagnetic generators · stator",
+          "line": null,
+          "facts": [],
+          "description": "",
+          "machinery": {
+            "how": {
+              "source": "eia-induction",
+              "text": "The stator stays fixed to the frame. In the illustrated arrangement, magnetic flux changes through its insulated coils as the rotor turns."
+            },
+            "cases": [
+              {
+                "title": "Winding insulation or connection damage",
+                "finding": {
+                  "source": "offshore-roadmap",
+                  "text": "The offshore roadmap identifies insulation damage, contamination and connection faults in permanent-magnet generator windings."
+                },
+                "inspect": {
+                  "source": "generator-thermal",
+                  "text": "Compare the winding-temperature channels against output and cooling operation. A hot winding can also reflect a ventilation problem."
+                },
+                "scope": "Generator-class evidence. A temperature trend alone cannot establish an electrical insulation fault."
+              },
+              {
+                "title": "Reduced generator cooling",
+                "finding": {
+                  "source": "generator-thermal",
+                  "text": "A ventilation fault in a studied doubly fed generator changed the relationship between stator winding temperature and electrical output."
+                },
+                "inspect": {
+                  "source": "generator-thermal",
+                  "text": "Compare winding temperatures at similar output against the machine’s earlier healthy trend. Include ambient conditions and the recorded cooling state."
+                },
+                "scope": "Published 1.5 MW case study. Use its comparison method with the actual machine’s cooling design."
+              }
+            ],
+            "basis": "Operating principle"
+          }
         }
       ]
     }
@@ -2476,6 +3295,106 @@
       "sha256": "53d032916d9967e01ef0e6a565eba18be4ac1667df026ee3697b654a4b3feb3c",
       "terms": "WindForge factual annotations; no third-party images or text redistributed",
       "license": "https://www.energy.gov/cmei/systems/how-do-wind-turbines-work"
+    },
+    "doe-nacelle": {
+      "id": "doe-nacelle",
+      "title": "DOE · Explore a Wind Turbine",
+      "url": "https://www.energy.gov/cmei/systems/explore-wind-turbine-text-version",
+      "revision": "Nacelle, main shaft bearing and direct-drive sections",
+      "sha256": "135a1b9f43b2b73dfffc07f2d432052b692e25fd6b26f9c4b253e7f2e5e8f767",
+      "scope": "method",
+      "terms": "WindForge factual annotation; original publication linked",
+      "license": "https://www.energy.gov/cmei/systems/explore-wind-turbine-text-version"
+    },
+    "yaw-field": {
+      "id": "yaw-field",
+      "title": "Simley et al. · Wake-steering field experiment",
+      "url": "https://wes.copernicus.org/articles/6/1427/2021/",
+      "revision": "2021 · §2.1 and wind-vane comparison",
+      "sha256": "dcf1ecd9c2cf8546ce170a9001ab952b9ed4f449530dab91d1c588266f6d6772",
+      "scope": "method",
+      "terms": "WindForge factual annotation; original publication linked",
+      "license": "https://wes.copernicus.org/articles/6/1427/2021/"
+    },
+    "planetary-test": {
+      "id": "planetary-test",
+      "title": "Input torque measurements for wind turbine gearboxes",
+      "url": "https://wes.copernicus.org/articles/7/505/2022/",
+      "revision": "2022 · §2, Fig. 2",
+      "sha256": "fbd0d53a26df7e662d2382483369d2002691c3c68a2534c5a02d050ab957012a",
+      "scope": "method",
+      "terms": "WindForge factual annotation; original publication linked",
+      "license": "https://wes.copernicus.org/articles/7/505/2022/"
+    },
+    "gear-inspection": {
+      "id": "gear-inspection",
+      "title": "Keller et al. · Condition of a GE Transportation Systems gearbox",
+      "url": "https://doi.org/10.2172/1659805",
+      "revision": "2020 · NREL/TP-5000-76004, abstract",
+      "sha256": "0cba242455fd52789355359b162487cd389b643a86e1b92ddf83826acc34a076",
+      "scope": "method",
+      "terms": "WindForge factual annotation; original publication linked",
+      "license": "https://doi.org/10.2172/1659805"
+    },
+    "main-bearing-field": {
+      "id": "main-bearing-field",
+      "title": "Hart et al. · Main bearing replacement and damage",
+      "url": "https://doi.org/10.2172/1992019",
+      "revision": "2023 · damage observations, Fig. 7",
+      "sha256": "e98a769e3745e89fcb99c67cd2ef4ffaca42dc93e94a5a72a191a63f7999a806",
+      "scope": "method",
+      "terms": "WindForge factual annotation; original publication linked",
+      "license": "https://doi.org/10.2172/1992019"
+    },
+    "skf-carb": {
+      "id": "skf-carb",
+      "title": "SKF · CARB toroidal roller bearings",
+      "url": "https://cdn.skfmediahub.skf.com/api/public/094bdeafb6b4ce5c/pdf_preview_medium/094bdeafb6b4ce5c_pdf_preview_medium.pdf",
+      "revision": "Bearing features, p. 4",
+      "sha256": "9339b16c9a7c9d764073743a50f50d5c92eee93d620cea855bfb5632af498714",
+      "scope": "method",
+      "terms": "WindForge factual annotation; original publication linked",
+      "license": "https://cdn.skfmediahub.skf.com/api/public/094bdeafb6b4ce5c/pdf_preview_medium/094bdeafb6b4ce5c_pdf_preview_medium.pdf"
+    },
+    "skf-srb": {
+      "id": "skf-srb",
+      "title": "SKF · Spherical roller bearings",
+      "url": "https://www.skf.com/binaries/pub12/Images/0901d196808a4ad1-Spherical-roller-bearings_18406-EN_tcm_12-480491.pdf",
+      "revision": "Bearing design, Fig. 1",
+      "sha256": "9426d9173d6d16130022b2b86831d0db8da5d7aa13de7d3df1270d80419dea05",
+      "scope": "method",
+      "terms": "WindForge factual annotation; original publication linked",
+      "license": "https://www.skf.com/binaries/pub12/Images/0901d196808a4ad1-Spherical-roller-bearings_18406-EN_tcm_12-480491.pdf"
+    },
+    "eia-induction": {
+      "id": "eia-induction",
+      "title": "EIA · How electricity is generated",
+      "url": "https://www.eia.gov/energyexplained/electricity/how-electricity-is-generated.php",
+      "revision": "Electromagnetic generators",
+      "sha256": "66c020d89b35f656bd2bd8fddb6f2e62d85fde608aa7f233d88222ed7517ad16",
+      "scope": "method",
+      "terms": "WindForge factual annotation; original publication linked",
+      "license": "https://www.eia.gov/energyexplained/electricity/how-electricity-is-generated.php"
+    },
+    "offshore-roadmap": {
+      "id": "offshore-roadmap",
+      "title": "NREL and Sandia · Offshore wind operations and maintenance roadmap",
+      "url": "https://www.energy.gov/sites/default/files/2024-05/operations-and-maintenance-roadmap-for-us-offshore-wind.5.17.24.pdf",
+      "revision": "2024 · §3.2.1, Hub and Nacelle",
+      "sha256": "03f1695a80f8ba47de9d4f274c6da7978909902fcbca4680e4898cd280567e56",
+      "scope": "method",
+      "terms": "WindForge factual annotation; original publication linked",
+      "license": "https://www.energy.gov/sites/default/files/2024-05/operations-and-maintenance-roadmap-for-us-offshore-wind.5.17.24.pdf"
+    },
+    "generator-thermal": {
+      "id": "generator-thermal",
+      "title": "Applying thermophysics for wind turbine drivetrain fault diagnosis",
+      "url": "https://doi.org/10.1049/iet-rpg.2015.0160",
+      "revision": "2016 · §4.2, generator case study",
+      "sha256": "033388a20fe74974c33efe14af8e19d9cbaa8cb28aaf58ad171114f27a71161e",
+      "scope": "method",
+      "terms": "WindForge factual annotation; original publication linked",
+      "license": "https://doi.org/10.1049/iet-rpg.2015.0160"
     }
   },
   "passages": [
@@ -3115,7 +4034,196 @@
       "locator": "How turbines work · assembly",
       "text": "The rotor captures mechanical power from the wind and drives a generator.",
       "id": "f462d5c0ab854db8e9b06d2a"
+    },
+    {
+      "scope": "method",
+      "source": "doe-nacelle",
+      "locator": "Nacelle, main shaft bearing and direct-drive sections",
+      "text": "The nacelle houses the shaft, gearbox and generator. The main bearings carry rotor loads while the gearbox raises shaft speed.",
+      "id": "6940a3a64527f648e4f73344"
+    },
+    {
+      "scope": "method",
+      "source": "yaw-field",
+      "locator": "2021 · §2.1 and wind-vane comparison",
+      "text": "A biased wind-vane reading can make the reported alignment differ from the incoming wind direction.",
+      "id": "6587708e33c3ce68d63bb4ac"
+    },
+    {
+      "scope": "method",
+      "source": "yaw-field",
+      "locator": "2021 · §2.1 and wind-vane comparison",
+      "text": "Compare wind-vane direction with an independent inflow measurement. The field experiment also checked nacelle heading with a GNSS compass.",
+      "id": "ce55a8ca8e4cb90be4c32b7b"
+    },
+    {
+      "scope": "method",
+      "source": "doe-nacelle",
+      "locator": "Nacelle, main shaft bearing and direct-drive sections",
+      "text": "The main bearings support the low-speed shaft as the rotor turns and transfer rotor loads into the stationary structure.",
+      "id": "375808c5d7f27d2ecda175f0"
+    },
+    {
+      "scope": "method",
+      "source": "main-bearing-field",
+      "locator": "2023 · damage observations, Fig. 7",
+      "text": "Flakes of material can detach from a rolling contact surface. Spalling was the most frequently reported damage in this field study.",
+      "id": "5c9aafe003caf709226e3b61"
+    },
+    {
+      "scope": "method",
+      "source": "main-bearing-field",
+      "locator": "2023 · damage observations, Fig. 7",
+      "text": "Record whether damage lies on the inner ring, outer ring or rollers. Inspection images and the damage location help distinguish observations from potential causes.",
+      "id": "a1aa6cf8323d97d1de75b8cf"
+    },
+    {
+      "scope": "method",
+      "source": "skf-carb",
+      "locator": "Bearing features, p. 4",
+      "text": "The CARB bearing uses toroidal rollers. It supports radial load and permits axial movement within the bearing as the shaft changes length.",
+      "id": "b84239f2544e67b1bae3d078"
+    },
+    {
+      "scope": "method",
+      "source": "skf-srb",
+      "locator": "Bearing design, Fig. 1",
+      "text": "A spherical roller bearing has two rows of rollers sharing a curved outer raceway. It can support radial load and axial load in either direction.",
+      "id": "d6c242c0feb48e5421ccf046"
+    },
+    {
+      "scope": "method",
+      "source": "doe-nacelle",
+      "locator": "Nacelle, main shaft bearing and direct-drive sections",
+      "text": "The gearbox couples the slow main shaft to the faster generator shaft. The speed increase lets the generator operate at lower torque for a given power.",
+      "id": "1710f46b157e1605efcaf364"
+    },
+    {
+      "scope": "method",
+      "source": "gear-inspection",
+      "locator": "2020 · NREL/TP-5000-76004, abstract",
+      "text": "Repeated contact can fatigue small areas of a tooth flank. Load, sliding and lubricant conditions influence how micropitting develops.",
+      "id": "4eeba604e2170fea6c6739be"
+    },
+    {
+      "scope": "method",
+      "source": "gear-inspection",
+      "locator": "2020 · NREL/TP-5000-76004, abstract",
+      "text": "Compare the position and extent of flank damage in inspection photographs with the operating load, speed, temperature and lubricant history.",
+      "id": "42c9227d5b4984f074edd4d3"
+    },
+    {
+      "scope": "grc",
+      "source": "grc-cracks",
+      "locator": "Abstract · NREL/TP-5000-70639",
+      "text": "Cracks can develop along bearing raceways in intermediate- and high-speed stages. The NREL investigation focused on a high-speed shaft bearing.",
+      "id": "477f4f2c17077084dec284f6"
+    },
+    {
+      "scope": "grc",
+      "source": "grc-cracks",
+      "locator": "Abstract · NREL/TP-5000-70639",
+      "text": "Identify the bearing and stage. The test rig instrumented shaft loads and sliding and monitored bearing and oil temperatures, water in the lubricant and electrical current.",
+      "id": "e682f07a5f3040b502f6f044"
+    },
+    {
+      "scope": "grc",
+      "source": "grc-round",
+      "locator": "Abstract",
+      "text": "A GRC field gearbox lost oil. A subsequent inspection found damage to bearings and gears.",
+      "id": "f35f6b515502d568388d68f8"
+    },
+    {
+      "scope": "grc",
+      "source": "grc-benchmark",
+      "locator": "DOI 10.25984/1844194 - dataset description",
+      "text": "Compare accelerometer signals at matched shaft speed and load, keeping the sensor mounting position with the record.",
+      "id": "9bb2e35821dfbb552626d37e"
+    },
+    {
+      "scope": "method",
+      "source": "planetary-test",
+      "locator": "2022 · §2, Fig. 2",
+      "text": "In a fixed-ring planetary stage, the carrier turns the planet gears around the sun. Contact with the ring and sun transfers torque and increases the output speed.",
+      "id": "fd39ca73e77f83750c12f158"
+    },
+    {
+      "scope": "grc",
+      "source": "grc-cracks",
+      "locator": "Abstract · NREL/TP-5000-70639",
+      "text": "These bearings support shafts rotating inside the gearbox. NREL’s instrumented example examined how bearing loads and sliding change during operation.",
+      "id": "3c25a4055bc466aa82c41205"
+    },
+    {
+      "scope": "method",
+      "source": "eia-induction",
+      "locator": "Electromagnetic generators",
+      "text": "The rotating and stationary parts move relative to a magnetic field. The changing magnetic flux through the windings induces voltage.",
+      "id": "3900603e9b3e65b17577a5ec"
+    },
+    {
+      "scope": "method",
+      "source": "generator-thermal",
+      "locator": "2016 · §4.2, generator case study",
+      "text": "A ventilation fault in a studied doubly fed generator changed the relationship between stator winding temperature and electrical output.",
+      "id": "29f7a9491fe56cbd38d8d99c"
+    },
+    {
+      "scope": "method",
+      "source": "generator-thermal",
+      "locator": "2016 · §4.2, generator case study",
+      "text": "Compare winding temperatures at similar output against the machine’s earlier healthy trend. Include ambient conditions and the recorded cooling state.",
+      "id": "318b256f9016c6bf9b420b3a"
+    },
+    {
+      "scope": "method",
+      "source": "offshore-roadmap",
+      "locator": "2024 · §3.2.1, Hub and Nacelle",
+      "text": "The offshore roadmap identifies insulation damage, contamination and connection faults in permanent-magnet generator windings.",
+      "id": "a919d19d2017f426ec9dd0c6"
+    },
+    {
+      "scope": "method",
+      "source": "generator-thermal",
+      "locator": "2016 · §4.2, generator case study",
+      "text": "Compare the winding-temperature channels against output and cooling operation. A hot winding can also reflect a ventilation problem.",
+      "id": "c8c969afc3411ee12f376cff"
+    },
+    {
+      "scope": "method",
+      "source": "eia-induction",
+      "locator": "Electromagnetic generators",
+      "text": "The generator rotor is the rotating electrical-machine element. Its motion relative to the stator produces a changing magnetic field at the windings.",
+      "id": "090108cf09539dd08ab73e6e"
+    },
+    {
+      "scope": "method",
+      "source": "offshore-roadmap",
+      "locator": "2024 · §3.2.1, Hub and Nacelle",
+      "text": "The roadmap lists demagnetisation among the failure modes of permanent-magnet synchronous generators.",
+      "id": "6c2cbef7b201af88f6265c7a"
+    },
+    {
+      "scope": "method",
+      "source": "offshore-roadmap",
+      "locator": "2024 · §3.2.1, Hub and Nacelle",
+      "text": "First identify the generator topology from an asset drawing or nameplate. This mechanism requires a permanent-magnet machine.",
+      "id": "a62f4f36810824f783a6d3a1"
+    },
+    {
+      "scope": "method",
+      "source": "eia-induction",
+      "locator": "Electromagnetic generators",
+      "text": "The stator stays fixed to the frame. In the illustrated arrangement, magnetic flux changes through its insulated coils as the rotor turns.",
+      "id": "8211cab3ef25a80d6c74fbfe"
+    },
+    {
+      "scope": "method",
+      "source": "doe-nacelle",
+      "locator": "Nacelle, main shaft bearing and direct-drive sections",
+      "text": "The nacelle houses the shaft, main bearings and generator. The turbine rotor drives the generator at rotor speed through a direct mechanical connection.",
+      "id": "2c118e912e70c12bd2516b05"
     }
   ],
-  "release": "9568233f23cea4cc"
+  "release": "af094f8b35a2ba43"
 }

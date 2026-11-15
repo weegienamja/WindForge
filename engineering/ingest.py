@@ -5,6 +5,7 @@ from pathlib import Path
 from xml.etree import ElementTree as ET
 import yaml
 from blade_sections import extract as extract_blade
+from machinery import apply as add_machinery
 
 ROOT = Path(__file__).resolve().parent
 CACHE = Path(os.environ.get("WINDFORGE_SOURCE_CACHE", ROOT / ".cache"))
@@ -458,6 +459,7 @@ def build():
                 n["function"] = mechanics[n["id"]]
     for k, v in mechanics.items():
         passage("method", "doe-functions", "How turbines work · " + k, v)
+    add_machinery(models, sources, passage)
     payload = dict(version=1, models=models, sources=sources, passages=passages)
     assert len({p["id"] for p in passages}) == len(passages)
     payload["release"] = sha(json.dumps(payload, sort_keys=True).encode())[:16]

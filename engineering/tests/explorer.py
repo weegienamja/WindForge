@@ -17,6 +17,7 @@ with sync_playwright() as pw:
     errors = []
     page.on("pageerror", lambda error: errors.append(str(error)))
     page.goto(base)
+    page.get_by_role("button", name="Blade sections", exact=True).click()
     expect(page.get_by_role("heading", name="Blade sections")).to_be_visible(timeout=25000)
     for model in catalogue["models"]:
         geometry = json.loads((ROOT / "geometry" / (model["bladeAsset"] + ".json")).read_bytes())

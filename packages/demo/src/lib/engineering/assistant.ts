@@ -30,6 +30,32 @@ export async function answer(
     );
     return a;
   }
+  const guide = scope === m.id ? n.machinery : undefined;
+  if (guide) {
+    const selected = guide.cases.find((c) => clean(q).includes(clean(c.title)));
+    const general = /what (?:can|could|might) go wrong|failure modes|which faults/i.test(q);
+    const how = /how (?:does|do|it works)|how .*work|what does .* do|working principle/i.test(q);
+    if (selected || general || how) {
+      const cases = selected ? [selected] : general ? guide.cases : [];
+      const notes = cases.length ? cases.flatMap((c) => [c.finding, c.inspect]) : [guide.how];
+      return {
+        ...a,
+        type: cases.length ? 'Research evidence' : 'Documented fact',
+        text: cases.length
+          ? cases
+              .map(
+                (c) => c.title + '\n' + c.finding.text + '\nEvidence to compare: ' + c.inspect.text,
+              )
+              .join('\n\n')
+          : guide.how.text,
+        citations: [...new Set(notes.map((v) => v.source))].flatMap((id) => {
+          const s = sources[id];
+          return s ? [{ title: s.title, url: s.url, locator: s.revision }] : [];
+        }),
+        gaps: cases.length ? cases.map((c) => c.scope) : [guide.basis],
+      };
+    }
+  }
   if (report && /what if|what changes if|suppose|instead of|substitute/i.test(q)) {
     return {
       ...a,
