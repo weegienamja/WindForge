@@ -914,7 +914,7 @@ export default function Workspace({ initialTab = 'Turbine explorer' }: { initial
                     <select value={scope} onChange={(e) => S(e.target.value)}>
                       <option value="model">Selected reference turbine</option>
                       <option value="grc">GRC research gearboxes · separate assembly</option>
-                      <option value="method">OpenFAST · BeamDyn methods</option>
+                      <option value="method">Engineering methods and component research</option>
                       <option value="schema">windIO definitions</option>
                     </select>
                   </label>

@@ -21,8 +21,18 @@ function Gear({ x, y, r, teeth = 18 }: { x: number; y: number; r: number; teeth?
     </g>
   );
 }
-function Hot({ name, go, children }: { name: string; go: () => void; children: ReactNode }) {
-  return (
+function Hot({
+  name,
+  go,
+  children,
+  labelBox,
+}: {
+  name: string;
+  go: () => void;
+  children: ReactNode;
+  labelBox?: [number, number, number, number];
+}) {
+  const control = (
     <g
       role="button"
       tabIndex={0}
@@ -36,8 +46,28 @@ function Hot({ name, go, children }: { name: string; go: () => void; children: R
         }
       }}
     >
-      {children}
+      {labelBox ? (
+        <rect
+          x={labelBox[0]}
+          y={labelBox[1]}
+          width={labelBox[2]}
+          height={labelBox[3]}
+          fill="transparent"
+        />
+      ) : (
+        children
+      )}
     </g>
+  );
+  return labelBox ? (
+    <g>
+      <g aria-hidden="true" onClick={go} style={{ cursor: 'pointer' }}>
+        {children}
+      </g>
+      {control}
+    </g>
+  ) : (
+    control
   );
 }
 function Tag({ x, y, text }: { x: number; y: number; text: string }) {
@@ -221,7 +251,7 @@ export function MachineDiagram({
       <>
         <Drawing name="Bearing operating principle">
           <g transform="translate(0 6)">
-            <Hot name="outer ring" go={() => setDetail(0)}>
+            <Hot name="outer ring" go={() => setDetail(0)} labelBox={[365, 22, 130, 41]}>
               <circle
                 cx="184"
                 cy="112"
@@ -236,7 +266,7 @@ export function MachineDiagram({
                 Outer ring
               </text>
             </Hot>
-            <Hot name="rolling elements" go={() => setDetail(1)}>
+            <Hot name="rolling elements" go={() => setDetail(1)} labelBox={[365, 88, 183, 42]}>
               {Array.from({ length: 12 }, (_, i) => {
                 const [x, y] = radial(184, 112, 63, i, 12);
                 return (
@@ -256,7 +286,7 @@ export function MachineDiagram({
                 Rolling elements
               </text>
             </Hot>
-            <Hot name="inner ring" go={() => setDetail(2)}>
+            <Hot name="inner ring" go={() => setDetail(2)} labelBox={[365, 166, 135, 44]}>
               <circle
                 cx="184"
                 cy="112"
@@ -287,7 +317,11 @@ export function MachineDiagram({
   if (['generator', 'generator-rotor', 'generator-stator'].includes(n.id)) {
     return (
       <Drawing name="Generator electromagnetic section">
-        <Hot name="stator and windings" go={() => select('generator-stator')}>
+        <Hot
+          name="stator and windings"
+          go={() => select('generator-stator')}
+          labelBox={[360, 20, 208, 44]}
+        >
           <circle
             cx="177"
             cy="122"
@@ -317,7 +351,11 @@ export function MachineDiagram({
             Stator and windings
           </text>
         </Hot>
-        <Hot name="generator rotor" go={() => select('generator-rotor')}>
+        <Hot
+          name="generator rotor"
+          go={() => select('generator-rotor')}
+          labelBox={[360, 160, 117, 46]}
+        >
           <circle
             cx="177"
             cy="122"
