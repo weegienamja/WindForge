@@ -21,6 +21,7 @@ export function useProject() {
   const lastSaved = useRef<string | null>(null);
   const [project, setProject] = useState<Project | null>(null);
   const [savedSites, setSavedSites] = useState<string[]>([]);
+  const [locationError, setLocationError] = useState('');
   const [storage, setStorage] = useState('');
   const [protect, setProtect] = useState(false);
   const [refresh, setRefresh] = useState(0);
@@ -30,14 +31,26 @@ export function useProject() {
     const params = new URLSearchParams(location.search);
     let site = EXAMPLE,
       data: Project | null = null;
+    const supplied = params.has('lat') || params.has('lng');
+    if (supplied) {
+      const lat = params.get('lat'),
+        lng = params.get('lng');
+      const candidate = { lat: Number(lat), lng: Number(lng) };
+      if (!lat?.trim() || !lng?.trim() || !validSite(candidate)) {
+        setLocationError(
+          'This site needs a latitude between −84° and 84° and a longitude between −179.8° and 179.8°.',
+        );
+        return;
+      }
+      site = rounded(candidate);
+    }
     try {
-      const previous = localStorage.getItem(RECENT)?.split(',');
-      const raw =
-        params.has('lat') || params.has('lng') ? [params.get('lat'), params.get('lng')] : previous;
-      if (raw) {
-        const candidate = { lat: Number(raw[0]), lng: Number(raw[1]) };
-        if (raw.length === 2 && raw.every((v) => v?.trim()) && validSite(candidate))
-          site = rounded(candidate);
+      if (!supplied) {
+        const last = localStorage.getItem(RECENT)?.split(',');
+        if (last?.length === 2 && last.every((v) => v.trim())) {
+          const candidate = { lat: Number(last[0]), lng: Number(last[1]) };
+          if (validSite(candidate)) site = rounded(candidate);
+        }
       }
       const key = siteKey(site);
       setSavedSites(
@@ -126,6 +139,7 @@ export function useProject() {
     project,
     setProject,
     savedSites,
+    locationError,
     storage,
     refreshEvidence: () => setRefresh((n) => n + 1),
     fetching,

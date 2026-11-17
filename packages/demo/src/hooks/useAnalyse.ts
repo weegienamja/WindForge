@@ -92,8 +92,7 @@ export function useAnalyse(): UseAnalyseResult {
       }
       try {
         const signature = response.headers?.get('x-windforge-site');
-        if (signature)
-          sessionStorage.setItem('wf-handoff', JSON.stringify({ site: body.analysis, signature }));
+        sessionStorage.setItem('wf-handoff', JSON.stringify({ site: body.analysis, signature }));
       } catch {
         /* Storage is optional. */
       }

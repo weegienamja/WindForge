@@ -93,6 +93,12 @@ export interface Project {
   active: string;
   layouts: Layout[];
 }
+export function availableName(layouts: Layout[], suggestion: string) {
+  const names = new Set(layouts.map((l) => l.name.toLowerCase()));
+  let name = suggestion;
+  for (let number = 2; names.has(name.toLowerCase()); number++) name = suggestion + ' ' + number;
+  return name;
+}
 export function newLayout(name: string): Layout {
   return {
     id: Array.from(crypto.getRandomValues(new Uint32Array(4)), (n) =>

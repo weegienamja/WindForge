@@ -21,7 +21,7 @@ body:has(.farm-shell) {
 }
 .farm-intro {
   display: flex;
-  align-items: end;
+  align-items: flex-end;
   gap: 5vw;
   justify-content: space-between;
   padding: 10px 0 28px;
@@ -411,7 +411,7 @@ body:has(.farm-shell) {
   padding: 8px 16px;
 }
 .farm-inspection {
-  align-items: end;
+  align-items: flex-end;
   gap: 12px;
 }
 .farm-point {
@@ -456,7 +456,7 @@ body:has(.farm-shell) {
 }
 .farm-parcel {
   display: flex;
-  align-items: start;
+  align-items: flex-start;
   justify-content: space-between;
   gap: 18px;
   padding: 16px 0;
@@ -577,7 +577,7 @@ body:has(.farm-shell) {
 }
 @media (max-width: 800px) {
   .farm-intro {
-    align-items: start;
+    align-items: flex-start;
     flex-direction: column;
     gap: 12px;
   }

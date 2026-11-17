@@ -9,6 +9,7 @@ import {
   type LatLng,
 } from '@jamieblair/windforge-core';
 import {
+  availableName,
   checkedBoundary,
   EXAMPLE,
   MAX_LAYOUTS,
@@ -40,8 +41,16 @@ function siteUrl(p: LatLng) {
   return '?lat=' + p.lat + '&lng=' + p.lng;
 }
 export default function Designer() {
-  const { project, setProject, savedSites, storage, refreshEvidence, fetching, evidenceStatus } =
-    useProject();
+  const {
+    project,
+    setProject,
+    savedSites,
+    locationError,
+    storage,
+    refreshEvidence,
+    fetching,
+    evidenceStatus,
+  } = useProject();
   const comparison = useResults(project);
   const [tool, setTool] = useState<Tool>('select'),
     [selected, select] = useState<number | null>(null);
@@ -52,6 +61,12 @@ export default function Designer() {
   useEffect(() => {
     setSettingsOpen(!window.matchMedia('(max-width: 650px)').matches);
   }, []);
+  if (locationError)
+    return (
+      <p role="alert">
+        {locationError} <a href="/designer">Open the last design</a>
+      </p>
+    );
   if (!project) return <p role="status">Opening design workspace…</p>;
   const p = project,
     layout = p.layouts.find((l) => l.id === p.active)!,
@@ -78,12 +93,12 @@ export default function Designer() {
   }
   function addLayout(copy: boolean) {
     if (p.layouts.length >= MAX_LAYOUTS) return;
-    const fresh = newLayout('Layout ' + (p.layouts.length + 1));
+    const fresh = newLayout(availableName(p.layouts, 'Layout ' + (p.layouts.length + 1)));
     const next = copy
       ? {
           ...layout,
           id: fresh.id,
-          name: layout.name.slice(0, 44) + ' copy',
+          name: availableName(p.layouts, layout.name.slice(0, 42) + ' copy'),
           positions: [...layout.positions],
         }
       : fresh;
@@ -217,7 +232,13 @@ export default function Designer() {
             onToggle={(ev) => setSettingsOpen(ev.currentTarget.open)}
           >
             <summary>Turbine specification</summary>
-            <LayoutInputs key={layout.id} layout={layout} price={p.price} onApply={setLayout} />
+            <LayoutInputs
+              key={layout.id}
+              layout={layout}
+              otherNames={p.layouts.filter((l) => l.id !== layout.id).map((l) => l.name)}
+              price={p.price}
+              onApply={setLayout}
+            />
             <p className="farm-spec">
               {machine.rotorDiameterM} m rotor · {fmt(machine.ratedPowerKw / 1000, 2)} MW per
               turbine

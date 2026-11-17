@@ -53,8 +53,10 @@ export function Coordinates({
 export function LayoutInputs({
   layout,
   price,
+  otherNames,
   onApply,
 }: {
+  otherNames: string[];
   layout: Layout;
   price: number;
   onApply: (patch: Partial<Layout>, price: number) => void;
@@ -100,9 +102,11 @@ export function LayoutInputs({
             e.preventDefault();
             const f = new FormData(e.currentTarget);
             const name = String(f.get('name')).trim();
-            if (!name) {
+            if (!name || otherNames.some((n) => n.toLowerCase() === name.toLowerCase())) {
               const input = e.currentTarget.elements.namedItem('name') as HTMLInputElement;
-              input.setCustomValidity('Enter a layout name.');
+              input.setCustomValidity(
+                name ? 'Choose a unique layout name.' : 'Enter a layout name.',
+              );
               input.reportValidity();
               return;
             }
