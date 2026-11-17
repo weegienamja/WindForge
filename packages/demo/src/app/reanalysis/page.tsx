@@ -1,3 +1,4 @@
+import { SiteHeader } from '../../components/SiteHeader';
 import Link from 'next/link';
 import type { CSSProperties } from 'react';
 import { Footer } from '../../components/Footer';
@@ -7,16 +8,10 @@ export default function ReanalysisPage() {
     <main
       style={{ minHeight: '100vh', background: 'var(--surface-0)', color: 'var(--text-primary)' }}
     >
+      <SiteHeader />
       <article
         style={{ maxWidth: 820, margin: '0 auto', padding: 'var(--space-9) var(--space-5)' }}
       >
-        <Link
-          href="/"
-          className="t-mono-data"
-          style={{ color: 'var(--text-secondary)', textDecoration: 'none' }}
-        >
-          ← WindForge
-        </Link>
         <div className="t-eyebrow" style={{ marginTop: 'var(--space-7)' }}>
           Optional advanced workflow
         </div>

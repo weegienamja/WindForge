@@ -4,6 +4,7 @@ import { useEffect } from 'react';
 import {
   CircleMarker,
   MapContainer,
+  ImageOverlay,
   Marker,
   Popup,
   TileLayer,
@@ -13,6 +14,7 @@ import {
 } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
+import atlas from '../../../public/gwa/uk-wind-100m.json';
 import type { LatLng } from '@jamieblair/windforge-core';
 
 // Fix default Leaflet marker assets when bundled by Next. Served locally from
@@ -36,6 +38,7 @@ export interface MapPreset {
 export type LeafletMapProps = {
   /** Active analysis point, if any. */
   coordinate: LatLng | null;
+  showAtlas?: boolean;
   /** Called when the user clicks the map (or a preset pin) to pick a point. */
   onPick?: (coordinate: LatLng) => void;
   /** Clickable preset locations shown as pins when there is no active point. */
@@ -49,7 +52,8 @@ export type LeafletMapProps = {
 function ClickToPick({ onPick }: { onPick?: (coordinate: LatLng) => void }) {
   useMapEvents({
     click(event) {
-      onPick?.({ lat: event.latlng.lat, lng: event.latlng.lng });
+      const point = event.latlng.wrap();
+      onPick?.({ lat: point.lat, lng: point.lng });
     },
   });
   return null;
@@ -76,13 +80,15 @@ function ResizeHandler() {
 /** Flies the map to the active coordinate whenever it changes. */
 function Recenter({ coordinate }: { coordinate: LatLng | null }) {
   const map = useMap();
+  const lat = coordinate?.lat,
+    lng = coordinate?.lng;
   useEffect(() => {
-    if (coordinate) {
-      map.flyTo([coordinate.lat, coordinate.lng], Math.max(map.getZoom(), 9), {
-        duration: 0.6,
-      });
-    }
-  }, [coordinate, map]);
+    if (lat === undefined || lng === undefined) return;
+    const zoom = Math.max(map.getZoom(), 9);
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches)
+      map.setView([lat, lng], zoom, { animate: false });
+    else map.flyTo([lat, lng], zoom, { duration: 0.6 });
+  }, [lat, lng, map]);
   return null;
 }
 
@@ -90,8 +96,9 @@ export function LeafletMap({
   coordinate,
   onPick,
   presets = [],
-  defaultCenter = [30, 0],
-  defaultZoom = 2,
+  showAtlas = false,
+  defaultCenter = [55.3, -3.8],
+  defaultZoom = 5,
 }: LeafletMapProps) {
   const center: [number, number] = coordinate ? [coordinate.lat, coordinate.lng] : defaultCenter;
   const zoom = coordinate ? 9 : defaultZoom;
@@ -115,6 +122,14 @@ export function LeafletMap({
         maxZoom={19}
         opacity={0.85}
       />
+      {showAtlas && (
+        <ImageOverlay
+          url="/gwa/uk-wind-100m.png"
+          bounds={atlas.bounds as [[number, number], [number, number]]}
+          opacity={0.72}
+          attribution='Wind resource: <a href="https://globalwindatlas.info/">Global Wind Atlas</a> (DTU/World Bank)'
+        />
+      )}
       {onPick ? <ClickToPick onPick={onPick} /> : null}
       <ResizeHandler />
       <Recenter coordinate={coordinate} />
@@ -126,9 +141,10 @@ export function LeafletMap({
               key={p.name}
               center={[p.lat, p.lng]}
               radius={7}
+              bubblingMouseEvents={false}
               pathOptions={{
-                color: '#6ba9ff',
-                fillColor: '#6ba9ff',
+                color: '#074e47',
+                fillColor: '#9de7c4',
                 fillOpacity: 0.6,
                 weight: 2,
               }}

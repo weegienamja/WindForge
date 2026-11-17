@@ -65,6 +65,15 @@ describe('useCompare', () => {
     expect(result.current.items).toHaveLength(0);
   });
 
+  it('keeps valid saved sites when an old or damaged entry cannot be rendered', () => {
+    window.localStorage.setItem(
+      'windforge:compare',
+      JSON.stringify([null, { lat: 'bad' }, snap(7, 7)]),
+    );
+    const { result } = renderHook(() => useCompare());
+    expect(result.current.items.map((item) => item.id)).toEqual([snapshotId(7, 7)]);
+  });
+
   it('persists across hook instances via localStorage', () => {
     const first = renderHook(() => useCompare());
     act(() => first.result.current.add(snap(7, 7)));

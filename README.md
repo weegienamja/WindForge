@@ -8,6 +8,8 @@ Open-source, screening-level evidence for early wind-energy site investigation.
 
 **Live demo:** https://windforge.khmer-iq.workers.dev
 
+The engineering workspace opens on an interactive turbine schematic. It includes three IEA reference designs, published blade sections and a searchable source library. When the live engineering service is unavailable, the explorer can display the public revision bundled with the application.
+
 WindForge combines public wind, elevation, OpenStreetMap, and geocoding evidence into an explained six-factor screen. It also includes reusable TypeScript modules for energy-yield sensitivity, layouts, wakes, noise, shadow flicker, wind-condition screening, finance, and report data, plus a local Model Context Protocol (MCP) server.
 
 WindForge is for comparing candidate locations and identifying questions for deeper investigation. It is not a planning search, statutory designation search, bankable energy assessment, IEC site-suitability determination, acoustic compliance assessment, or substitute for site measurements and qualified professional review.
@@ -141,5 +143,7 @@ Useful documentation:
 Code is available under the [MIT License](LICENSE).
 
 WindForge uses data from [NASA POWER](https://power.larc.nasa.gov/), [ECMWF/Copernicus ERA5](https://www.ecmwf.int/en/forecasts/dataset/ecmwf-reanalysis-v5), [OpenStreetMap contributors](https://www.openstreetmap.org/copyright), [Open-Elevation](https://open-elevation.com/), and Nominatim. Upstream datasets retain their own terms and attribution requirements.
+
+The workspace uses a cropped WebP version of [Block Island offshore wind farm](https://commons.wikimedia.org/wiki/File:Block_Island_offshore_wind_farm_P6290638m.jpg) by Ionna22. The image and its adaptation are licensed under [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/).
 
 Built and maintained by Jamie Blair.

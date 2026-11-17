@@ -12,6 +12,7 @@ export interface CompareSnapshot {
   lat: number;
   lng: number;
   hub: number;
+  turbineId?: string;
   composite: number | null;
   windSpeedMs: number | null;
   netAepMwh: number | null;
@@ -24,13 +25,31 @@ export function snapshotId(lat: number, lng: number): string {
   return `${lat.toFixed(3)},${lng.toFixed(3)}`;
 }
 
+function isSnapshot(value: unknown): value is CompareSnapshot {
+  if (!value || typeof value !== 'object') return false;
+  const s = value as Record<string, unknown>;
+  const finite = (v: unknown) => typeof v === 'number' && Number.isFinite(v);
+  return (
+    typeof s.id === 'string' &&
+    finite(s.lat) &&
+    finite(s.lng) &&
+    [80, 100, 120, 140].includes(Number(s.hub)) &&
+    finite(s.hub) &&
+    (s.placeName === null || typeof s.placeName === 'string') &&
+    (s.turbineId === undefined || typeof s.turbineId === 'string') &&
+    [s.composite, s.windSpeedMs, s.netAepMwh, s.lcoePerMwh].every((v) => v === null || finite(v)) &&
+    finite(s.hardConstraints) &&
+    finite(s.savedAt)
+  );
+}
+
 function load(): CompareSnapshot[] {
   if (typeof window === 'undefined') return [];
   try {
     const raw = window.localStorage.getItem(STORAGE_KEY);
     if (!raw) return [];
     const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) ? (parsed as CompareSnapshot[]) : [];
+    return Array.isArray(parsed) ? parsed.filter(isSnapshot).slice(-MAX_ITEMS) : [];
   } catch {
     return [];
   }

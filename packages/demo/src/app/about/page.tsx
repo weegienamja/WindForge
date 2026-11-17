@@ -1,5 +1,6 @@
 'use client';
 
+import { SiteHeader } from '../../components/SiteHeader';
 import Link from 'next/link';
 import { DataCard } from '../../components/primitives/DataCard';
 import { ParticleField } from '../../components/primitives/ParticleField';
@@ -21,11 +22,12 @@ const MCP_TOOLS = [
 export default function LandingPage() {
   return (
     <main style={{ background: 'var(--surface-0)', color: 'var(--text-primary)' }}>
+      <SiteHeader />
       {/* HERO */}
       <section
         style={{
           position: 'relative',
-          minHeight: '100vh',
+          minHeight: 'min(590px, 74vh)',
           width: '100%',
           overflow: 'hidden',
         }}
@@ -45,7 +47,7 @@ export default function LandingPage() {
             position: 'absolute',
             inset: 0,
             background:
-              'radial-gradient(ellipse at center, transparent 30%, rgba(10,14,26,0.55) 70%, rgba(10,14,26,0.85) 100%)',
+              'radial-gradient(ellipse at center, transparent 30%, rgba(16,43,48,.6) 75%, #102b30 100%)',
             zIndex: 1,
           }}
         />
@@ -57,16 +59,13 @@ export default function LandingPage() {
             flexDirection: 'column',
             justifyContent: 'center',
             alignItems: 'center',
-            minHeight: '100vh',
+            minHeight: 'min(590px, 74vh)',
             padding: 'var(--space-8) var(--space-5)',
             textAlign: 'center',
             maxWidth: 1100,
             margin: '0 auto',
           }}
         >
-          <div className="t-eyebrow" style={{ color: 'var(--text-secondary)' }}>
-            Wind site intelligence
-          </div>
           <h1
             className="t-display"
             style={{
@@ -84,8 +83,8 @@ export default function LandingPage() {
               margin: '0 0 var(--space-7)',
             }}
           >
-            Six-factor pre-feasibility screening from public data, with explicit provenance and
-            missing-evidence states. Open source and callable from MCP clients.
+            Compare wind, terrain, grid access and land use at a candidate site. Each result shows
+            its sources and flags missing evidence.
           </p>
           <div
             style={{

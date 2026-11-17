@@ -8,6 +8,9 @@ import { BladeSections } from './blades';
 import { SourceLibrary } from './library';
 import { Guide, MachineDiagram, MachineNav } from './machinery';
 import { download, markdown } from './report';
+import { SiteHeader } from '../../components/SiteHeader';
+import { PhotoCredit, WorkspaceHero } from './WorkspaceHero';
+import { SectionIcon } from './SectionIcon';
 import './engineering.css';
 const views = {
   'Turbine explorer': 'turbines',
@@ -367,9 +370,10 @@ export default function Workspace({ initialTab = 'Turbine explorer' }: { initial
           handoff.current = JSON.parse(sessionStorage.getItem('wf-handoff') ?? 'null') ?? undefined;
         } catch {}
       }
-      const list = await reload();
       const item = u.searchParams.get('item');
-      if (item) {
+      if (requested === 'Saved work' || item) {
+        const list = await reload();
+        if (!item) return;
         const ref = list.find((x) => x.id === item);
         if (ref) await open(ref);
         else throw Error('That item is not available in this browser workspace.');
@@ -468,6 +472,8 @@ export default function Workspace({ initialTab = 'Turbine explorer' }: { initial
           answer?: Answer;
           reportId?: string;
         };
+        pick(c.model);
+        P(c.component);
         if (c.entryType === 'answer') {
           if (c.reportId) {
             const rep = await request<{ content: Report }>('get', { id: c.reportId });
@@ -478,8 +484,6 @@ export default function Workspace({ initialTab = 'Turbine explorer' }: { initial
           }
           Ans(c.answer ? [c.answer] : []);
         } else {
-          pick(c.model);
-          P(c.component);
           RecordId(x.id);
           N(c.text);
           F(x.title);
@@ -535,6 +539,10 @@ export default function Workspace({ initialTab = 'Turbine explorer' }: { initial
     T(t);
     E('');
     G('');
+    if (t === 'Saved work')
+      void act('Loading saved work', async () => {
+        await reload();
+      });
   };
   useEffect(() => {
     if (!cat) return;
@@ -545,7 +553,11 @@ export default function Workspace({ initialTab = 'Turbine explorer' }: { initial
     window.history.replaceState(window.history.state, '', url);
   }, [cat, tab, model, part]);
   const formChanged =
-    site && (Number(lat) !== site.coordinate.lat || Number(lng) !== site.coordinate.lng);
+    site &&
+    (!lat.trim() ||
+      !lng.trim() ||
+      Number(lat) !== site.coordinate.lat ||
+      Number(lng) !== site.coordinate.lng);
   const selectModel = (
     <label>
       Reference design
@@ -579,34 +591,28 @@ export default function Workspace({ initialTab = 'Turbine explorer' }: { initial
   );
   return (
     <main className="wf-work">
-      <header className="wf-head">
-        <div>
-          <Link className="wf-brand" href="/">
-            WindForge
-          </Link>
-          <nav aria-label="Site tools">
-            <Link href="/analyse">Site analysis</Link> <Link href="/map">UK map</Link>
-          </nav>
-        </div>
-      </header>
+      <SiteHeader active="/" />
+      <WorkspaceHero />
       <div className="wf-frame">
-        <div className="wf-intro">
-          <div>
-            <h1>Wind turbine engineering</h1>
-          </div>
-          <p>
-            {site
-              ? 'Site · ' + site.coordinate.lat.toFixed(3) + ', ' + site.coordinate.lng.toFixed(3)
-              : 'Reference designs, component geometry and research evidence'}
-          </p>
-        </div>
         <nav className="wf-tabs" aria-label="Workspace sections">
           {tabs.map((t) => (
             <button key={t} aria-current={tab === t} onClick={() => move(t)}>
+              <SectionIcon name={views[t]} />
               {t}
             </button>
           ))}
         </nav>
+        {cat?.bundled && (
+          <p className="notice" role="status">
+            Browsing bundled reference data · revision {cat.release}. The live engineering service
+            is unavailable.
+          </p>
+        )}
+        {site && (
+          <p className="wf-active-site">
+            Selected site · {site.coordinate.lat.toFixed(3)}, {site.coordinate.lng.toFixed(3)}
+          </p>
+        )}
         {busy && (
           <p role="status" className="notice">
             {busy}…
@@ -659,16 +665,15 @@ export default function Workspace({ initialTab = 'Turbine explorer' }: { initial
               />
             )}
             {tab === 'Turbine explorer' && (
-              <div className="wf-grid">
+              <div className="wf-grid wf-explorer">
                 <section className="wf-panel">
-                  <div className="wf-fields">
-                    {selectModel}
+                  <div className="wf-model-head">
                     <div>
-                      <small>{m.setting} · reference design</small>
                       <h2>{m.name}</h2>
+                      <small>{m.setting} reference design</small>
                     </div>
+                    {selectModel}
                   </div>
-                  <MachineNav m={m} n={n} select={inspectPart} />
                   {n.machinery ? (
                     <MachineDiagram
                       key={'diagram-' + m.id + '-' + (n.id === 'gear-stages' ? 'gearbox' : n.id)}
@@ -679,6 +684,29 @@ export default function Workspace({ initialTab = 'Turbine explorer' }: { initial
                   ) : (
                     <Diagram model={m} part={n} select={inspectPart} />
                   )}
+                  {n.id === 'assembly' && (
+                    <dl className="wf-dimensions">
+                      <div>
+                        <dt>Rated power</dt>
+                        <dd>
+                          {fmt(m.ratedKw / 1000, 2)} <small>MW</small>
+                        </dd>
+                      </div>
+                      <div>
+                        <dt>Rotor diameter</dt>
+                        <dd>
+                          {fmt(m.rotorM)} <small>m</small>
+                        </dd>
+                      </div>
+                      <div>
+                        <dt>Hub height</dt>
+                        <dd>
+                          {fmt(m.hubM)} <small>m</small>
+                        </dd>
+                      </div>
+                    </dl>
+                  )}
+                  <MachineNav m={m} n={n} select={inspectPart} />
                   <small>
                     Functional schematic. Select a labelled part to inspect it. Shapes and spacing
                     are illustrative.
@@ -719,8 +747,8 @@ export default function Workspace({ initialTab = 'Turbine explorer' }: { initial
                   </details>
                 </section>
                 <section className="wf-panel" aria-label="Component record">
-                  {selectPart}
                   <h2>{n.label}</h2>
+                  {selectPart}
                   {n.function && !n.machinery && (
                     <p>
                       {n.function} <a href={cat.sources['doe-functions']?.url}>Function source</a>
@@ -1099,7 +1127,7 @@ export default function Workspace({ initialTab = 'Turbine explorer' }: { initial
                   Access is held by a private cookie in this browser. Export evidence you need to
                   retain before clearing browser data.
                 </p>
-                {!saved.length && (
+                {!saved.length && !busy && !err && (
                   <p>No saved work yet. Analyse a site or ask a question to start a record.</p>
                 )}
                 {saved.map((x) => (
@@ -1148,6 +1176,7 @@ export default function Workspace({ initialTab = 'Turbine explorer' }: { initial
           <Link href="/reanalysis">Wind reanalysis</Link>
           {' · '}
           <Link href="/about">Site screening guide</Link>
+          <PhotoCredit />
         </footer>
       </div>
     </main>

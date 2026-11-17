@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import type { SiteAnalysis, AnalysisOptions, ScoringError } from '@jamieblair/windforge-core';
 import { analyseSite } from '@jamieblair/windforge-core';
 import type { Result } from '@jamieblair/windforge-core';
@@ -45,8 +45,11 @@ export function useSiteScore(): UseSiteScoreState {
   const reset = useCallback(() => {
     abortRef.current?.abort();
     setAnalysis(null);
+    setLoading(false);
     setError(null);
   }, []);
+
+  useEffect(() => () => abortRef.current?.abort(), []);
 
   return { analysis, loading, error, analyse, reset };
 }

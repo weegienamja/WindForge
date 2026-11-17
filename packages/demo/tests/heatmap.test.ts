@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { cellStepDeg, makeRelativeColor, parseWindSpeedMs, scoreColor } from '../src/lib/heatmap';
+import {
+  heatmapMetricValue,
+  cellStepDeg,
+  makeRelativeColor,
+  parseWindSpeedMs,
+  scoreColor,
+} from '../src/lib/heatmap';
 
 describe('scoreColor', () => {
   it('returns a hex colour for any score in range', () => {
@@ -56,8 +62,19 @@ describe('cellStepDeg', () => {
 });
 
 describe('parseWindSpeedMs', () => {
-  it('returns the highest m/s figure in the detail text', () => {
-    expect(parseWindSpeedMs('4.3 m/s at 2m, 7.2 m/s at 50m, 8.6 m/s at 100m hub height')).toBe(8.6);
+  it('reads the labelled hub estimate even when variability is larger', () => {
+    expect(
+      parseWindSpeedMs(
+        '4.3 m/s at 2m, 7.2 m/s at 50m, 8.6 m/s at 100m hub height. Variability: 11 m/s.',
+      ),
+    ).toBe(8.6);
+  });
+
+  it('retains available wind and economics when a composite is withheld', () => {
+    const cell = { lat: 55, lng: -3, score: null, windSpeedMs: 7.5, lcoePerMwh: 0 };
+    expect(heatmapMetricValue(cell, 'suitability')).toBeNull();
+    expect(heatmapMetricValue(cell, 'wind')).toBe(7.5);
+    expect(heatmapMetricValue(cell, 'economics')).toBe(0);
   });
 
   it('returns null when there is no speed', () => {

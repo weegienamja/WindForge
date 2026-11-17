@@ -1,5 +1,6 @@
 'use client';
 
+import { SiteHeader } from '../../components/SiteHeader';
 import { Suspense, useCallback, useEffect, useMemo, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
@@ -54,6 +55,7 @@ import {
   type UseGeocodeSearchReturn,
 } from '../../hooks/useGeocode';
 import { useCompare, snapshotId, type CompareSnapshot } from '../../hooks/useCompare';
+import { parseWindSpeedMs } from '../../lib/heatmap';
 import { errorCopyFor } from '../../lib/errorCopy';
 
 const HUB_OPTIONS = [80, 100, 120, 140] as const;
@@ -83,15 +85,6 @@ function clampLng(v: number): boolean {
   return Number.isFinite(v) && v >= -180 && v <= 180;
 }
 
-/** Pull the highest (hub-height) wind speed out of the wind factor detail text. */
-function parseWindSpeedMs(detail: string | undefined): number | null {
-  if (!detail) return null;
-  const matches = [...detail.matchAll(/([0-9]+(?:\.[0-9]+)?)\s*m\/s/g)];
-  if (matches.length === 0) return null;
-  const speeds = matches.map((m) => Number(m[1])).filter((n) => Number.isFinite(n));
-  return speeds.length > 0 ? Math.max(...speeds) : null;
-}
-
 export function AnalyseClient() {
   return (
     <Suspense fallback={null}>
@@ -113,7 +106,10 @@ function AnalysePageInner() {
     const raw = Number(searchParams?.get('hub'));
     return (HUB_OPTIONS as readonly number[]).includes(raw) ? (raw as Hub) : 100;
   });
-  const [turbineId, setTurbineId] = useState<string>(defaultTurbine?.id ?? '');
+  const [turbineId, setTurbineId] = useState<string>(
+    () =>
+      turbines.find((t) => t.id === searchParams?.get('turbine'))?.id ?? defaultTurbine?.id ?? '',
+  );
 
   const { status, data, error, run, cancel, history, aep } = useAnalyse();
   const isMobile = useMediaQuery('(max-width: 767px)');
@@ -133,8 +129,9 @@ function AnalysePageInner() {
   // Run button, the location search, the example chips and map clicks alike, so
   // every path keeps the URL, inputs and the three data hooks in lockstep.
   const runAt = useCallback(
-    (la: number, ln: number, hh: Hub) => {
-      if (!clampLat(la) || !clampLng(ln)) return;
+    (la: number, ln: number, hh: Hub, turbine = selectedTurbine) => {
+      if (!turbine || !clampLat(la) || !clampLng(ln)) return;
+      setTurbineId(turbine.id);
       setLat(String(la));
       setLng(String(ln));
       setHub(hh);
@@ -142,12 +139,12 @@ function AnalysePageInner() {
       params.set('lat', String(la));
       params.set('lng', String(ln));
       params.set('hub', String(hh));
+      params.set('turbine', turbine.id);
       router.replace(`/analyse?${params.toString()}`);
-      if (!selectedTurbine) return;
       void run({
         coordinate: { lat: la, lng: ln },
         hubHeightM: hh,
-        turbineId: selectedTurbine.id,
+        turbineId: turbine.id,
       });
     },
     [router, run, selectedTurbine],
@@ -172,7 +169,7 @@ function AnalysePageInner() {
     const qLat = searchParams?.get('lat');
     const qLng = searchParams?.get('lng');
     const qHub = Number(searchParams?.get('hub'));
-    if (!qLat || !qLng) return;
+    if (!qLat?.trim() || !qLng?.trim()) return;
     const la = Number(qLat);
     const ln = Number(qLng);
     if (!clampLat(la) || !clampLng(ln)) return;
@@ -204,7 +201,8 @@ function AnalysePageInner() {
       placeName,
       lat: data.coordinate.lat,
       lng: data.coordinate.lng,
-      hub,
+      hub: data.metadata.hubHeightM,
+      turbineId: aep.data?.turbineModel.id ?? searchParams?.get('turbine') ?? defaultTurbine?.id,
       composite: data.compositeScore,
       windSpeedMs: parseWindSpeedMs(wind?.detail),
       netAepMwh: aep.data?.netAepMwh ?? null,
@@ -213,7 +211,7 @@ function AnalysePageInner() {
       savedAt: Date.now(),
     };
     compare.add(snapshot);
-  }, [data, aep.data, placeName, hub, compare]);
+  }, [data, aep.data, placeName, searchParams, defaultTurbine, compare]);
 
   // Responsive control styling: on narrow viewports the form fields and action
   // buttons go full-width and stack vertically.
@@ -229,6 +227,7 @@ function AnalysePageInner() {
         color: 'var(--text-primary)',
       }}
     >
+      <SiteHeader active="/analyse" />
       <header
         data-testid="analyse-topbar"
         style={{
@@ -253,18 +252,6 @@ function AnalysePageInner() {
             gap: 'var(--space-3)',
           }}
         >
-          <Link
-            href="/"
-            className="t-mono-data"
-            style={{
-              color: 'var(--text-secondary)',
-              textDecoration: 'none',
-              fontSize: 12,
-              padding: '8px 0',
-            }}
-          >
-            ← WindForge
-          </Link>
           <LocationSearch
             geocode={geocode}
             onSelect={selectPlace}
@@ -278,7 +265,7 @@ function AnalysePageInner() {
               step="any"
               value={lat}
               onChange={(e) => setLat(e.target.value)}
-              aria-invalid={!valid && lat !== ''}
+              aria-invalid={lat !== '' && !clampLat(latNum)}
               aria-label="Latitude"
               style={controlStyle}
             />
@@ -290,7 +277,7 @@ function AnalysePageInner() {
               step="any"
               value={lng}
               onChange={(e) => setLng(e.target.value)}
-              aria-invalid={!valid && lng !== ''}
+              aria-invalid={lng !== '' && !clampLng(lngNum)}
               aria-label="Longitude"
               style={controlStyle}
             />
@@ -430,15 +417,22 @@ function AnalysePageInner() {
         <Drilldown
           history={history}
           aep={aep}
-          turbine={selectedTurbine}
-          hubHeightM={hub}
+          turbine={turbines.find((t) => t.id === aep.data?.turbineModel.id)}
+          hubHeightM={data.metadata.hubHeightM}
           reconciliation={data.metadata.reconciliation ?? null}
         />
       ) : null}
 
       <CompareTray
         items={compare.items}
-        onLoad={(item) => runAt(item.lat, item.lng, item.hub as Hub)}
+        onLoad={(item) =>
+          runAt(
+            item.lat,
+            item.lng,
+            item.hub as Hub,
+            turbines.find((t) => t.id === item.turbineId) ?? defaultTurbine,
+          )
+        }
         onRemove={compare.remove}
         onClear={compare.clear}
         activeId={activeId}
@@ -570,10 +564,9 @@ function WindCard({
   reconciliation?: ReconciliationMetadata;
 }) {
   const detail = factor?.detail ?? 'No wind data available.';
-  const speedMatch = detail.match(/([0-9]+(?:\.[0-9]+)?)\s*m\/s/);
-  const speed = speedMatch?.[1] ? Number(speedMatch[1]) : null;
+  const speed = parseWindSpeedMs(detail);
   return (
-    <DataCard eyebrow="WIND">
+    <DataCard eyebrow="HUB-HEIGHT WIND">
       {speed !== null ? (
         <NumericReadout
           value={speed}
@@ -897,9 +890,8 @@ function YieldSection({
   aep: AepAuxiliaryState;
   turbine: TurbineModel | undefined;
 }) {
-  if (!turbine) return <PowerCurveEmpty />;
   if (aep.status === 'running') return <PowerCurveSkeleton />;
-  if (aep.status === 'error' || !aep.data) return <PowerCurveEmpty />;
+  if (aep.status === 'error' || !aep.data || !turbine) return <PowerCurveEmpty />;
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
       <PowerCurveChart turbine={turbine} aep={aep.data} />

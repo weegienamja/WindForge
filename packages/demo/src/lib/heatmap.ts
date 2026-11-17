@@ -145,10 +145,14 @@ export function cellStepDeg(
   return { latStepDeg, lngStepDeg };
 }
 
-/** Pull the highest (hub-height) wind speed out of the wind factor detail text. */
+/** The factor also lists reference-height speeds and variability. Only the hub estimate belongs on the map. */
 export function parseWindSpeedMs(detail: string | undefined): number | null {
-  if (!detail) return null;
-  const matches = [...detail.matchAll(/([0-9]+(?:\.[0-9]+)?)\s*m\/s/g)];
-  const speeds = matches.map((m) => Number(m[1])).filter((n) => Number.isFinite(n));
-  return speeds.length > 0 ? Math.max(...speeds) : null;
+  const match = detail?.match(/([\d.]+)\s*m\/s at (?:\d+(?:\.\d+)?\s*m\s+)?hub height/i);
+  return match && Number.isFinite(Number(match[1])) ? Number(match[1]) : null;
+}
+
+export function heatmapMetricValue(cell: HeatmapCell, metric: HeatmapMetric): number | null {
+  const value =
+    metric === 'suitability' ? cell.score : metric === 'wind' ? cell.windSpeedMs : cell.lcoePerMwh;
+  return typeof value === 'number' && Number.isFinite(value) ? value : null;
 }

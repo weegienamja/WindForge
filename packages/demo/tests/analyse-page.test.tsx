@@ -205,7 +205,7 @@ function resetAep() {
 
 const SAMPLE_AEP = {
   turbineModel: {
-    id: 'gw-2mw',
+    id: 'vestas-v90-2000',
     manufacturer: 'Generic',
     model: '2MW',
     ratedPowerKw: 2000,
@@ -377,13 +377,13 @@ describe('Analyse page', () => {
   });
 
   it('triggers automatic analysis when URL params are present on mount', async () => {
-    mockParams = new URLSearchParams('lat=55.86&lng=-4.25&hub=120');
+    mockParams = new URLSearchParams('lat=55.86&lng=-4.25&hub=120&turbine=vestas-v90-2000');
     await renderPage();
     expect(hookState.run).toHaveBeenCalledTimes(1);
     expect(hookState.run).toHaveBeenCalledWith({
       coordinate: { lat: 55.86, lng: -4.25 },
       hubHeightM: 120,
-      turbineId: expect.any(String),
+      turbineId: 'vestas-v90-2000',
     });
   });
 
@@ -552,6 +552,14 @@ describe('Analyse page', () => {
     await renderPage();
     const curve = screen.getByTestId('power-curve-chart');
     expect(curve).toBeInTheDocument();
+    const picker = screen.getByLabelText('Turbine model') as HTMLSelectElement;
+    fireEvent.change(picker, {
+      target: {
+        value: Array.from(picker.options).find((o) => o.value !== SAMPLE_AEP.turbineModel.id)!
+          .value,
+      },
+    });
+    expect(curve).toHaveAttribute('data-turbine', SAMPLE_AEP.turbineModel.id);
     expect(curve).toHaveAttribute('data-central', String(SAMPLE_AEP.centralEstimate.aepMwh));
     expect(curve).toHaveAttribute('data-downside-10', String(SAMPLE_AEP.downside10.aepMwh));
     expect(curve).toHaveAttribute('data-downside-20', String(SAMPLE_AEP.downside20.aepMwh));

@@ -68,6 +68,7 @@ export interface Model {
   nodes: Part[];
 }
 export interface Catalogue {
+  bundled?: boolean;
   release: string;
   models: Model[];
   sources: Record<string, Source>;

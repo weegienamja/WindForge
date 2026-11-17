@@ -88,8 +88,8 @@ async function body(req: Request) {
   }
 }
 export async function GET(req: Request) {
+  const params = new URL(req.url).searchParams;
   try {
-    const params = new URL(req.url).searchParams;
     if (params.has('library') || params.has('blade')) {
       const release = params.get('release') ?? '';
       if (!/^[a-f0-9]{16}$/.test(release))
@@ -105,6 +105,9 @@ export async function GET(req: Request) {
     }
     return reply(await rpc(params.has('status') ? 'status' : 'catalogue'));
   } catch {
+    const { bundledEvidence } = await import('../../../lib/engineering/bundled-evidence');
+    const snapshot = await bundledEvidence(params);
+    if (snapshot) return reply(snapshot);
     return reply({ error: 'Engineering library temporarily unavailable.' }, 503);
   }
 }
