@@ -646,6 +646,23 @@
   margin-top: 17px;
   line-height: 1.5;
 }
+.wf-work .wf-design-link {
+  display: inline-flex;
+  gap: 12px;
+  align-items: center;
+  min-height: 37px;
+  margin-top: 14px;
+  padding: 7px 14px;
+  border-radius: 5px;
+  background: #d7efa7;
+  color: #133f35;
+  font-size: 14px;
+  font-weight: 600;
+  text-decoration: none;
+}
+.wf-work .wf-design-link:hover {
+  background: #e7f6c6;
+}
 .wf-work .wf-photo-caption {
   position: absolute;
   bottom: 18px;

@@ -1,3 +1,5 @@
+import Link from 'next/link';
+
 const photo =
   'https://commons.wikimedia.org/wiki/File:Block_Island_offshore_wind_farm_P6290638m.jpg';
 
@@ -33,8 +35,12 @@ export function WorkspaceHero() {
           Wind turbine <em>engineering</em>
         </h1>
         <p>
-          Explore reference turbines, trace their components and compare the evidence for a site.
+          Inspect reference turbines and their components, or place them on a parcel and compare
+          layouts.
         </p>
+        <Link className="wf-design-link" href="/designer">
+          Open farm designer <span aria-hidden="true">→</span>
+        </Link>
       </div>
       <a className="wf-photo-caption" href={photo}>
         <svg

@@ -6,7 +6,7 @@ Open-source, screening-level evidence for early wind-energy site investigation.
 [![CI](https://img.shields.io/github/actions/workflow/status/weegienamja/WindForge/ci.yml?branch=main&label=CI)](https://github.com/weegienamja/WindForge/actions)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
-**Live demo:** https://windforge.khmer-iq.workers.dev
+[Design a wind farm](https://windforge.khmer-iq.workers.dev/designer) · [Explore turbine engineering](https://windforge.khmer-iq.workers.dev/engineering)
 
 The engineering workspace opens on an interactive turbine schematic. It includes three IEA reference designs, published blade sections and a searchable source library. When the live engineering service is unavailable, the explorer can display the public revision bundled with the application.
 
