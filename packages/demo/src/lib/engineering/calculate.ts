@@ -102,15 +102,10 @@ export function ring(v: unknown, site: LatLng): LatLng[] {
   if (area < 0.001 || area > 200) fail('Boundary must cover 0.001–200 km².');
   return p;
 }
-export function calculate(
-  site: SiteAnalysis,
-  m: Model,
-  c: Config,
-  g: Geometry | null,
-  receptor: LatLng | null,
-  setting: string,
-): Case {
-  const t = {
+export function referenceTurbine(
+  m: Pick<Model, 'id' | 'name' | 'ratedKw' | 'rotorM' | 'hubM' | 'curve'>,
+) {
+  return {
     id: m.id,
     manufacturer: 'IEA reference design',
     model: m.name,
@@ -122,6 +117,16 @@ export function calculate(
       p[2] === null ? [] : [{ windSpeedMs: p[0], thrustCoefficient: p[2] }],
     ),
   };
+}
+export function calculate(
+  site: SiteAnalysis,
+  m: Model,
+  c: Config,
+  g: Geometry | null,
+  receptor: LatLng | null,
+  setting: string,
+): Case {
+  const t = referenceTurbine(m);
   const out: Case = {
     model: m.id,
     label: m.name,

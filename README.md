@@ -31,6 +31,14 @@ Provider failures are recorded as missing evidence. If a required factor is unav
 
 The public demo uses raw NASA POWER wind data by default. The core library has an ERA5 monthly-history adapter for callers that deliberately retrieve and supply a reanalysis series. Automated CERRA correction is disabled because the former request did not create a defensible monthly climatology. See [Data sources](docs/DATA-SOURCES.md) and [Bias correction](docs/BIAS-CORRECTION.md).
 
+## Wind farm designer
+
+[Open the farm designer](https://windforge.khmer-iq.workers.dev/designer) or choose **Design farm layouts** after running a site analysis. The Caithness example opens with two hypothetical four-turbine layouts and a dated site-analysis snapshot. **Change site** opens a separate design and retrieves evidence for those coordinates.
+
+Draw the shared parcel, place a receptor, then add or drag turbines. Duplicate a layout to keep a baseline while changing positions, hub height, turbine model or costs. The comparison shows absolute values or differences from any layout. Designs and their evidence are saved per site in this browser. **Check parcel constraints** overlays OpenStreetMap exclusion geometry for the drawn footprint and flags affected turbines. Site-point constraints are displayed separately.
+
+The designer passes the edited coordinates to the core Jensen/Park wake and AEP models. IEA reference designs use published power and thrust tables. Commercial models use the existing illustrative library curves and sound levels. Receptor noise, astronomical shadow, LCOE and project NPV use the core environmental and financial models.
+
 ## Engineering workspace
 
 [Open the engineering workspace](https://windforge.khmer-iq.workers.dev/engineering), or select **Investigate turbine fit** after a point analysis to carry its signed evidence into a comparison. Explore three IEA reference designs and their component records, compare counts and hub heights, supply a real parcel/receptor or deliberate cost and sound-power assumptions, and save/export versioned investigations. Missing wind, source, receptor or placement evidence remains explicit. A legacy commercial model name in the point analyser uses an illustrative curve; it is not a verified manufacturer power table.

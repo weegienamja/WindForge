@@ -2,6 +2,7 @@ import Link from 'next/link';
 
 const destinations = [
   { href: '/', label: 'Engineering' },
+  { href: '/designer', label: 'Farm designer' },
   { href: '/analyse', label: 'Site analysis' },
   { href: '/map', label: 'UK map' },
 ];

@@ -1,0 +1,314 @@
+{
+  "coordinate": {
+    "lat": 58.45,
+    "lng": -3.65
+  },
+  "compositeScore": 68,
+  "windResource": {
+    "raw": {
+      "coordinate": {
+        "lat": 58.45,
+        "lng": -3.65
+      },
+      "monthlyAverages": [
+        {
+          "month": 1,
+          "averageSpeedMs": 10.668,
+          "averageDirectionDeg": 251.40519637981828
+        },
+        {
+          "month": 2,
+          "averageSpeedMs": 10.501,
+          "averageDirectionDeg": 220.43049230082977
+        },
+        {
+          "month": 3,
+          "averageSpeedMs": 9.078,
+          "averageDirectionDeg": 226.30036664749204
+        },
+        {
+          "month": 4,
+          "averageSpeedMs": 8.151,
+          "averageDirectionDeg": 190.8897039541202
+        },
+        {
+          "month": 5,
+          "averageSpeedMs": 7.178000000000002,
+          "averageDirectionDeg": 214.71398811742725
+        },
+        {
+          "month": 6,
+          "averageSpeedMs": 7.491,
+          "averageDirectionDeg": 226.16383867107922
+        },
+        {
+          "month": 7,
+          "averageSpeedMs": 6.759,
+          "averageDirectionDeg": 256.90832542384624
+        },
+        {
+          "month": 8,
+          "averageSpeedMs": 7.215999999999999,
+          "averageDirectionDeg": 231.45663816691695
+        },
+        {
+          "month": 9,
+          "averageSpeedMs": 8.564,
+          "averageDirectionDeg": 232.90575227147784
+        },
+        {
+          "month": 10,
+          "averageSpeedMs": 9.65,
+          "averageDirectionDeg": 207.50239928923233
+        },
+        {
+          "month": 11,
+          "averageSpeedMs": 9.736999999999998,
+          "averageDirectionDeg": 254.62719578425634
+        },
+        {
+          "month": 12,
+          "averageSpeedMs": 10.040000000000001,
+          "averageDirectionDeg": 230.54785571454826
+        }
+      ],
+      "annualAverageSpeedMs": 8.752750000000002,
+      "speedStdDevMs": 1.6388492388658242,
+      "prevailingDirectionDeg": 231.67599920453537,
+      "directionalConsistency": 0.6329548894772093,
+      "dataYears": 10,
+      "referenceHeightM": 50
+    },
+    "resolved": {
+      "coordinate": {
+        "lat": 58.45,
+        "lng": -3.65
+      },
+      "monthlyAverages": [
+        {
+          "month": 1,
+          "averageSpeedMs": 10.668,
+          "averageDirectionDeg": 251.40519637981828
+        },
+        {
+          "month": 2,
+          "averageSpeedMs": 10.501,
+          "averageDirectionDeg": 220.43049230082977
+        },
+        {
+          "month": 3,
+          "averageSpeedMs": 9.078,
+          "averageDirectionDeg": 226.30036664749204
+        },
+        {
+          "month": 4,
+          "averageSpeedMs": 8.151,
+          "averageDirectionDeg": 190.8897039541202
+        },
+        {
+          "month": 5,
+          "averageSpeedMs": 7.178000000000002,
+          "averageDirectionDeg": 214.71398811742725
+        },
+        {
+          "month": 6,
+          "averageSpeedMs": 7.491,
+          "averageDirectionDeg": 226.16383867107922
+        },
+        {
+          "month": 7,
+          "averageSpeedMs": 6.759,
+          "averageDirectionDeg": 256.90832542384624
+        },
+        {
+          "month": 8,
+          "averageSpeedMs": 7.215999999999999,
+          "averageDirectionDeg": 231.45663816691695
+        },
+        {
+          "month": 9,
+          "averageSpeedMs": 8.564,
+          "averageDirectionDeg": 232.90575227147784
+        },
+        {
+          "month": 10,
+          "averageSpeedMs": 9.65,
+          "averageDirectionDeg": 207.50239928923233
+        },
+        {
+          "month": 11,
+          "averageSpeedMs": 9.736999999999998,
+          "averageDirectionDeg": 254.62719578425634
+        },
+        {
+          "month": 12,
+          "averageSpeedMs": 10.040000000000001,
+          "averageDirectionDeg": 230.54785571454826
+        }
+      ],
+      "annualAverageSpeedMs": 8.752750000000002,
+      "speedStdDevMs": 1.6388492388658242,
+      "prevailingDirectionDeg": 231.67599920453537,
+      "directionalConsistency": 0.6329548894772093,
+      "dataYears": 10,
+      "referenceHeightM": 50
+    },
+    "primarySource": "NASA POWER",
+    "correction": {
+      "status": "not_configured",
+      "reference": null,
+      "detail": "No caller-reviewed reanalysis override was supplied; raw NASA POWER data was used."
+    }
+  },
+  "factors": [
+    {
+      "factor": "windResource",
+      "score": 76,
+      "weight": 0.35,
+      "weightedScore": 26.599999999999998,
+      "detail": "Good wind resource. 5.6 m/s at 2m, 8.8 m/s at 50m, estimated 9.6 m/s at 100m hub height. Variability: 1.6 m/s. Prevailing direction: 232 degrees, 63% directional consistency. Based on 10 years of data.",
+      "dataSource": "NASA POWER API (50m wind speed, 10-year monthly averages)",
+      "confidence": "high"
+    },
+    {
+      "factor": "terrainSuitability",
+      "score": 93,
+      "weight": 0.2,
+      "weightedScore": 18.6,
+      "detail": "Fewer topographic screening concerns. Elevation: 125m, derived slope: 2.1%, derived aspect: 318 degrees. No land-cover or aerodynamic roughness dataset was used.",
+      "dataSource": "Open-Elevation API (provider elevation samples)",
+      "confidence": "medium"
+    },
+    {
+      "factor": "gridProximity",
+      "score": 77,
+      "weight": 0.15,
+      "weightedScore": 11.549999999999999,
+      "detail": "Good grid access. Nearest transmission line: 11.2km. Nearest substation: 11.0km. 101 lines, 54 substations within 50km.",
+      "dataSource": "OpenStreetMap Overpass API (transmission lines, substations)",
+      "confidence": "high"
+    },
+    {
+      "factor": "landUseCompatibility",
+      "score": 0,
+      "weight": 0.15,
+      "weightedScore": 0,
+      "detail": "Incompatible land use. SCREENING EXCLUSION: nature_reserve; authoritative confirmation required. Forest (tree clearing required). Water body nearby (complicates foundation work) (25 features).",
+      "dataSource": "OpenStreetMap Overpass API (land use designations)",
+      "confidence": "high"
+    },
+    {
+      "factor": "planningFeasibility",
+      "score": 85,
+      "weight": 0.1,
+      "weightedScore": 8.5,
+      "detail": "Estimated planning feasibility based on proximity to existing wind installations, population density, and regional context. United Kingdom has a generally favourable wind energy framework. Wind farm 8.5km away (planning precedent exists). 155 wind installations within 20km. Low density area (favourable for planning). This is not a substitute for formal planning assessment.",
+      "dataSource": "OSM Nominatim, Overpass API (wind farms, land use density)",
+      "confidence": "medium"
+    },
+    {
+      "factor": "accessLogistics",
+      "score": 45,
+      "weight": 0.05,
+      "weightedScore": 2.25,
+      "detail": "Moderate access. No major roads found within 5km.",
+      "dataSource": "OpenStreetMap Overpass API (road network)",
+      "confidence": "high"
+    }
+  ],
+  "hardConstraints": [
+    {
+      "factor": "landUseCompatibility",
+      "description": "OpenStreetMap nature-reserve geometry intersects the site point (screening evidence)",
+      "severity": "blocking"
+    }
+  ],
+  "warnings": [
+    {
+      "factor": "landUseCompatibility",
+      "description": "landUseCompatibility scored 0/100 in the configured screen and requires further review"
+    }
+  ],
+  "metadata": {
+    "analysedAt": "2026-11-17T19:31:44.872Z",
+    "dataFreshness": {
+      "windResource": "Historical monthly data",
+      "terrainSuitability": "SRTM elevation data",
+      "gridProximity": "OSM infrastructure snapshot: 2026-11-17T19:29:58.000Z",
+      "landUseCompatibility": "OSM land use snapshot: 2026-11-17T19:29:58.000Z",
+      "planningFeasibility": "Heuristic estimate",
+      "accessLogistics": "OSM road network snapshot: 2026-11-17T19:29:58.000Z"
+    },
+    "sourcesUsed": [
+      "NASA POWER",
+      "Open-Elevation",
+      "Overpass (grid)",
+      "Overpass (land use)",
+      "Nominatim",
+      "Overpass (wind farms)",
+      "Overpass (roads)"
+    ],
+    "sourcesFailed": [],
+    "durationMs": 6347,
+    "hubHeightM": 100,
+    "windShearAlpha": 0.14,
+    "windShearBasis": "Generic open-terrain screening assumption; no land-cover roughness dataset was queried.",
+    "completeness": {
+      "status": "complete",
+      "compositeEligible": true,
+      "missingRequiredFactors": [],
+      "detail": "All six required screening factors were available."
+    },
+    "evidence": [
+      {
+        "source": "NASA POWER",
+        "factor": "windResource",
+        "status": "available",
+        "requiredForComposite": true,
+        "detail": "Historical monthly wind evidence was available."
+      },
+      {
+        "source": "CDS reanalysis",
+        "factor": "reanalysis",
+        "status": "not_configured",
+        "requiredForComposite": false,
+        "detail": "Optional bias correction was not applied."
+      },
+      {
+        "source": "Open-Elevation",
+        "factor": "terrainSuitability",
+        "status": "available",
+        "requiredForComposite": true,
+        "detail": "Elevation and local slope samples were available."
+      },
+      {
+        "source": "OpenStreetMap via Overpass",
+        "factor": "gridProximity",
+        "status": "available",
+        "requiredForComposite": true,
+        "detail": "Grid feature geometry was available."
+      },
+      {
+        "source": "OpenStreetMap via Overpass",
+        "factor": "landUseCompatibility",
+        "status": "available",
+        "requiredForComposite": true,
+        "detail": "Land-use geometry was available as non-statutory screening evidence."
+      },
+      {
+        "source": "Nominatim and OpenStreetMap via Overpass",
+        "factor": "planningFeasibility",
+        "status": "available",
+        "requiredForComposite": true,
+        "detail": "All planning heuristic inputs were available; this remains screening evidence."
+      },
+      {
+        "source": "OpenStreetMap via Overpass",
+        "factor": "accessLogistics",
+        "status": "available",
+        "requiredForComposite": true,
+        "detail": "Road-network geometry was available."
+      }
+    ]
+  }
+}

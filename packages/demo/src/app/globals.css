@@ -317,7 +317,7 @@ button {
   .mast-links {
     grid-column: 1 / -1;
     grid-row: 2;
-    gap: 26px;
+    gap: clamp(8px, 3vw, 26px);
   }
   .mast-links a {
     min-height: 42px;
