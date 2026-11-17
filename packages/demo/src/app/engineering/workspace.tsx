@@ -387,7 +387,9 @@ export default function Workspace({ initialTab = 'Turbine explorer' }: { initial
       const h = handoff.current as { site?: SiteAnalysis; signature?: string } | undefined;
       const x = await request<{ id: string; site: SiteAnalysis }>('site', {
         coordinate,
-        ...(h?.site?.coordinate.lat === coordinate.lat && h.site.coordinate.lng === coordinate.lng
+        ...(h?.signature &&
+        h.site?.coordinate.lat === coordinate.lat &&
+        h.site.coordinate.lng === coordinate.lng
           ? h
           : {}),
       });

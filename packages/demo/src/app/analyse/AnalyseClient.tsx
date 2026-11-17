@@ -393,6 +393,12 @@ function AnalysePageInner() {
               >
                 Investigate turbine fit →
               </Link>
+              <Link
+                href={`/designer?lat=${data.coordinate.lat}&lng=${data.coordinate.lng}`}
+                style={{ color: 'var(--accent-cool)' }}
+              >
+                Design farm layouts →
+              </Link>
               <ResultActions
                 analysis={data}
                 aep={aep.data}

@@ -36,6 +36,10 @@ it('opens on the turbine, provides access to the nacelle, blade viewer and site 
     screen.getByRole('img', { name: geometry.stations[2].name + ' normalised airfoil section' }),
   ).toBeVisible();
   expect(screen.getByRole('button', { name: 'Source library' })).toBeVisible();
+  expect(screen.getByRole('link', { name: 'Open farm designer' })).toHaveAttribute(
+    'href',
+    '/designer',
+  );
   expect(screen.getByRole('link', { name: 'Site analysis' })).toHaveAttribute('href', '/analyse');
   expect(screen.getByRole('link', { name: 'UK map' })).toHaveAttribute('href', '/map');
   await expectNoAxeViolations(container);

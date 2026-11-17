@@ -139,6 +139,8 @@ export type {
   YearOverYearEntry,
 } from './analysis/index.js';
 
+export { isValidPosition } from './energy/layout-constraints.js';
+
 // ─── Utilities ───
 
 /** Geographic and math utility functions. */

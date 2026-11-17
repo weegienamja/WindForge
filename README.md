@@ -6,7 +6,7 @@ Open-source, screening-level evidence for early wind-energy site investigation.
 [![CI](https://img.shields.io/github/actions/workflow/status/weegienamja/WindForge/ci.yml?branch=main&label=CI)](https://github.com/weegienamja/WindForge/actions)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
-**Live demo:** https://windforge.khmer-iq.workers.dev
+[Design a wind farm](https://windforge.khmer-iq.workers.dev/designer) · [Explore turbine engineering](https://windforge.khmer-iq.workers.dev/engineering)
 
 The engineering workspace opens on an interactive turbine schematic. It includes three IEA reference designs, published blade sections and a searchable source library. When the live engineering service is unavailable, the explorer can display the public revision bundled with the application.
 
@@ -30,6 +30,14 @@ The default public analysis runs on the server and uses:
 Provider failures are recorded as missing evidence. If a required factor is unavailable, WindForge withholds the composite score instead of substituting a neutral value. Results include completeness, provenance, failed sources, confidence, the raw/resolved wind resource, and any applied correction.
 
 The public demo uses raw NASA POWER wind data by default. The core library has an ERA5 monthly-history adapter for callers that deliberately retrieve and supply a reanalysis series. Automated CERRA correction is disabled because the former request did not create a defensible monthly climatology. See [Data sources](docs/DATA-SOURCES.md) and [Bias correction](docs/BIAS-CORRECTION.md).
+
+## Wind farm designer
+
+[Open the farm designer](https://windforge.khmer-iq.workers.dev/designer) or choose **Design farm layouts** after running a site analysis. The Caithness example opens with two hypothetical four-turbine layouts and a dated site-analysis snapshot. **Change site** opens a separate design and retrieves evidence for those coordinates.
+
+Draw the shared parcel, place a receptor, then add or drag turbines. Duplicate a layout to keep a baseline while changing positions, hub height, turbine model or costs. The comparison shows absolute values or differences from any layout. Designs and their evidence are saved per site in this browser. **Check parcel constraints** overlays OpenStreetMap exclusion geometry for the drawn footprint and flags affected turbines. Site-point constraints are displayed separately.
+
+The designer passes the edited coordinates to the core Jensen/Park wake and AEP models. IEA reference designs use published power and thrust tables. Commercial models use the existing illustrative library curves and sound levels. Receptor noise, astronomical shadow, LCOE and project NPV use the core environmental and financial models.
 
 ## Engineering workspace
 

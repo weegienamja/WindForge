@@ -51,6 +51,10 @@ describe('useAnalyse', () => {
     );
     expect(result.current.status).toBe('success');
     expect(result.current.data?.coordinate).toEqual(REQUEST.coordinate);
+    expect(JSON.parse(sessionStorage.getItem('wf-handoff')!)).toEqual({
+      site: RESPONSE.analysis,
+      signature: null,
+    });
     expect(result.current.history.status).toBe('error');
     expect(result.current.history.error?.message).toBe('History unavailable.');
   });
