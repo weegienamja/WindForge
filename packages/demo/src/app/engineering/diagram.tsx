@@ -9,7 +9,7 @@ export function Diagram({
   select: (id: string) => void;
 }) {
   const key = part.id === 'assembly' ? 'assembly' : (part.path.split('.')[1] ?? part.id);
-  const active = (k: string) => (key === k ? '#007a77' : '#526773');
+  const active = (k: string) => (key === k ? '#0f8272' : 'url(#airfoil-metal)');
   const hot = (k: string) => ({
     role: 'button',
     tabIndex: 0,
@@ -30,13 +30,24 @@ export function Diagram({
     >
       <title>Illustrative assembly diagram. Select a part to inspect its source record.</title>
       <defs>
+        <linearGradient id="airfoil-metal" x1="0" x2="1" y1="0" y2=".25">
+          <stop stopColor="#f4f7ec" />
+          <stop offset=".38" stopColor="#bbd6ca" />
+          <stop offset=".55" stopColor="#769e91" />
+          <stop offset="1" stopColor="#3e6864" />
+        </linearGradient>
         <pattern id="ground" width="8" height="8" patternUnits="userSpaceOnUse">
           <path d="M0 8L8 0" stroke="#afc0bc" strokeWidth="1" />
         </pattern>
       </defs>
+      <g fill="none" stroke="#83a599" opacity=".6" strokeWidth=".65" pointerEvents="none">
+        <circle cx="134" cy="106" r="96" strokeDasharray="3 5" />
+        <path d="M30 106h208M134 5v220" strokeDasharray="2 5" />
+        <path d="M289 25v220" />
+      </g>
       <path d="M16 245H281" stroke="#809590" />
       <path d="M16 246H281v9H16z" fill="url(#ground)" />
-      <g {...hot('tower')}>
+      <g {...hot('tower')} stroke="#54786e" strokeWidth=".9">
         <path d="M134 243L139 111L147 111L155 243Z" fill={active('tower')} />
         <path d="M145 119L149 238" stroke="white" fill="none" />
       </g>
@@ -48,7 +59,7 @@ export function Diagram({
           Nacelle ›
         </text>
       </g>
-      <g {...hot('blade')} fill={active('blade')}>
+      <g {...hot('blade')} fill={active('blade')} stroke="#54786e" strokeWidth=".9">
         {[0, 120, 240].map((deg) => (
           <path
             key={deg}

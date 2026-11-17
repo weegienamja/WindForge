@@ -1,10 +1,11 @@
 'use client';
 
+import { SiteHeader } from '../../components/SiteHeader';
 import { Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import dynamic from 'next/dynamic';
-import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import {
+  heatmapMetricValue,
   makeRelativeColor,
   scoreColor,
   type HeatmapCell,
@@ -18,12 +19,6 @@ const METRICS: Array<{ key: HeatmapMetric; label: string }> = [
   { key: 'wind', label: 'Wind' },
   { key: 'suitability', label: 'Suitability' },
 ];
-
-const METRIC_VALUE: Record<HeatmapMetric, (c: HeatmapCell) => number | null | undefined> = {
-  economics: (c) => c.lcoePerMwh,
-  wind: (c) => c.windSpeedMs,
-  suitability: (c) => c.score,
-};
 
 type Layer = 'atlas' | 'composite';
 
@@ -126,32 +121,30 @@ function HeatmapInner() {
   const isLiveFeed = url !== '/heatmap.json';
   const { data, error } = useHeatmapFeed(url, isLiveFeed);
   const meta = data?.meta;
-  const cells = data?.cells ?? [];
-  const scored = cells.filter((c) => c.score !== null && c.score !== undefined);
+  const cells = data?.cells;
   const pct = meta && meta.total > 0 ? Math.round((meta.done / meta.total) * 100) : 0;
-  const hasData = scored.length > 0;
 
   // Default to the economics view once any cell carries an LCOE, else fall back
   // to wind (always present, good spread, and the main driver of viability).
-  const hasEconomics = scored.some((c) => typeof c.lcoePerMwh === 'number');
+  const hasEconomics = cells?.some((c) => heatmapMetricValue(c, 'economics') !== null) ?? false;
   const [metricRaw, setMetric] = useState<HeatmapMetric | null>(null);
   const metric: HeatmapMetric = metricRaw ?? (hasEconomics ? 'economics' : 'wind');
 
   // Build a colour function stretched to the data's actual spread for the chosen
   // metric, so close values still read as different colours.
-  const { colorFor, lo, hi } = useMemo(() => {
-    const getter = METRIC_VALUE[metric];
-    const values = scored
-      .map((c) => getter(c))
-      .filter((v): v is number => typeof v === 'number' && Number.isFinite(v));
-    const invert = metric === 'economics'; // lower LCOE = better
-    const { color, lo, hi } = makeRelativeColor(values, { invert });
-    const colorFor = (cell: HeatmapCell) => {
-      const v = getter(cell);
-      return typeof v === 'number' && Number.isFinite(v) ? color(v) : 'var(--surface-elevated)';
+  const { visibleCells, colorFor, lo, hi } = useMemo(() => {
+    const visibleCells = (cells ?? []).filter((cell) => heatmapMetricValue(cell, metric) !== null);
+    const { color, lo, hi } = makeRelativeColor(
+      visibleCells.map((cell) => heatmapMetricValue(cell, metric)!),
+      { invert: metric === 'economics' },
+    );
+    return {
+      visibleCells,
+      colorFor: (cell: HeatmapCell) => color(heatmapMetricValue(cell, metric)!),
+      lo,
+      hi,
     };
-    return { colorFor, lo, hi };
-  }, [scored, metric]);
+  }, [cells, metric]);
 
   // Fine-resolution Global Wind Atlas overlay (500 m). Loaded once if present.
   const [gwa, setGwa] = useState<GwaMeta | null>(null);
@@ -186,6 +179,7 @@ function HeatmapInner() {
     <main
       style={{ minHeight: '100vh', background: 'var(--surface-0)', color: 'var(--text-primary)' }}
     >
+      <SiteHeader active="/map" />
       <header
         style={{
           position: 'sticky',
@@ -200,13 +194,6 @@ function HeatmapInner() {
           gap: 'var(--space-4)',
         }}
       >
-        <Link
-          href="/"
-          className="t-mono-data"
-          style={{ color: 'var(--text-secondary)', textDecoration: 'none', fontSize: 12 }}
-        >
-          ← WindForge
-        </Link>
         <div style={{ flex: 1, minWidth: 180 }}>
           <div className="t-eyebrow">UK wind map</div>
           <div className="t-mono-data" style={{ fontSize: 13, color: 'var(--text-secondary)' }}>
@@ -259,9 +246,8 @@ function HeatmapInner() {
             borderBottom: '1px solid var(--border-subtle)',
           }}
         >
-          Wind Atlas is the intentional default for continuous context. Resolution {gwa.resolutionM}{' '}
-          m at {gwa.heightM} m; it is wind-resource context only, not a site-suitability
-          determination.
+          Mean wind speed at {gwa.heightM} m, shown on a {gwa.resolutionM} m grid. Select a location
+          to screen the site.
         </div>
       ) : null}
 
@@ -292,13 +278,23 @@ function HeatmapInner() {
         ) : (
           <>
             <HeatmapLeaflet
-              cells={scored}
+              cells={visibleCells}
               meta={meta ?? FALLBACK_META}
               onPick={onPick}
               colorFor={colorFor}
             />
-            <Legend metric={metric} lo={lo} hi={hi} />
-            {!hasData ? <EmptyOverlay error={error} url={url} /> : null}
+            {visibleCells.length > 0 && <Legend metric={metric} lo={lo} hi={hi} />}
+            {!visibleCells.length && (
+              <EmptyOverlay
+                message={
+                  error
+                    ? 'Map data could not be loaded.'
+                    : data
+                      ? 'No readings for this metric in this dataset.'
+                      : 'Loading map data…'
+                }
+              />
+            )}
           </>
         )}
       </div>
@@ -551,56 +547,11 @@ function Legend({ metric, lo, hi }: { metric: HeatmapMetric; lo: number; hi: num
   );
 }
 
-function EmptyOverlay({ error, url }: { error: string | null; url: string }) {
+function EmptyOverlay({ message }: { message: string }) {
   return (
-    <div
-      style={{
-        position: 'absolute',
-        inset: 0,
-        zIndex: 1000,
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        pointerEvents: 'none',
-      }}
-    >
-      <div
-        style={{
-          maxWidth: 440,
-          background: 'var(--surface-1)',
-          border: '1px solid var(--border-subtle)',
-          borderRadius: 4,
-          padding: 'var(--space-5)',
-          pointerEvents: 'auto',
-        }}
-      >
-        <div className="t-eyebrow" style={{ color: 'var(--accent-cool)' }}>
-          No data yet
-        </div>
-        <p
-          className="t-body"
-          style={{ color: 'var(--text-secondary)', fontSize: 13, marginTop: 'var(--space-2)' }}
-        >
-          The heatmap fills in as the worker computes each grid point. Point this page at a running
-          worker with{' '}
-          <code style={{ fontFamily: 'var(--font-mono)', color: 'var(--text-primary)' }}>
-            ?src=
-          </code>
-          , e.g.{' '}
-          <code style={{ fontFamily: 'var(--font-mono)', color: 'var(--text-primary)' }}>
-            /map?src=https%3A%2F%2Fworker-host%2Fheatmap.json
-          </code>
-          , or set <code style={{ fontFamily: 'var(--font-mono)' }}>NEXT_PUBLIC_HEATMAP_URL</code>.
-        </p>
-        <p
-          className="t-mono-data"
-          style={{ color: 'var(--text-tertiary)', fontSize: 11, marginTop: 'var(--space-3)' }}
-        >
-          source: {url}
-          {error ? ` · ${error}` : ''}
-        </p>
-      </div>
-    </div>
+    <p role="status" className="wf-map-status">
+      {message}
+    </p>
   );
 }
 

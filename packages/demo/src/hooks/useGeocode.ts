@@ -44,6 +44,7 @@ export function useGeocodeSearch(): UseGeocodeSearchReturn {
       clear();
       return;
     }
+    setResults([]);
     const myId = ++runIdRef.current;
     const handle = setTimeout(() => {
       abortRef.current?.abort();
@@ -77,34 +78,26 @@ export function useGeocodeSearch(): UseGeocodeSearchReturn {
  * rounded coordinate changes; stale responses are ignored.
  */
 export function useReverseGeocode(coordinate: { lat: number; lng: number } | null): string | null {
-  const [label, setLabel] = useState<string | null>(null);
-  const runIdRef = useRef(0);
+  const [result, setResult] = useState<{ key: string; label: string | null } | null>(null);
 
   // Round to ~100 m so tiny coordinate jitter doesn't trigger refetches.
   const key = coordinate ? `${coordinate.lat.toFixed(3)},${coordinate.lng.toFixed(3)}` : null;
 
   useEffect(() => {
-    if (!coordinate || !key) {
-      setLabel(null);
-      return;
-    }
-    const myId = ++runIdRef.current;
+    if (!key) return;
     const controller = new AbortController();
-    fetch(`/api/geocode?lat=${coordinate.lat}&lng=${coordinate.lng}`, {
-      signal: controller.signal,
-    })
+    const [lat, lng] = key.split(',');
+    fetch(`/api/geocode?lat=${lat}&lng=${lng}`, { signal: controller.signal })
       .then((r) => (r.ok ? r.json() : Promise.reject(new Error(`HTTP ${r.status}`))))
       .then((data: { label?: string; displayName?: string }) => {
-        if (runIdRef.current !== myId) return;
-        setLabel(data.label || data.displayName || null);
+        if (!controller.signal.aborted)
+          setResult({ key, label: data.label || data.displayName || null });
       })
       .catch(() => {
-        if (runIdRef.current !== myId) return;
-        setLabel(null);
+        if (!controller.signal.aborted) setResult({ key, label: null });
       });
     return () => controller.abort();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [key]);
 
-  return label;
+  return result?.key === key ? result.label : null;
 }

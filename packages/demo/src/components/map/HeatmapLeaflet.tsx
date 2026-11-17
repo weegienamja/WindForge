@@ -75,7 +75,6 @@ export function HeatmapLeaflet({
       {gwa && onMapPick ? <MapClick onMapPick={onMapPick} /> : null}
 
       {cells.map((cell) => {
-        if (cell.score === null || cell.score === undefined) return null;
         const bounds: [[number, number], [number, number]] = [
           [cell.lat - halfLat, cell.lng - halfLng],
           [cell.lat + halfLat, cell.lng + halfLng],
@@ -93,7 +92,7 @@ export function HeatmapLeaflet({
           >
             <Tooltip direction="top" opacity={1}>
               <div style={{ fontFamily: 'monospace', fontSize: 12 }}>
-                <strong>Score {cell.score}</strong>
+                <strong>Score {cell.score ?? 'withheld'}</strong>
                 {cell.offshore ? <> · offshore</> : null}
                 {typeof cell.windSpeedMs === 'number' ? (
                   <> · {cell.windSpeedMs.toFixed(1)} m/s</>

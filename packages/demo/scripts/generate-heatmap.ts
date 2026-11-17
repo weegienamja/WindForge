@@ -316,9 +316,9 @@ function saveSoon(): void {
 
 let lastStart = 0;
 async function rateGate(): Promise<void> {
-  const wait = lastStart + DELAY_MS - Date.now();
-  if (wait > 0) await sleep(wait);
-  lastStart = Date.now();
+  const now = Date.now();
+  lastStart = Math.max(now, lastStart + DELAY_MS);
+  if (lastStart > now) await sleep(lastStart - now);
 }
 
 const factorScore = (a: { factors: ReadonlyArray<FactorScore> }, f: ScoringFactor) =>
@@ -480,7 +480,7 @@ async function analysePoint(p: GridPoint): Promise<CellRecord> {
           description: w.description,
         })),
       ],
-      compositeScore: Math.round(a.compositeScore),
+      compositeScore: a.compositeScore === null ? null : Math.round(a.compositeScore),
       overallConfidence: overallConfidence(a.factors),
       hardConstraintCount: a.hardConstraints.length,
       windScore: windF ? Math.round(windF.score) : null,

@@ -1,19 +1,14 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { ImageResponse } from 'next/og';
+import { WindMark } from '../components/SiteHeader';
 
 export const runtime = 'nodejs';
-export const alt = 'WindForge turbine engineering workspace.';
+export const alt = 'WindForge · Wind turbine engineering';
 export const size = { width: 1200, height: 630 };
 export const contentType = 'image/png';
 
-/**
- * Fraunces SemiBold (600) loaded once at module scope. Bundled with the
- * demo package via packages/demo/public/fonts/Fraunces-600.ttf so the OG
- * route renders the headline in the brand display face rather than a
- * generic system serif.
- */
-const FRAUNCES_TTF: Buffer = readFileSync(join(process.cwd(), 'public/fonts/Fraunces-600.ttf'));
+const displayFont = readFileSync(join(process.cwd(), 'public/fonts/Fraunces-600.ttf'));
 
 export default function OgImage() {
   return new ImageResponse(
@@ -21,104 +16,54 @@ export default function OgImage() {
       style={{
         width: '100%',
         height: '100%',
-        background: '#0a0e1a',
-        color: '#e8eaef',
-        padding: '64px 80px',
+        background: '#113d40',
+        color: '#f9fcf3',
+        padding: '58px 70px',
         display: 'flex',
         flexDirection: 'column',
         justifyContent: 'space-between',
-        fontFamily: 'sans-serif',
-        backgroundImage:
-          'radial-gradient(circle at 20% 30%, rgba(56,189,248,0.08), transparent 50%), radial-gradient(circle at 80% 80%, rgba(251,191,36,0.06), transparent 50%)',
+        position: 'relative',
       }}
     >
-      {/* Eyebrow */}
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: 16,
-          color: '#9ca3b0',
-          fontSize: 18,
-          letterSpacing: '0.18em',
-          textTransform: 'uppercase',
-        }}
+      <svg
+        width="1200"
+        height="630"
+        viewBox="0 0 1200 630"
+        style={{ position: 'absolute', left: 0, top: 0 }}
+        fill="none"
       >
-        <span
-          style={{
-            width: 10,
-            height: 10,
-            borderRadius: 999,
-            background: '#38bdf8',
-          }}
-        />
+        {Array.from({ length: 22 }, (_, i) => (
+          <path
+            key={i}
+            stroke="#46736a"
+            strokeWidth="2"
+            d={`M-20 ${370 + i * 8} C230 ${330 + i * 7}, 280 ${640 + i * 5}, 600 ${480 + i * 5} S900 ${80 + i * 10}, 1230 ${175 + i * 9}`}
+          />
+        ))}
+      </svg>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12, fontSize: 38 }}>
+        <WindMark />
         WindForge
       </div>
-
-      {/* Headline + sub */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
-        <div
-          style={{
-            fontFamily: 'Fraunces',
-            fontSize: 96,
-            lineHeight: 1.05,
-            fontWeight: 600,
-            letterSpacing: '-0.02em',
-            color: '#f5f7fa',
-            maxWidth: 980,
-          }}
-        >
-          Wind turbine engineering.
-        </div>
-        <div
-          style={{
-            fontFamily: 'monospace',
-            fontSize: 22,
-            color: '#9ca3b0',
-            letterSpacing: '0.04em',
-            display: 'flex',
-            gap: 16,
-          }}
-        >
-          <span>Turbine components</span>
-          <span>·</span>
-          <span>Blade sections</span>
-          <span>·</span>
-          <span>Open source</span>
-        </div>
-      </div>
-
-      {/* Bottom-right URL */}
       <div
         style={{
           display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'flex-end',
-          color: '#5b6478',
-          fontFamily: 'monospace',
-          fontSize: 18,
+          flexDirection: 'column',
+          fontFamily: 'Fraunces',
+          fontSize: 108,
+          lineHeight: 1.02,
+          letterSpacing: '-0.03em',
         }}
       >
-        <div style={{ display: 'flex', gap: 16 }}>
-          <span>IEA reference designs</span>
-          <span>·</span>
-          <span>Engineering evidence</span>
-          <span>·</span>
-          <span>MCP-ready</span>
-        </div>
-        <div>windforge.khmer-iq.workers.dev</div>
+        <span>Wind turbine</span>
+        <span style={{ color: '#d7efa7' }}>engineering</span>
+      </div>
+      <div style={{ display: 'flex', gap: 28, fontSize: 24, color: '#d5e7de' }}>
+        <span>Turbine explorer</span>
+        <span>Site analysis</span>
+        <span>UK wind map</span>
       </div>
     </div>,
-    {
-      ...size,
-      fonts: [
-        {
-          name: 'Fraunces',
-          data: FRAUNCES_TTF,
-          weight: 600,
-          style: 'normal',
-        },
-      ],
-    },
+    { ...size, fonts: [{ name: 'Fraunces', data: displayFont, weight: 600, style: 'normal' }] },
   );
 }
