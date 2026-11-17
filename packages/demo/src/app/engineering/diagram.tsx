@@ -1,3 +1,4 @@
+import { useMediaQuery } from '../../hooks/useMediaQuery';
 import type { Model, Part } from '../../lib/engineering/types';
 export function Diagram({
   model,
@@ -8,6 +9,7 @@ export function Diagram({
   part: Part;
   select: (id: string) => void;
 }) {
+  const compact = useMediaQuery('(max-width: 600px)');
   const key = part.id === 'assembly' ? 'assembly' : (part.path.split('.')[1] ?? part.id);
   const active = (k: string) => (key === k ? '#0f8272' : 'url(#airfoil-metal)');
   const hot = (k: string) => ({
@@ -25,7 +27,7 @@ export function Diagram({
   return (
     <svg
       className="wf-diagram"
-      viewBox="0 0 540 280"
+      viewBox={compact ? '0 0 300 404' : '0 0 540 280'}
       aria-label="Interactive illustrative turbine elevation and drivetrain"
     >
       <title>Illustrative assembly diagram. Select a part to inspect its source record.</title>
@@ -43,7 +45,7 @@ export function Diagram({
       <g fill="none" stroke="#83a599" opacity=".6" strokeWidth=".65" pointerEvents="none">
         <circle cx="134" cy="106" r="96" strokeDasharray="3 5" />
         <path d="M30 106h208M134 5v220" strokeDasharray="2 5" />
-        <path d="M289 25v220" />
+        {!compact && <path d="M289 25v220" />}
       </g>
       <path d="M16 245H281" stroke="#809590" />
       <path d="M16 246H281v9H16z" fill="url(#ground)" />
@@ -79,7 +81,7 @@ export function Diagram({
       />
       <g fill="none" stroke="#889d9a">
         <path d="M47 20v174m-4-174h8m-8 174h8M224 106v137m-4-137h8m-8 137h8" />
-        <path d="M177 105h17l23-35h79" strokeDasharray="3 4" />
+        {!compact && <path d="M177 105h17l23-35h79" strokeDasharray="3 4" />}
       </g>
       <text x="57" y="35">
         Ø {model.rotorM.toFixed(1)} m
@@ -87,7 +89,7 @@ export function Diagram({
       <text x="232" y="182">
         {model.hubM} m
       </text>
-      <g transform="translate(303 60)">
+      <g transform={compact ? 'translate(46 295)' : 'translate(303 60)'}>
         <text x="0" y="-10">
           Nacelle section
         </text>
